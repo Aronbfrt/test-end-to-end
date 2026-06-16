@@ -137,6 +137,16 @@
     const img = t.images[0] ? `<div class="tee-row__media"><img src="${escapeHtml(t.images[0])}" loading="lazy" alt="screenshot"></div>` : '';
     const log = t.log ? `<pre class="tee-row__log">${escapeHtml(t.log)}</pre>` : '';
     const shortName = t.testId.split('::').slice(1).join(' › ') || t.testId;
+    const isBroken = t.result === 'Failed' || t.result === 'Error';
+    // A static HTML file can't execute pytest itself — no backend to run the command. The
+    // honest, actually-useful version of "relancer" is: copy the exact command, paste it in
+    // a terminal. That's a real action a button can perform, unlike pretending to re-run.
+    const rerunBtn = isBroken
+      ? `<button type="button" class="tee-rerun-btn" data-cmd="pytest &quot;${escapeHtml(t.testId)}&quot; -v"
+           title="Un rapport HTML statique ne peut pas exécuter de code — copie la commande et colle-la dans ton terminal pour relancer ce test précis.">
+           🔁 Copier la commande pour relancer ce test
+         </button>`
+      : '';
     return `
     <div class="tee-row tee-row--${resultClass}" data-result="${t.result}" data-category="${escapeHtml(t.category)}" data-search="${escapeHtml(t.testId.toLowerCase())}">
       <div class="tee-row__head" tabindex="0">
@@ -148,6 +158,7 @@
         <span class="tee-row__chevron">▾</span>
       </div>
       <div class="tee-row__detail">
+        ${rerunBtn}
         ${log}
         ${img}
         ${!log && !img ? '<div class="tee-row__empty">Aucun détail supplémentaire.</div>' : ''}
@@ -191,6 +202,28 @@
     root.querySelectorAll('.tee-row__head').forEach((head) => {
       head.addEventListener('click', () => head.closest('.tee-row').classList.toggle('is-expanded'));
       head.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); head.click(); } });
+    });
+
+    // "relancer" button — copies the exact pytest command to the clipboard. A static HTML
+    // file genuinely cannot execute that command itself (no backend); this is the honest
+    // version of "make the button work": it performs a real, useful action.
+    root.querySelectorAll('.tee-rerun-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cmd = btn.dataset.cmd;
+        const original = btn.textContent;
+        const onOk = () => {
+          btn.textContent = '✓ Commande copiée — colle-la dans ton terminal';
+          btn.classList.add('is-copied');
+          setTimeout(() => { btn.textContent = original; btn.classList.remove('is-copied'); }, 2200);
+        };
+        const onFail = () => { btn.textContent = `Copie manuelle : ${cmd}`; };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cmd).then(onOk, onFail);
+        } else {
+          onFail();
+        }
+      });
     });
 
     const state = { cat: '', q: '', results: new Set(['Passed', 'Failed', 'Skipped', 'Rerun']) };

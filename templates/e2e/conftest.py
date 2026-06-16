@@ -3,8 +3,8 @@ Import convention: every internal import uses the `tests.` prefix (tests/__init_
 this a package; pytest adds the project root to sys.path because of that __init__.py).
 """
 import os
+import shutil
 import logging
-from datetime import datetime
 
 import pytest
 import requests
@@ -30,7 +30,6 @@ USER_EMAIL  = os.getenv('TEST_USER_EMAIL',  'user@example.com')
 USER_PASS   = os.getenv('TEST_USER_PASS',   'password')
 API_URL     = os.getenv('TEST_API_URL', helpers_module.BASE_URL)
 SCREENSHOTS = os.getenv('TEST_SCREENSHOTS', 'tests/screenshots')
-RUN_ID      = datetime.now().strftime('%Y%m%d_%H%M%S')
 ADMIN_DASHBOARD_PATH = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '/admin/dashboard')
 
 logging.basicConfig(
@@ -41,6 +40,16 @@ logging.basicConfig(
 log = logging.getLogger('e2e')
 
 fake = Faker('fr_FR')   # adapt locale per project
+
+
+# ── Same overwrite philosophy as tests/report.html: each run replaces the previous one,
+# nothing accumulates run after run. Wipe screenshots from the last run before this one starts
+# (skip under xdist workers — only the master process should do it, or workers would race
+# each other and delete screenshots a sibling worker just wrote).
+def pytest_sessionstart(session):
+    if hasattr(session.config, 'workerinput'):
+        return
+    shutil.rmtree(SCREENSHOTS, ignore_errors=True)
 
 
 # ── CLI option: override env at runtime (pytest --env=staging) ────────────────
@@ -160,10 +169,9 @@ def pytest_runtest_makereport(item, call):
     if driver is None:
         return
 
-    out_dir = os.path.join(SCREENSHOTS, RUN_ID)
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(SCREENSHOTS, exist_ok=True)
     name = item.nodeid.replace('/', '_').replace('::', '__')
-    path = os.path.join(out_dir, f'{name}.png')
+    path = os.path.join(SCREENSHOTS, f'{name}.png')
     try:
         driver.save_screenshot(path)
         if extras:

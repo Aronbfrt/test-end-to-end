@@ -14,7 +14,7 @@ class TestPublicPages:
     @pytest.mark.parametrize('path,name', PUBLIC_PAGES)
     def test_01_page_loads(self, user_driver, path, name):
         user_driver.get(url(path))
-        assert user_driver.title != '', f'{name}: empty <title>'
+        assert user_driver.title != '', f'{name} : <title> vide'
 
     @pytest.mark.parametrize('path,name', PUBLIC_PAGES)
     def test_02_no_php_errors(self, user_driver, path, name):
@@ -39,4 +39,4 @@ class TestPublicPages:
         user_driver.get(url(HomePage.PATH))
         logs = user_driver.get_log('browser')
         mixed = [l for l in logs if 'Mixed Content' in l.get('message', '')]
-        assert len(mixed) == 0, f'Mixed content warnings: {mixed}'
+        assert len(mixed) == 0, f'Avertissements contenu mixte : {mixed}'

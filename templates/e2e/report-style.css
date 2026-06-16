@@ -122,6 +122,14 @@ html, body {
 .tee-row__media img { max-width: 520px; width: 100%; border-radius: 8px; border: 1px solid #2a2e37; cursor: zoom-in; }
 .tee-row__empty { color: #6b7280; font-size: 13px; padding: 8px 0; }
 
+.tee-rerun-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  background: #1b1f27; color: #e6e6e6; border: 1px solid #2f3540; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; cursor: pointer; transition: all .12s ease;
+}
+.tee-rerun-btn:hover { background: #232a35; border-color: #3a4150; }
+.tee-rerun-btn.is-copied { background: rgba(63, 185, 80, .15); border-color: #3fb950; color: #3fb950; }
+
 .tee-empty-state { text-align: center; color: #6b7280; padding: 60px 0; font-size: 14px; }
 .tee-empty-state:not([hidden]) { display: block; }
 

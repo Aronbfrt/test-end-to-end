@@ -109,15 +109,33 @@ Skip forms with no free-text input (pure button/checkbox) — note why in a one-
 ```
 `bootstrap.py` auto-installs whatever's missing, for any language the *test suite* runs in (it's always Python/pytest regardless of the target app's language — the app under test can be PHP/Java/Go/whatever). If the app isn't running yet, check `CLAUDE.md`/`package.json`/`README`/`Makefile` for the real start command before asking the user — don't guess one.
 
-## Step 5 — Report back
+## Step 5 — Diagnose and fix, then re-verify (don't just report and stop)
+
+For every failure and every skip, before writing the summary:
+
+1. **Read the actual message.** `[SECURITY]`/`[SEO]` failures already say what/why/how to fix. Functional failures need a real traceback read.
+2. **Decide what's actually wrong** — almost always one of:
+   - **The project's code is wrong** (missing canonical tag, unescaped output, missing security header, broken form field, route returns the wrong thing) → fix the project's source code. This is the normal case — go fix it.
+   - **The test itself is wrong** (selector drifted from a real markup change, wrong path from a stale discovery, assumption that doesn't hold for this project) → fix the test/selector in `pages/*.py` or the test file. Only this case justifies touching the test.
+   - **The skip is correct, not a bug** (genuinely no mobile nav by design, no subscription feature) → leave it, no fix needed, just say so clearly in the summary.
+   - **Neither** — fixing it needs a decision only the human can make (real content for a missing meta description, a business call on whether `/admin` should really be public, a data dependency) → don't guess, flag it explicitly instead of inventing a fix.
+3. **Apply the fix immediately** — in the project's actual source files for the "code is wrong" case. Stay in scope: fix the specific thing the test caught, don't refactor around it. Don't pause to ask before fixing an obvious, in-scope, non-destructive bug (missing canonical tag, unescaped output, missing header, wrong selector) — just do it and move to the next one. Only stop to ask when a fix would touch auth/payment logic, delete data, or change a business rule.
+4. **Re-run just the affected test(s)** to confirm: `./tests/run.sh tests/<domain> -k <test_name> -v` (or copy the exact command from the report's "🔁 Copier la commande" button on that row).
+5. **Keep going** — move to the next failure/skip and repeat steps 1-4, in the same pass, no pause in between. Don't stop after "one retry" as a rule; stop on a given item only when either it's green, or a second honest fix attempt on that *specific* item didn't take (then flag it and move on to the rest — one stuck item doesn't block fixing everything else). Never "fix" a test by weakening or deleting its assertion just to turn it green.
+6. **Process every failure and every skip this way before reporting** — the summary in Step 6 comes after the fix pass is done, not instead of it.
+
+This loop is the whole point of `/e2e-audit` — a report nobody acts on is wasted work.
+
+## Step 6 — Report back
 
 Summarize, in this order:
 
 1. **Sync summary** (if this was a re-run) — "X routes already covered, Y new tests added, Z flagged as possibly stale."
-2. **Security findings** — relay the `[SECURITY] <what> — <why> — <fix>` assertion message verbatim. Point to the red 🔒 badge in `tests/report.html`'s Category column.
-3. **SEO findings** — same pattern, `[SEO] <what> — <why>`.
-4. **Functional failures** (auth, admin, checkout, contact) — what broke and where.
-5. **Skipped tests** — relay the explicit `reason=` on every skip; a skip is not automatically a problem, say so when it isn't.
-6. **Pass count / total**, link to `tests/report.html`.
+2. **Fixed automatically** — what was wrong, what got changed, confirmed green by re-run.
+3. **Security findings still open** (if any survived a fix attempt) — relay the `[SÉCURITÉ] <quoi> — <pourquoi> — <fix>` message verbatim. Point to the red 🔒 badge in `tests/report.html`'s Category column.
+4. **SEO findings still open** — same pattern, `[SEO] <quoi> — <pourquoi>`.
+5. **Flagged for human decision** — what couldn't be auto-fixed and why.
+6. **Skipped tests** — relay the explicit `reason=` on every skip; say plainly when a skip is correct, not a gap.
+7. **Pass count / total**, link to `tests/report.html`.
 
 Never say "tests passed" without checking the actual exit code and reading `tests/report.html` numbers — pytest can exit 0 with skips, and a wall of skips hiding real coverage gaps is itself a finding worth surfacing.

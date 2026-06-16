@@ -1,7 +1,7 @@
-"""Security checks — non-destructive probes only. Never run against prod (.env.test should
-point to a local/dev instance). Every assertion explains the risk + why it matters, so a
-failure in the HTML report is self-explanatory without digging through code.
-Tag tests with @pytest.mark.security.
+"""Checks sécurité — sondes non-destructives uniquement. Jamais contre la prod (.env.test doit
+pointer vers une instance locale/dev). Chaque assertion explique le risque + pourquoi ça
+compte, pour qu'un échec dans le rapport HTML s'explique seul sans fouiller le code.
+Tag les tests @pytest.mark.security.
 """
 from selenium.webdriver.common.by import By
 
@@ -14,17 +14,17 @@ SQLI_PROBES = ["'", "' OR '1'='1", '" OR "1"="1', "1' --", "'; DROP TABLE x; --"
 XSS_PROBE = '<script>__e2e_xss_probe_9f3a__</script>'
 
 SECURITY_HEADERS = {
-    'x-frame-options': 'missing X-Frame-Options — page can be embedded in a malicious iframe (clickjacking)',
-    'x-content-type-options': 'missing X-Content-Type-Options: nosniff — browser may MIME-sniff and execute disguised scripts',
-    'content-security-policy': 'missing Content-Security-Policy — no defense-in-depth against injected scripts',
-    'referrer-policy': 'missing Referrer-Policy — full URLs (possibly with tokens) leak to third-party sites via the Referer header',
+    'x-frame-options': 'X-Frame-Options manquant — la page peut être embarquée dans une iframe malveillante (clickjacking)',
+    'x-content-type-options': 'X-Content-Type-Options: nosniff manquant — le navigateur peut deviner le type MIME et exécuter un script déguisé',
+    'content-security-policy': 'Content-Security-Policy manquant — aucune défense en profondeur contre les scripts injectés',
+    'referrer-policy': 'Referrer-Policy manquant — les URLs complètes (potentiellement avec tokens) fuient vers des sites tiers via l\'en-tête Referer',
 }
 
 
 def check_no_sql_error_leak(driver, input_locator: tuple, submit_locator: tuple, url_to_load: str | None = None) -> None:
-    """Submits harmless SQLi-shaped strings into a field and checks the response doesn't
-    leak a raw DB error — that error message itself is information disclosure, and the
-    underlying lack of parameterization is a SQL injection risk."""
+    """Soumet des chaînes inoffensives en forme d'injection SQL dans un champ et vérifie que
+    la réponse ne fuite pas une erreur BDD brute — ce message d'erreur est lui-même une
+    divulgation d'information, et l'absence de paramétrage sous-jacente est un risque d'injection SQL."""
     for probe in SQLI_PROBES:
         if url_to_load:
             driver.get(url_to_load)
@@ -35,15 +35,15 @@ def check_no_sql_error_leak(driver, input_locator: tuple, submit_locator: tuple,
         src = driver.page_source.lower()
         leaked = [m for m in SQL_ERROR_MARKERS if m in src]
         assert not leaked, (
-            f"[SECURITY] raw SQL error leaked after submitting {probe!r}: '{leaked[0]}' — "
-            "indicates an unparameterized query AND discloses DB internals to an attacker. "
-            "Fix: use prepared statements / parameterized queries, never concatenate user input into SQL."
+            f"[SÉCURITÉ] erreur SQL brute divulguée après soumission de {probe!r} : « {leaked[0]} » — "
+            "indique une requête non paramétrée ET divulgue des détails internes de la BDD à un attaquant. "
+            "Fix : utiliser des requêtes préparées/paramétrées, jamais concaténer l'input utilisateur dans du SQL."
         )
 
 
 def check_reflected_input_escaped(driver, input_locator: tuple, submit_locator: tuple, url_to_load: str | None = None) -> None:
-    """Submits a harmless <script> marker and checks it comes back HTML-escaped, not as a
-    live tag — a reflected, unescaped value is a stored/reflected XSS vector."""
+    """Soumet un marqueur <script> inoffensif et vérifie qu'il revient échappé en HTML, pas
+    comme une balise active — une valeur réfléchie non échappée est un vecteur XSS stocké/réfléchi."""
     if url_to_load:
         driver.get(url_to_load)
     el = driver.find_element(*input_locator)
@@ -52,22 +52,22 @@ def check_reflected_input_escaped(driver, input_locator: tuple, submit_locator: 
     driver.find_element(*submit_locator).click()
     src = driver.page_source
     assert XSS_PROBE not in src, (
-        f"[SECURITY] input reflected unescaped in the response — confirmed reflected XSS. "
-        "An attacker-controlled <script> tag executes in the victim's browser. "
-        "Fix: HTML-escape all user input on output (htmlspecialchars() in PHP, Thymeleaf [[...]] not [(...)], React default escaping)."
+        "[SÉCURITÉ] input réfléchi non échappé dans la réponse — XSS réfléchi confirmé. "
+        "Une balise <script> contrôlée par l'attaquant s'exécute dans le navigateur de la victime. "
+        "Fix : échapper tout input utilisateur à l'affichage (htmlspecialchars() en PHP, Thymeleaf [[...]] pas [(...)], échappement par défaut de React)."
     )
 
 
 def check_security_headers(headers: dict) -> None:
-    """`headers` — a dict from `requests.get(url).headers` (use the `api` fixture, not Selenium,
-    headers aren't exposed to JS)."""
+    """`headers` — un dict issu de `requests.get(url).headers` (utiliser la fixture `api`, pas
+    Selenium, les headers HTTP ne sont pas exposés au JS)."""
     lower = {k.lower(): v for k, v in headers.items()}
     missing = [msg for key, msg in SECURITY_HEADERS.items() if key not in lower]
-    assert not missing, '[SECURITY] ' + '; '.join(missing)
+    assert not missing, '[SÉCURITÉ] ' + '; '.join(missing)
 
 
 def check_no_sensitive_path_exposed(api, base_url: str, paths: list[str] | None = None) -> None:
-    """Checks common sensitive files aren't served (.env, .git/config, debug endpoints)."""
+    """Vérifie que les fichiers sensibles courants ne sont pas servis (.env, .git/config, endpoints debug)."""
     paths = paths or ['/.env', '/.git/config', '/.git/HEAD', '/composer.json', '/package.json', '/phpinfo.php']
     exposed = []
     for path in paths:
@@ -78,9 +78,9 @@ def check_no_sensitive_path_exposed(api, base_url: str, paths: list[str] | None 
         except Exception:
             continue
     assert not exposed, (
-        f"[SECURITY] sensitive path(s) publicly served: {exposed} — "
-        "leaks secrets/credentials or internal structure to anyone who requests the URL. "
-        "Fix: block these paths at the web server level (nginx/Apache deny rule) or move them outside the web root."
+        f"[SÉCURITÉ] chemin(s) sensible(s) servi(s) publiquement : {exposed} — "
+        "fuite de secrets/identifiants ou de structure interne à quiconque demande l'URL. "
+        "Fix : bloquer ces chemins au niveau du serveur web (règle deny nginx/Apache) ou les sortir de la racine web."
     )
 
 
@@ -89,9 +89,9 @@ def check_no_debug_mode_banner(driver) -> None:
     markers = ['Whitelabel Error Page', 'Stack trace:', 'Fatal error:', 'Warning: ', 'XDEBUG', 'APP_DEBUG']
     hit = [m for m in markers if m in src]
     assert not hit, (
-        f"[SECURITY] debug/error output exposed in production-reachable page: {hit} — "
-        "stack traces reveal file paths, framework versions, and sometimes credentials. "
-        "Fix: disable debug mode / display_errors outside local dev."
+        f"[SÉCURITÉ] sortie debug/erreur exposée sur une page accessible : {hit} — "
+        "les stack traces révèlent chemins de fichiers, versions de framework, et parfois des identifiants. "
+        "Fix : désactiver le mode debug / display_errors hors dev local."
     )
 
 
@@ -100,4 +100,4 @@ def check_admin_requires_auth(driver, admin_path: str, base_url: str) -> None:
     body = driver.page_source.lower()
     looks_authenticated = 'tableau de bord' in body or 'dashboard' in body and 'login' not in driver.current_url.lower()
     assert not looks_authenticated or 'login' in driver.current_url.lower() or 'connexion' in driver.current_url.lower(), \
-        f"[SECURITY] {admin_path} reachable without authentication — full admin access bypass. Fix: enforce auth middleware/guard on every admin route."
+        f"[SÉCURITÉ] {admin_path} accessible sans authentification — bypass complet de l'accès admin. Fix : appliquer un middleware/garde d'authentification sur chaque route admin."
