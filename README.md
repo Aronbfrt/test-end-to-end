@@ -28,7 +28,7 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 
 ## Le pipeline
 
-<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="700"></p>
+<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="900"></p>
 
 ---
 
