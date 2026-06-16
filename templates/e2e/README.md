@@ -89,6 +89,16 @@ Report: `tests/report.html` (self-contained, dark themed via `report-style.css`)
 - **One automatic rerun** on failure (`pytest-rerunfailures`) absorbs network flakiness without manual retries.
 - **Markers** (`smoke`, `regression`, `admin`, `stripe`...) let CI run a 30-second smoke pass on every PR and the full 1000-test regression only on `main` or nightly.
 
+## Configuration — what to edit to control which tests run / show
+
+Three different places, three different jobs — don't confuse them:
+
+1. **`pytest.ini` (project root)** — *which tests exist as a category*. The `markers =` block declares `smoke`, `regression`, `admin`, `stripe`, `a11y`, `responsive`, `performance`, `seo`, `security`. Add a new marker here before using `@pytest.mark.yourmarker` in a test, or pytest warns about an unknown marker.
+2. **`-m <marker>` on the command line** — *which tests run this time*. `./tests/run.sh -m smoke` runs only smoke tests; `./tests/run.sh -m "not slow"` excludes slow ones. This is the main lever — decided when we built the marker set: smoke for every push, full regression for `main`/nightly (see "Scaling to 1000+ tests" below).
+3. **`tests/report.html`'s own checkboxes** — *which already-run results are displayed*. After a run, the report shows `☑ Failed ☑ Passed ☑ Skipped ☑ Errors` checkboxes in the Summary — uncheck any to hide that category from the table without re-running anything. This is pytest-html's built-in filter, not something we built — it's the fastest way to "see only what's broken" right after a run.
+
+`.env.test` controls runtime behavior, not test selection: `TEST_HEADLESS` (1=headless/CI, 0=visible window for local debugging — decided to keep configurable rather than hardcode either way), `TEST_BASE_URL` + `TEST_BASE_URL_STAGING`/`_PROD` (switched via `--env=staging`), `TEST_BROWSER` (chrome/firefox), `TEST_MOBILE_WIDTH/HEIGHT/DPR` (mobile emulation viewport — explicit metrics, not a named device, because Chrome's built-in device list changes between versions and breaks a hardcoded name).
+
 ## Fixtures (conftest.py)
 
 | Fixture | Scope | Use |

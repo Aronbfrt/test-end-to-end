@@ -1,5 +1,9 @@
 ; Copy this file to the PROJECT ROOT as `pytest.ini` (not inside tests/) — pytest reads
 ; config relative to rootdir, and tests/ needs to stay a plain package (tests/__init__.py).
+;
+; To run only some categories: `pytest -m smoke`, `pytest -m "not slow"`, `pytest -m security`...
+; To filter what's SHOWN after a run without re-running: use the checkboxes in tests/report.html's
+; Summary (Failed/Passed/Skipped/Errors). See tests/README.md "Configuration" for the full picture.
 [pytest]
 testpaths = tests
 addopts =
