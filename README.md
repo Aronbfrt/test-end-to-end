@@ -6,6 +6,8 @@
 
 <p align="center"><img src="docs/assets/demo.gif" alt="Démo terminal" width="560"></p>
 
+---
+
 ## Installation
 
 ```
@@ -22,6 +24,14 @@
 
 Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit`.
 
+---
+
+## Le pipeline
+
+<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="700"></p>
+
+---
+
 ## Ce que tu obtiens
 
 - **Page Object Model** — sélecteurs dans `tests/pages/`, jamais en dur dans un test
@@ -35,24 +45,16 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 
 Voir `templates/e2e/README.md` pour la référence complète de structure une fois installé dans un projet.
 
-<details>
-<summary><b>Le pipeline</b> (cliquer pour déplier)</summary>
-<br>
-<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="680"></p>
-</details>
+---
 
-<details>
-<summary><b>Aperçu du rapport</b> (cliquer pour déplier)</summary>
-<br>
-<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonne Catégorie, screenshots embarqués" width="680"></p>
-</details>
+## Le rapport
+
+<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonne Catégorie, screenshots embarqués" width="700"></p>
+
+---
 
 ## Contributeurs
 
 - [Aron Beaufort](https://github.com/Aronbfrt) — créateur & mainteneur
 
 PR bienvenues — voir `templates/e2e/README.md` pour les conventions à suivre (Page Object Model, dossiers plats par domaine, messages d'assertion qui expliquent le pourquoi, pas juste le quoi).
-
-## Licence
-
-MIT
