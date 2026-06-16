@@ -42,7 +42,13 @@ def make_driver(private: bool = False, mobile: bool = False, browser: str = BROW
         opts.add_argument('--incognito')
     if HEADLESS:
         opts.add_argument('--headless=new')
-        opts.add_argument('--blink-settings=imagesEnabled=false')
+        # NOT --blink-settings=imagesEnabled=false: disabling image loads is a real speed
+        # win in headless/CI, but it silently breaks two of this suite's own checks —
+        # img.naturalWidth stays 0 and no 'img' resource-timing entries are ever recorded
+        # when nothing downloads, so check_responsive_images and check_no_oversized_images
+        # have nothing to inspect and always pass trivially. Verified by hand: with this flag
+        # on, an intentionally oversized real PNG goes completely undetected in headless mode
+        # (the exact mode CI actually runs in) — coverage matters more than the speedup here.
     opts.add_argument('--no-sandbox')
     opts.add_argument('--disable-dev-shm-usage')
     opts.add_argument('--disable-gpu')

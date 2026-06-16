@@ -439,6 +439,14 @@ def pytest_runtest_makereport(item, call):
                 diff_name = item.nodeid.replace('/', '_').replace('::', '__') + '_visualdiff.png'
                 diff_path = os.path.join(SCREENSHOTS, diff_name)
                 diff_pct, diff_img = check_visual_regression(driver_for_visual, item.nodeid, diff_path)
+                # check_visual_regression already decided this drift is below
+                # TEST_VISUAL_THRESHOLD (anti-aliasing noise, not a real regression) when it
+                # returns no diff_img — without this, a non-zero-but-insignificant pct (e.g.
+                # 0.3%) still rendered as "Δ0.3%" in the report and counted toward the hero's
+                # "N régressions visuelles" alert, contradicting the threshold's whole purpose.
+                # Keep None as-is (first run, baseline just created — nothing to compare yet).
+                if diff_pct is not None and not diff_img:
+                    diff_pct = 0.0
                 report.visual_diff_pct = diff_pct
                 if diff_img and extras:
                     rel = os.path.relpath(diff_img, start='tests')
