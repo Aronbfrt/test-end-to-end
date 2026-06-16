@@ -192,6 +192,53 @@
     return root;
   }
 
+  function applyRerunResult(row, data) {
+    const oldResult = row.dataset.result;
+    const newResult = data.passed ? 'Passed' : 'Failed';
+    if (oldResult === newResult) {
+      // still the same bucket — just refresh the log text below
+      const log = row.querySelector('.tee-row__log');
+      if (log) log.textContent = data.output || log.textContent;
+      return;
+    }
+
+    row.classList.remove(`tee-row--${oldResult.toLowerCase()}`);
+    row.classList.add(`tee-row--${newResult.toLowerCase()}`);
+    row.dataset.result = newResult;
+    const icon = row.querySelector('.tee-row__icon');
+    if (icon) icon.textContent = RESULT_ICON[newResult] || '•';
+    const log = row.querySelector('.tee-row__log');
+    if (log) log.textContent = data.output || '';
+    const badge = document.createElement('span');
+    badge.className = 'tee-chip tee-chip--live';
+    badge.textContent = '🔄 relancé en direct';
+    row.querySelector('.tee-row__head').appendChild(badge);
+
+    // keep the hero stat cards honest after a live rerun
+    const bump = (key, delta) => {
+      const el = document.querySelector(`.tee-stat--${key.toLowerCase()} .tee-stat__value`);
+      if (el) el.textContent = String(Math.max(0, parseInt(el.textContent, 10) + delta));
+    };
+    bump(oldResult === 'Error' ? 'Failed' : oldResult, -1);
+    bump(newResult === 'Error' ? 'Failed' : newResult, 1);
+
+    // and the group's "N échecs" badge
+    const group = row.closest('.tee-group');
+    if (group) {
+      const stillBroken = group.querySelectorAll('.tee-row--failed, .tee-row--error').length;
+      const badgeEl = group.querySelector('.tee-chip--fail, .tee-chip--ok');
+      if (badgeEl) {
+        if (stillBroken > 0) {
+          badgeEl.className = 'tee-chip tee-chip--fail';
+          badgeEl.textContent = `${stillBroken} échec${stillBroken > 1 ? 's' : ''}`;
+        } else {
+          badgeEl.className = 'tee-chip tee-chip--ok';
+          badgeEl.textContent = 'OK';
+        }
+      }
+    }
+  }
+
   function wireInteractions(root) {
     // group collapse
     root.querySelectorAll('.tee-group__head').forEach((head) => {
@@ -204,26 +251,70 @@
       head.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); head.click(); } });
     });
 
-    // "relancer" button — copies the exact pytest command to the clipboard. A static HTML
-    // file genuinely cannot execute that command itself (no backend); this is the honest
-    // version of "make the button work": it performs a real, useful action.
+    // "relancer" button — tries a REAL re-run first via /__rerun__ (only answers if the
+    // report is opened through tests/live_server.py instead of double-clicked as a file).
+    // No server listening (plain file://, or report opened by just double-clicking it) →
+    // falls back to copying the exact pytest command, the next best honest thing.
     root.querySelectorAll('.tee-rerun-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        const row = btn.closest('.tee-row');
         const cmd = btn.dataset.cmd;
-        const original = btn.textContent;
-        const onOk = () => {
-          btn.textContent = '✓ Commande copiée — colle-la dans ton terminal';
-          btn.classList.add('is-copied');
-          setTimeout(() => { btn.textContent = original; btn.classList.remove('is-copied'); }, 2200);
+        const cmdMatch = cmd.match(/"([^"]+)"/);
+        const testId = cmdMatch ? cmdMatch[1] : '';
+        const original = btn.innerHTML;
+
+        const copyFallback = () => {
+          const onOk = () => {
+            btn.textContent = '✓ Commande copiée — colle-la dans ton terminal';
+            btn.classList.add('is-copied');
+            setTimeout(() => { btn.innerHTML = original; btn.classList.remove('is-copied'); }, 2200);
+          };
+          const onFail = () => { btn.textContent = `Copie manuelle : ${cmd}`; };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(cmd).then(onOk, onFail);
+          } else {
+            onFail();
+          }
         };
-        const onFail = () => { btn.textContent = `Copie manuelle : ${cmd}`; };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(cmd).then(onOk, onFail);
-        } else {
-          onFail();
-        }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ relance en cours…';
+
+        fetch('/__rerun__', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ testId }),
+        }).then((r) => {
+          if (!r.ok) throw new Error('no live server');
+          return r.json();
+        }).then((data) => {
+          applyRerunResult(row, data);
+          btn.disabled = false;
+          btn.textContent = data.passed ? '✓ relancé — réussi' : '✗ relancé — toujours en échec';
+          setTimeout(() => { btn.innerHTML = original; }, 2600);
+        }).catch(() => {
+          // No live_server.py running (plain static file) — that's expected most of the
+          // time, not an error to alarm about. Fall back silently to the copy action.
+          btn.disabled = false;
+          copyFallback();
+        });
       });
+    });
+
+    // Image lightbox — click a screenshot thumbnail to see it full size.
+    const lightbox = document.createElement('div');
+    lightbox.className = 'tee-lightbox';
+    lightbox.innerHTML = '<img alt="screenshot en grand">';
+    lightbox.addEventListener('click', () => lightbox.classList.remove('is-open'));
+    document.body.appendChild(lightbox);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lightbox.classList.remove('is-open'); });
+    root.addEventListener('click', (e) => {
+      const img = e.target.closest('.tee-row__media img');
+      if (!img) return;
+      e.stopPropagation();
+      lightbox.querySelector('img').src = img.src;
+      lightbox.classList.add('is-open');
     });
 
     const state = { cat: '', q: '', results: new Set(['Passed', 'Failed', 'Skipped', 'Rerun']) };

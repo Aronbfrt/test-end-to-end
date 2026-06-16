@@ -79,7 +79,19 @@ cp tests/pytest.ini.project-root pytest.ini
 TEST_HEADLESS=0 ./tests/run.sh          # visible browser (debug)
 ```
 
-Report: `tests/report.html` (self-contained, dark themed via `report-style.css`). Every failure embeds its screenshot + last console errors **directly in the report row** — no separate folder to dig through. A **Category** column (security/seo/a11y/responsive/performance/admin/stripe/smoke) makes it obvious at a glance what kind of issue failed — security rows get a red 🔒 badge. Every assertion message in `utils/security_checks.py` and `utils/seo_checks.py` explains **what's wrong, why it matters, and how to fix it** — not just "assert failed". Every `pytest.skip()` in this template carries an explicit reason, shown in the report, so a skip never looks like a silent gap. JUnit XML at `tests/junit.xml` for CI.
+Report: `tests/report.html` (self-contained, dark themed via `report-style.css`). Every failure embeds its screenshot + last console errors **directly in the report row** — no separate folder to dig through, click a screenshot to see it full size. A **Category** column (security/seo/a11y/responsive/performance/admin/stripe/smoke) makes it obvious at a glance what kind of issue failed — security rows get a red 🔒 badge. Every assertion message in `utils/security_checks.py` and `utils/seo_checks.py` explains **what's wrong, why it matters, and how to fix it** — not just "assert failed". Every `pytest.skip()` in this template carries an explicit reason, shown in the report, so a skip never looks like a silent gap. JUnit XML at `tests/junit.xml` for CI.
+
+### Actually re-running a test from the report ("Relancer")
+
+Double-clicking `tests/report.html` opens a plain `file://` page — no backend, so the rerun button there can only copy the pytest command to your clipboard (still genuinely useful, just not a real execution).
+
+For a button that **actually re-runs the test**, serve the report through the included tiny local server instead of opening the file directly:
+
+```bash
+python3 tests/live_server.py            # http://localhost:8765/tests/report.html
+```
+
+Open that URL (not the file) — the same button now POSTs to `/__rerun__`, the server runs `pytest <that one test>` for real, and the row updates in place (icon, log, stat cards) with the actual new result. No server running → same button silently falls back to the clipboard-copy behavior, no error shown.
 
 ## Scaling to 1000+ tests
 
