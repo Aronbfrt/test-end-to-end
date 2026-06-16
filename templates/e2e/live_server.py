@@ -64,7 +64,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         print(f'[live] relance : {test_id}')
         try:
             result = subprocess.run(
-                [sys.executable, '-m', 'pytest', test_id, '-v', '--tb=short', '-p', 'no:cacheprovider'],
+                [
+                    sys.executable, '-m', 'pytest', test_id, '-v', '--tb=short',
+                    '-p', 'no:cacheprovider',
+                    # pytest.ini's addopts bake in --html=tests/report.html and
+                    # --junitxml=tests/junit.xml — without disabling those two plugins here,
+                    # running a single test through this endpoint would silently overwrite
+                    # the full multi-test report with a one-test report on disk. The live
+                    # dashboard updates the row in memory either way; this just keeps the
+                    # file on disk intact for the next real reload.
+                    '-p', 'no:html', '-p', 'no:junitxml',
+                ],
                 cwd=str(ROOT), capture_output=True, text=True, timeout=120,
             )
             self._send_json(200, {
