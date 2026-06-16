@@ -14,7 +14,18 @@ TIMEOUT = 25
 #   TEST_HEADLESS=1 pytest tests/        (headless, CI/server)
 HEADLESS = os.environ.get('TEST_HEADLESS', '1') == '1'
 BROWSER  = os.environ.get('TEST_BROWSER', 'chrome')   # chrome | firefox
-MOBILE   = os.environ.get('TEST_MOBILE_DEVICE', 'Pixel 5')
+
+# Explicit metrics instead of a named deviceName — Chrome's built-in device list (Pixel 5,
+# iPhone X...) changes between versions and a removed name throws InvalidArgumentException.
+# Override via .env.test if a different viewport is needed.
+MOBILE_WIDTH  = int(os.environ.get('TEST_MOBILE_WIDTH', '393'))
+MOBILE_HEIGHT = int(os.environ.get('TEST_MOBILE_HEIGHT', '851'))
+MOBILE_DPR    = float(os.environ.get('TEST_MOBILE_DPR', '2.75'))
+MOBILE_UA     = os.environ.get(
+    'TEST_MOBILE_UA',
+    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) '
+    'Chrome/120.0.0.0 Mobile Safari/537.36',
+)
 
 
 def make_driver(private: bool = False, mobile: bool = False, browser: str = BROWSER) -> webdriver.Remote:
@@ -44,7 +55,10 @@ def make_driver(private: bool = False, mobile: bool = False, browser: str = BROW
     opts.add_argument('--log-level=3')
     opts.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
     if mobile:
-        opts.add_experimental_option('mobileEmulation', {'deviceName': MOBILE})
+        opts.add_experimental_option('mobileEmulation', {
+            'deviceMetrics': {'width': MOBILE_WIDTH, 'height': MOBILE_HEIGHT, 'pixelRatio': MOBILE_DPR},
+            'userAgent': MOBILE_UA,
+        })
     else:
         opts.add_argument('--window-size=1280,900')
     return webdriver.Chrome(options=opts)

@@ -31,6 +31,16 @@ Natural-language triggers (if you map them in your own `CLAUDE.md`): "teste-moi 
 
 See `templates/e2e/README.md` for the full structure reference once installed in a project.
 
+## Report
+
+![E2E test report — dark theme, Category column, embedded screenshots](docs/report-screenshot.png)
+
+## Contributors
+
+- [Aron Beaufort](https://github.com/Aronbfrt) — creator & maintainer
+
+PRs welcome — see `templates/e2e/README.md` for the conventions to follow (Page Object Model, flat domain folders, assertion messages that explain the why, not just the what).
+
 ## License
 
 MIT

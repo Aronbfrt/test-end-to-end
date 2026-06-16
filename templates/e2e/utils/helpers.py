@@ -1,8 +1,13 @@
 """Generic, project-agnostic helpers. Import from any test file."""
 import os
+from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+# Loaded here too (not just in conftest.py) so BASE_URL is correct even if this module gets
+# imported before conftest.py's load_dotenv() runs — import order isn't guaranteed otherwise.
+load_dotenv('.env.test')
 
 BASE_URL = os.environ.get('TEST_BASE_URL', 'http://localhost:8000')
 
