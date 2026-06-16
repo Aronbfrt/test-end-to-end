@@ -1,10 +1,10 @@
 {
-  "name": "e2e-tester",
-  "description": "Zero-manual-work E2E test generator for any stack. /e2e-init for guided setup, /e2e-audit for full automatic site audit (basic + SEO + security + a11y + performance + responsive), discovered from the code via static analysis. Idempotent on re-run.",
+  "name": "test-end-to-end",
+  "description": "La révolution des tests end-to-end. Générateur de tests E2E zéro effort manuel, pour n'importe quelle stack. /e2e-init pour setup guidé, /e2e-audit pour audit automatique complet (basique + SEO + sécurité + a11y + performance + responsive), découvert depuis le code par analyse statique. Idempotent au re-run.",
   "version": "1.0.0",
   "author": {
     "name": "Aron Beaufort"
   },
-  "homepage": "https://github.com/Aronbfrt/claude-e2e-tester",
-  "repository": "https://github.com/Aronbfrt/claude-e2e-tester"
+  "homepage": "https://github.com/Aronbfrt/test-end-to-end",
+  "repository": "https://github.com/Aronbfrt/test-end-to-end"
 }

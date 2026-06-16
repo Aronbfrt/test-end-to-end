@@ -180,7 +180,7 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_html_report_title(report):
-    report.title = 'E2E Test Report'
+    report.title = 'Test End-to-End — Rapport'
 
 
 # ── Category column — security/seo/a11y/... visible at a glance, no need to open each row ──

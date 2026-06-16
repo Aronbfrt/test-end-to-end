@@ -1,5 +1,5 @@
 ---
-description: Initialize E2E test structure (pytest + Selenium) in the current project. Copies the base template and adapts it to the project's routes and entities.
+description: La révolution des tests end-to-end. Initialise la structure de tests E2E (pytest + Selenium) dans le projet courant. Copie le template de base et l'adapte aux routes et entités du projet.
 ---
 
 # /e2e-init

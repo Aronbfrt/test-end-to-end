@@ -1,5 +1,5 @@
 ---
-description: Full automatic site audit — discovers every route/form/entity via static code analysis (any language/framework), generates and runs basic + SEO + security + accessibility + performance + responsive tests. Idempotent — syncs new routes into an existing suite without touching hand-edited tests. Zero manual input required. Triggers on "teste-moi le site", "audit le site", "teste le site complet", "test complet", or /e2e-audit.
+description: La révolution des tests end-to-end. Audit automatique complet du site — découvre chaque route/form/entité par analyse statique du code (n'importe quel langage/framework), génère et lance tests basiques + SEO + sécurité + accessibilité + performance + responsive. Idempotent — synchronise les nouvelles routes sans toucher aux tests déjà écrits à la main. Zéro saisie manuelle. Déclencheurs : "teste-moi le site", "audit le site", "teste le site complet", "test complet", ou /e2e-audit.
 ---
 
 # /e2e-audit
