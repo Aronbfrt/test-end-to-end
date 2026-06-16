@@ -66,6 +66,9 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 - **Navigateurs session-scoped** — un navigateur par rôle pour toute la run, scale à 1000+ tests
 - **SEO complet** — title/meta/canonical (+ https)/h1/hiérarchie de titres/alt/lang/viewport/Open Graph/noindex/structured data/robots.txt/sitemap.xml, chaque échec explique pourquoi ça compte
 - **Sécurité complète, non-destructive** — fuite erreur SQL, échappement input réfléchi, headers sécu (CSP/HSTS/X-Frame-Options...), cookies (Secure/HttpOnly/SameSite), fuite de version serveur, open redirect, listing de répertoire, CORS permissif, chemins sensibles exposés, bannières debug, bypass auth admin, prix manipulable côté client. Jamais destructif, jamais contre la prod.
+- **Accessibilité au-delà du scan générique** — lien d'évitement, labels de formulaire, landmarks ARIA, pièges aria-hidden, boutons sans nom accessible
+- **Responsive complet** — débordement horizontal multi-breakpoints, cibles tactiles, images qui scalent, taille de police lisible sur mobile
+- **Performance au-delà du chargement** — scripts bloquants, poids total de la page, taille du DOM, First Contentful Paint, compression gzip/brotli
 - **Rapport HTML enrichi** — échecs avec screenshot/replay + erreurs console embarqués direct dans la ligne, thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur (sécu = badge rouge 🔒)
 - **Zéro install** — `tests/run.sh` installe automatiquement les paquets pip manquants
 - **N'importe quelle stack** — PHP, Java/Spring, Next.js, Django, Flask, Rails, Go, Rust, Elixir — la découverte de routes s'adapte selon le fichier marqueur (`composer.json`, `pom.xml`, `manage.py`...)

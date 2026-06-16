@@ -1,7 +1,9 @@
-"""Responsive — sitewide breakpoint/mobile-nav checks not tied to one specific page."""
+"""Responsive — sitewide breakpoint/mobile-nav checks not tied to one specific page, plus
+image scaling and mobile readability."""
 import pytest
 from tests.pages.public_pages import HomePage, MobileNavPage
 from tests.utils.helpers import url
+from tests.utils.checks import check_responsive_images, check_mobile_font_size_readable
 
 
 @pytest.mark.responsive
@@ -29,3 +31,15 @@ class TestMobileNav:
         too_small = [b for b in buttons if b.is_displayed() and (b.size['width'] < 44 or b.size['height'] < 44)]
         assert len(too_small) <= len(buttons) * 0.2, \
             f'{len(too_small)}/{len(buttons)} cibles tactiles sous 44x44px'
+
+
+@pytest.mark.responsive
+class TestMobileLayout:
+
+    def test_01_images_scale_to_viewport(self, mobile_driver):
+        mobile_driver.get(url(HomePage.PATH))
+        check_responsive_images(mobile_driver)
+
+    def test_02_font_size_readable(self, mobile_driver):
+        mobile_driver.get(url(HomePage.PATH))
+        check_mobile_font_size_readable(mobile_driver)

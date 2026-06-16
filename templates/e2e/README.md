@@ -16,7 +16,7 @@ project-root/
     ├── utils/
     │   ├── browser.py          # make_driver() — Selenium Manager auto-downloads the right driver
     │   ├── helpers.py           # url(), fill(), click_submit(), wait_for_locator(), login()...
-    │   ├── checks.py             # check_accessibility, check_load_budget, check_no_console_errors...
+    │   ├── checks.py             # axe-core scan + skip link/form labels/landmarks/aria-hidden traps/button names (a11y), responsive images/font size, render-blocking JS/page weight/DOM size/FCP/gzip (perf)
     │   ├── seo_checks.py          # title/meta/canonical+https/h1/heading hierarchy/alt/lang/viewport/OG/noindex/structured data/robots/sitemap
     │   ├── security_checks.py     # SQLi leak/XSS reflection/headers/HSTS/cookies/server version/open redirect/dir listing/CORS/sensitive paths/debug banner/admin bypass
     │   ├── visual.py               # check_visual_regression — pixel diff against a stored baseline
