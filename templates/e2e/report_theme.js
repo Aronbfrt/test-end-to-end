@@ -141,10 +141,12 @@
     // A static HTML file can't execute pytest itself — no backend to run the command. The
     // honest, actually-useful version of "relancer" is: copy the exact command, paste it in
     // a terminal. That's a real action a button can perform, unlike pretending to re-run.
+    // Visible directly on the (possibly still collapsed) row — not buried inside the
+    // detail panel, which needs an extra click to even see the button exists.
     const rerunBtn = isBroken
-      ? `<button type="button" class="tee-rerun-btn" data-cmd="pytest &quot;${escapeHtml(t.testId)}&quot; -v"
-           title="Un rapport HTML statique ne peut pas exécuter de code — copie la commande et colle-la dans ton terminal pour relancer ce test précis.">
-           🔁 Copier la commande pour relancer ce test
+      ? `<button type="button" class="tee-rerun-btn tee-rerun-btn--compact" data-cmd="pytest &quot;${escapeHtml(t.testId)}&quot; -v"
+           title="Relance réellement ce test si le rapport est ouvert via tests/live_server.py — sinon copie la commande pytest à coller dans un terminal.">
+           🔁 Relancer
          </button>`
       : '';
     return `
@@ -154,11 +156,11 @@
         <span class="tee-row__name">${escapeHtml(shortName)}</span>
         ${t.category && t.category !== '-' ? `<span class="tee-chip tee-chip--cat ${t.isSecurity ? 'tee-chip--security' : ''}">${t.isSecurity ? '🔒 ' : ''}${escapeHtml(t.category)}</span>` : ''}
         ${t.everRerun ? '<span class="tee-chip tee-chip--rerun">↻ relancé</span>' : ''}
+        ${rerunBtn}
         <span class="tee-row__duration">${escapeHtml(t.duration)}</span>
         <span class="tee-row__chevron">▾</span>
       </div>
       <div class="tee-row__detail">
-        ${rerunBtn}
         ${log}
         ${img}
         ${!log && !img ? '<div class="tee-row__empty">Aucun détail supplémentaire.</div>' : ''}
@@ -266,11 +268,12 @@
 
         const copyFallback = () => {
           const onOk = () => {
-            btn.textContent = '✓ Commande copiée — colle-la dans ton terminal';
+            btn.textContent = '✓ copié';
+            btn.title = 'Commande copiée — colle-la dans ton terminal.';
             btn.classList.add('is-copied');
-            setTimeout(() => { btn.innerHTML = original; btn.classList.remove('is-copied'); }, 2200);
+            setTimeout(() => { btn.innerHTML = original; btn.classList.remove('is-copied'); }, 2000);
           };
-          const onFail = () => { btn.textContent = `Copie manuelle : ${cmd}`; };
+          const onFail = () => { btn.textContent = '⚠ copie manuelle'; btn.title = cmd; };
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(cmd).then(onOk, onFail);
           } else {
@@ -279,7 +282,7 @@
         };
 
         btn.disabled = true;
-        btn.textContent = '⏳ relance en cours…';
+        btn.textContent = '⏳ en cours…';
 
         fetch('/__rerun__', {
           method: 'POST',
@@ -291,8 +294,8 @@
         }).then((data) => {
           applyRerunResult(row, data);
           btn.disabled = false;
-          btn.textContent = data.passed ? '✓ relancé — réussi' : '✗ relancé — toujours en échec';
-          setTimeout(() => { btn.innerHTML = original; }, 2600);
+          btn.textContent = data.passed ? '✓ réussi' : '✗ toujours rouge';
+          setTimeout(() => { btn.innerHTML = original; }, 2400);
         }).catch(() => {
           // No live_server.py running (plain static file) — that's expected most of the
           // time, not an error to alarm about. Fall back silently to the copy action.

@@ -130,6 +130,9 @@ html, body {
 .tee-rerun-btn:hover { background: #232a35; border-color: #3a4150; }
 .tee-rerun-btn.is-copied { background: rgba(63, 185, 80, .15); border-color: #3fb950; color: #3fb950; }
 .tee-rerun-btn:disabled { opacity: .6; cursor: wait; }
+.tee-rerun-btn--compact {
+  margin-bottom: 0; padding: 5px 11px; font-size: 12px; white-space: nowrap; flex-shrink: 0;
+}
 
 .tee-chip--live { background: rgba(88, 166, 255, .12); color: #79c0ff; border-color: rgba(88,166,255,.35); font-size: 11px; padding: 3px 9px; }
 
