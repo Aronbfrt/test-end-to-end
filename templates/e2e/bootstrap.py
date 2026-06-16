@@ -25,6 +25,7 @@ REQUIRED_MODULES = {
     'faker': 'faker',
     'requests': 'requests',
     'axe_selenium_python': 'axe-selenium-python',
+    'PIL': 'pillow',
 }
 
 

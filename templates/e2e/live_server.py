@@ -12,6 +12,7 @@ Usage:
 """
 import http.server
 import json
+import re
 import socketserver
 import subprocess
 import sys
@@ -19,6 +20,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+
+# Must look like a real pytest nodeid under tests/ — blocks CLI-flag injection ("-k",
+# "--co"...) and anything that isn't one of our own test files. Deliberately permissive
+# past that: parametrized test IDs routinely contain '/', brackets, spaces, accents.
+_VALID_NODEID = re.compile(r'^tests/.+\.py(::.+)?$')
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -35,16 +41,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Access-Control-Allow-Origin', '*')
+        # No Access-Control-Allow-Origin header on purpose: the report is served BY this
+        # server, so calling /__rerun__ from it is same-origin and needs no CORS grant at
+        # all. A wildcard '*' here would let any other site open in the same browser also
+        # hit this endpoint (it executes code) — closing that off by default, not opting in.
         self.end_headers()
         self.wfile.write(body)
-
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
 
     def do_POST(self):
         if self.path != '/__rerun__':
@@ -56,8 +58,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             data = {}
         test_id = data.get('testId', '')
-        if not test_id:
-            self._send_json(400, {'error': 'testId manquant'})
+        if not test_id or '..' in test_id or not _VALID_NODEID.match(test_id):
+            self._send_json(400, {'error': 'testId invalide'})
             return
         print(f'[live] relance : {test_id}')
         try:

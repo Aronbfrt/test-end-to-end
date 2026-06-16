@@ -1,3 +1,21 @@
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+
+# If someone ever copies templates/e2e/ in place and runs it from the repo root directly
+# (not the intended flow, but just in case) — same exclusions as gitignore-snippet.txt
+tests/report.html
+tests/junit.xml
+tests/tests.log
+tests/screenshots/
+tests/.visual-baselines/
+tests/.test-history.jsonl
+tests/.pytest_cache/
+.env.test
+
+# OS / editor cruft
 .DS_Store
+.vscode/
+.idea/

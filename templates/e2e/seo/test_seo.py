@@ -3,10 +3,11 @@ discovered route automatically; fill SEO_PAGES by hand if running /e2e-init alon
 import pytest
 from tests.pages.public_pages import HomePage
 from tests.utils.helpers import url
-from tests.utils.checks import check_no_console_errors
 from tests.utils.seo_checks import (
     check_title_tag, check_meta_description, check_canonical_tag,
     check_single_h1, check_images_have_alt, check_structured_data_present,
+    check_html_lang_attribute, check_viewport_meta, check_open_graph_tags,
+    check_canonical_is_https, check_heading_hierarchy, check_no_noindex,
 )
 
 SEO_PAGES = [
@@ -34,14 +35,44 @@ class TestOnPageSEO:
         check_canonical_tag(user_driver)
 
     @pytest.mark.parametrize('path,name', SEO_PAGES)
-    def test_04_single_h1(self, user_driver, path, name):
+    def test_04_canonical_is_https(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_canonical_is_https(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_05_single_h1(self, user_driver, path, name):
         user_driver.get(url(path))
         check_single_h1(user_driver)
 
     @pytest.mark.parametrize('path,name', SEO_PAGES)
-    def test_05_images_have_alt(self, user_driver, path, name):
+    def test_06_heading_hierarchy(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_heading_hierarchy(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_07_images_have_alt(self, user_driver, path, name):
         user_driver.get(url(path))
         check_images_have_alt(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_08_html_lang_attribute(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_html_lang_attribute(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_09_viewport_meta(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_viewport_meta(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_10_open_graph_tags(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_open_graph_tags(user_driver)
+
+    @pytest.mark.parametrize('path,name', SEO_PAGES)
+    def test_11_no_noindex(self, user_driver, path, name):
+        user_driver.get(url(path))
+        check_no_noindex(user_driver)
 
 
 @pytest.mark.seo

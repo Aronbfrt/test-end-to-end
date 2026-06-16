@@ -63,3 +63,60 @@ def check_sitemap_reachable(driver, base_url: str) -> None:
     driver.get(base_url + '/sitemap.xml')
     assert '<urlset' in driver.page_source or '<sitemapindex' in driver.page_source, \
         '[SEO] /sitemap.xml manquant ou mal formé — les moteurs de recherche découvrent les pages plus lentement sans lui'
+
+
+def check_html_lang_attribute(driver) -> None:
+    lang = driver.execute_script("return document.documentElement.lang") or ''
+    assert lang.strip(), \
+        '[SEO] <html lang="..."> manquant — sans lui, Google et les lecteurs d\'écran doivent deviner la langue de la page, ce qui dégrade le ciblage géographique/linguistique et l\'accessibilité'
+
+
+def check_viewport_meta(driver) -> None:
+    els = driver.find_elements(By.CSS_SELECTOR, 'meta[name=viewport]')
+    assert els, \
+        '[SEO] <meta name="viewport"> manquante — Google utilise l\'indexation mobile-first, une page sans viewport est traitée comme non adaptée au mobile et perd du classement'
+    content = (els[0].get_attribute('content') or '').lower()
+    assert 'width=device-width' in content, \
+        f'[SEO] meta viewport présente mais sans "width=device-width" (contenu actuel: "{content}") — la page ne s\'adapte pas correctement à l\'écran mobile'
+
+
+def check_open_graph_tags(driver) -> None:
+    """og:title/description/image — sans eux, un partage sur Facebook/LinkedIn/Discord
+    affiche une carte vide ou un extrait aléatoire au lieu d'un visuel maîtrisé."""
+    required = ['og:title', 'og:description', 'og:image']
+    missing = [tag for tag in required if not driver.find_elements(By.CSS_SELECTOR, f'meta[property="{tag}"]')]
+    assert not missing, \
+        f'[SEO] balises Open Graph manquantes: {missing} — un partage sur les réseaux sociaux affichera une carte vide ou un extrait aléatoire au lieu du visuel/texte choisi'
+
+
+def check_canonical_is_https(driver) -> None:
+    els = driver.find_elements(By.CSS_SELECTOR, 'link[rel=canonical]')
+    if not els:
+        return  # absence déjà couverte par check_canonical_tag — ne pas dupliquer l'échec
+    href = els[0].get_attribute('href') or ''
+    assert href.startswith('https://'), \
+        f'[SEO] canonical pointe vers une URL non-https ("{href}") — Google préfère et indexe la version https, une canonical http crée un signal contradictoire'
+
+
+def check_heading_hierarchy(driver) -> None:
+    """Pas de niveau de titre sauté (h1 -> h3 sans h2) — perturbe la structure sémantique
+    que les moteurs de recherche et les lecteurs d'écran utilisent pour comprendre le plan."""
+    levels = driver.execute_script("""
+        return Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+            .map(h => parseInt(h.tagName[1], 10));
+    """)
+    skips = []
+    for prev, curr in zip(levels, levels[1:]):
+        if curr - prev > 1:
+            skips.append(f'h{prev}->h{curr}')
+    assert not skips, \
+        f'[SEO] hiérarchie de titres avec des niveaux sautés: {skips} — un h1 suivi directement d\'un h3 (sans h2) casse le plan sémantique de la page'
+
+
+def check_no_noindex(driver) -> None:
+    """Garde-fou — une page censée être indexable ne doit jamais porter un noindex oublié
+    (configuration de staging copiée en prod, balise ajoutée par erreur...)."""
+    els = driver.find_elements(By.CSS_SELECTOR, 'meta[name=robots], meta[name=googlebot]')
+    flagged = [el.get_attribute('content') or '' for el in els if 'noindex' in (el.get_attribute('content') or '').lower()]
+    assert not flagged, \
+        f'[SEO] balise meta robots contient "noindex" ({flagged}) — cette page sera retirée des résultats de recherche. Si c\'est volontaire, ignore ce test pour cette page ; sinon c\'est probablement une config de staging restée en prod'

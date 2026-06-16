@@ -40,7 +40,7 @@ Quiconque utilise Claude Code sur un projet web (peu importe le langage backend)
 | Commande | Action |
 |---|---|
 | `/e2e-init` | Setup guidé — copie le template, routes/forms remplis étape par étape |
-| `/e2e-audit` | Audit automatique complet — découvre chaque route/form/entité par analyse statique, génère tests basiques + SEO + sécurité + accessibilité + performance + responsive, les lance. Zéro saisie manuelle. Idempotent : un re-run synchronise les nouvelles routes sans toucher aux tests déjà écrits à la main. |
+| `/e2e-audit` | Audit automatique complet — découvre chaque route/form/entité par analyse statique, génère tests basiques + SEO + sécurité + accessibilité + performance + responsive, les lance, corrige les échecs en boucle. Zéro saisie manuelle. Idempotent : un re-run synchronise les nouvelles routes sans toucher aux tests déjà écrits à la main. |
 
 Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit`.
 
@@ -52,14 +52,21 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 
 ---
 
+## 4 choses que personne d'autre ne fait dans un setup pytest+Selenium offline
+
+- **🎬 Replay animé des échecs** — pas un screenshot du moment où ça plante, un GIF des dernières actions (clics + navigations) qui ont mené au crash. Capturé en silence, assemblé seulement si ça apporte une vraie info (pas de "replay" figé si la page n'a pas bougé).
+- **👁 Régression visuelle** — chaque test compare son screenshot à une baseline, pass ou fail. Un test peut être 100% fonctionnellement vert et avoir quand même un bouton qui a bougé ou un header devenu invisible — aucun `assert` ne voit ça, ce mécanisme oui.
+- **🎲 Détection de tests instables** — historique léger sur les derniers runs, flag les tests qui se contredisent d'une fois à l'autre. Le signal que `pytest-rerunfailures` masque en se contentant de réessayer.
+- **🩹 Sélecteurs auto-réparants** — narrow et jamais silencieux : un seul repli (id↔name↔data-testid), jamais d'heuristique floue qui risquerait d'interagir avec le mauvais élément. Si ça répare, ça le crie dans le rapport.
+
 ## Ce que tu obtiens
 
 - **Page Object Model** — sélecteurs dans `tests/pages/`, jamais en dur dans un test
 - **Dossiers plats par domaine** — `tests/auth/`, `tests/admin/`, `tests/checkout/`... une feature = un endroit
 - **Navigateurs session-scoped** — un navigateur par rôle pour toute la run, scale à 1000+ tests
-- **Checks SEO** — title/meta/canonical/h1/alt/structured data/robots/sitemap, chaque échec explique pourquoi ça compte
-- **Checks sécurité** — non-destructifs : fuite erreur SQL, échappement input réfléchi, headers sécu, chemins sensibles exposés, bannières debug, bypass auth admin. Jamais destructif, jamais contre la prod.
-- **Rapport HTML enrichi** — échecs avec screenshot + erreurs console embarqués direct dans la ligne, thème sombre, colonne Catégorie (sécu = badge rouge 🔒)
+- **SEO complet** — title/meta/canonical (+ https)/h1/hiérarchie de titres/alt/lang/viewport/Open Graph/noindex/structured data/robots.txt/sitemap.xml, chaque échec explique pourquoi ça compte
+- **Sécurité complète, non-destructive** — fuite erreur SQL, échappement input réfléchi, headers sécu (CSP/HSTS/X-Frame-Options...), cookies (Secure/HttpOnly/SameSite), fuite de version serveur, open redirect, listing de répertoire, CORS permissif, chemins sensibles exposés, bannières debug, bypass auth admin, prix manipulable côté client. Jamais destructif, jamais contre la prod.
+- **Rapport HTML enrichi** — échecs avec screenshot/replay + erreurs console embarqués direct dans la ligne, thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur (sécu = badge rouge 🔒)
 - **Zéro install** — `tests/run.sh` installe automatiquement les paquets pip manquants
 - **N'importe quelle stack** — PHP, Java/Spring, Next.js, Django, Flask, Rails, Go, Rust, Elixir — la découverte de routes s'adapte selon le fichier marqueur (`composer.json`, `pom.xml`, `manage.py`...)
 
@@ -69,7 +76,7 @@ Voir `templates/e2e/README.md` pour la référence complète de structure une fo
 
 ## Le rapport
 
-<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonne Catégorie, screenshots embarqués" width="700"></p>
+<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur" width="700"></p>
 
 ---
 

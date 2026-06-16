@@ -39,13 +39,14 @@ class TestCheckout:
         assert len(error_text) > 0
 
     @pytest.mark.stripe
+    @pytest.mark.security
     def test_05_price_not_client_controllable(self, user_driver):
         """Price must come from server — cannot be overridden via DOM manipulation."""
         user_driver.get(url(CheckoutPage.PATH))
         price_els = user_driver.find_elements(*CheckoutPage.PRICE_INPUT)
         for el in price_els:
             assert el.get_attribute('type') == 'hidden' or not el.is_displayed(), \
-                'Editable price field found — client-side price manipulation possible'
+                '[SÉCURITÉ] champ prix éditable trouvé — manipulation du prix côté client possible. Fix : ne jamais faire confiance à un prix envoyé par le navigateur, toujours recalculer côté serveur.'
 
 
 class TestSubscription:
