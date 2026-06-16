@@ -9,7 +9,7 @@ testpaths = tests
 addopts =
     -v --tb=short
     --durations=10
-    --html=tests/report.html --self-contained-html --css=tests/report-style.css
+    --html=tests/report.html --self-contained-html --css=tests/report/report-style.css
     --junitxml=tests/junit.xml
     --reruns 1 --reruns-delay 2
 log_cli = true
