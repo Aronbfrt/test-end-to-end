@@ -139,7 +139,13 @@
 
   function renderTestRow(t) {
     const resultClass = t.result.toLowerCase();
-    const img = t.images[0] ? `<div class="tee-row__media"><img src="${escapeHtml(t.images[0])}" loading="lazy" alt="screenshot"></div>` : '';
+    const isReplay = t.images[0] && t.images[0].toLowerCase().endsWith('.gif');
+    const img = t.images[0]
+      ? `<div class="tee-row__media">
+           ${isReplay ? '<span class="tee-chip tee-chip--replay">🎬 replay des dernières actions</span>' : ''}
+           <img src="${escapeHtml(t.images[0])}" loading="lazy" alt="${isReplay ? 'replay animé du test jusqu’à l’échec' : 'screenshot'}">
+         </div>`
+      : '';
     const log = t.log ? `<pre class="tee-row__log">${escapeHtml(t.log)}</pre>` : '';
     const shortName = t.testId.split('::').slice(1).join(' › ') || t.testId;
     const isBroken = t.result === 'Failed' || t.result === 'Error';

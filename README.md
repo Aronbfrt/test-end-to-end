@@ -54,6 +54,7 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 
 ## Ce que tu obtiens
 
+- **🎬 Replay animé des échecs** — pas juste un screenshot du moment où ça plante. Chaque clic et chaque navigation est capturé en silence, et à l'échec ces frames deviennent un petit GIF qui montre ce que le bot a vraiment fait dans les dernières secondes avant le crash. Autoplay direct dans le rapport.
 - **Page Object Model** — sélecteurs dans `tests/pages/`, jamais en dur dans un test
 - **Dossiers plats par domaine** — `tests/auth/`, `tests/admin/`, `tests/checkout/`... une feature = un endroit
 - **Navigateurs session-scoped** — un navigateur par rôle pour toute la run, scale à 1000+ tests

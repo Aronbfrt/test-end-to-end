@@ -7,3 +7,4 @@ python-dotenv>=1.0
 faker>=24.0
 requests>=2.31
 axe-selenium-python>=2.1.6
+pillow>=10.0

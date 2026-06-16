@@ -135,6 +135,7 @@ html, body {
 }
 
 .tee-chip--live { background: rgba(88, 166, 255, .12); color: #79c0ff; border-color: rgba(88,166,255,.35); font-size: 11px; padding: 3px 9px; }
+.tee-chip--replay { background: rgba(137, 87, 229, .12); color: #c9a6ff; border-color: rgba(137,87,229,.35); font-size: 11px; padding: 3px 9px; display: block; width: fit-content; margin-bottom: 6px; }
 
 /* Image lightbox — click a screenshot thumbnail to see it full size */
 .tee-lightbox {

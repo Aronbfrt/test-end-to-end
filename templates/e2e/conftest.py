@@ -2,9 +2,12 @@
 Import convention: every internal import uses the `tests.` prefix (tests/__init__.py makes
 this a package; pytest adds the project root to sys.path because of that __init__.py).
 """
+import io
 import os
 import shutil
+import time
 import logging
+import collections
 
 import pytest
 import requests
@@ -20,6 +23,11 @@ try:
     from pytest_html import extras
 except ImportError:
     extras = None
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 load_dotenv('.env.test')
 
@@ -40,6 +48,90 @@ logging.basicConfig(
 log = logging.getLogger('e2e')
 
 fake = Faker('fr_FR')   # adapt locale per project
+
+
+# ── Failure replay — instead of a single screenshot at the moment of failure, capture a
+# rolling filmstrip of the last few navigations/clicks and assemble it into an animated GIF
+# when a test fails. The report then shows what the bot actually did right up to the crash,
+# not just where it ended up. Off by default cost is near zero for passing tests (a capped
+# in-memory deque, cleared the instant the test finishes); set TEST_REPLAY=0 to disable
+# entirely if click/navigation overhead ever matters more than this.
+REPLAY_ENABLED   = os.getenv('TEST_REPLAY', '1') == '1' and Image is not None
+REPLAY_MAX_FRAMES = 8
+REPLAY_MIN_INTERVAL_S = 0.25  # don't flood the buffer on tight loops (e.g. SQLi probes)
+
+_current_test_id: str | None = None
+_frame_buffers: dict[str, collections.deque] = {}
+_last_capture_ts: dict[str, float] = {}
+
+
+def _capture_frame(driver) -> None:
+    if not REPLAY_ENABLED or _current_test_id is None:
+        return
+    now = time.monotonic()
+    if now - _last_capture_ts.get(_current_test_id, 0.0) < REPLAY_MIN_INTERVAL_S:
+        return
+    try:
+        png = driver.get_screenshot_as_png()
+    except Exception:
+        return
+    _last_capture_ts[_current_test_id] = now
+    _frame_buffers.setdefault(_current_test_id, collections.deque(maxlen=REPLAY_MAX_FRAMES)).append(png)
+
+
+if REPLAY_ENABLED:
+    from selenium.webdriver.remote.webdriver import WebDriver as _SeleniumWebDriver
+    from selenium.webdriver.remote.webelement import WebElement as _SeleniumWebElement
+
+    _original_get = _SeleniumWebDriver.get
+    _original_click = _SeleniumWebElement.click
+
+    def _patched_get(self, url_):  # noqa: ANN001 — mirrors Selenium's own signature
+        result = _original_get(self, url_)
+        _capture_frame(self)
+        return result
+
+    def _patched_click(self):
+        result = _original_click(self)
+        try:
+            _capture_frame(self._parent)
+        except Exception:
+            pass
+        return result
+
+    _SeleniumWebDriver.get = _patched_get
+    _SeleniumWebElement.click = _patched_click
+
+
+def _build_replay_gif(frames: list[bytes], final_png_path: str, out_path: str) -> bool:
+    """Assembles captured frames + the final failure screenshot into one animated GIF.
+    Returns True on success — caller falls back to the plain static screenshot on False."""
+    try:
+        images = [Image.open(io.BytesIO(b)).convert('RGB') for b in frames]
+        images.append(Image.open(final_png_path).convert('RGB'))
+        w, h = images[0].size
+        scale = min(1.0, 480 / w)
+        if scale < 1.0:
+            images = [im.resize((int(w * scale), int(h * scale))) for im in images]
+        images[0].save(out_path, save_all=True, append_images=images[1:], duration=550, loop=0, optimize=True)
+        return True
+    except Exception:
+        return False
+
+
+def pytest_runtest_setup(item):
+    global _current_test_id
+    _current_test_id = item.nodeid
+    _frame_buffers.pop(item.nodeid, None)
+    _last_capture_ts.pop(item.nodeid, None)
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    # bounds memory regardless of pass/fail — a buffer only needs to survive long enough for
+    # pytest_runtest_makereport (below) to read it during the 'call' phase, which always
+    # happens before this hook fires.
+    _frame_buffers.pop(nodeid, None)
+    _last_capture_ts.pop(nodeid, None)
 
 
 # ── Same overwrite philosophy as tests/report.html: each run replaces the previous one,
@@ -181,13 +273,24 @@ def pytest_runtest_makereport(item, call):
     path = os.path.join(SCREENSHOTS, f'{name}.png')
     try:
         driver.save_screenshot(path)
+        media_path = path
+
+        # Replay GIF — the captured filmstrip (if any) plus this final frame, shown instead
+        # of the single static screenshot. Falls back to the plain screenshot if there
+        # weren't enough frames buffered or Pillow isn't installed.
+        frames = list(_frame_buffers.get(item.nodeid, ()))
+        if REPLAY_ENABLED and len(frames) >= 2:
+            gif_path = path.rsplit('.', 1)[0] + '_replay.gif'
+            if _build_replay_gif(frames, path, gif_path):
+                media_path = gif_path
+
         if extras:
             # pytest-html uses this path AS-IS as the <img src>, resolved relative to
             # report.html's own location (tests/report.html) — not relative to CWD (project
             # root, where pytest actually runs from). Without this rebase the path keeps its
             # "tests/" prefix and the browser looks for tests/tests/screenshots/... (404,
             # broken image icon). Rebase it relative to the tests/ dir specifically.
-            report_relative_path = os.path.relpath(path, start='tests')
+            report_relative_path = os.path.relpath(media_path, start='tests')
             report.extra.append(extras.image(report_relative_path))
     except Exception:
         pass

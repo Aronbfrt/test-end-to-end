@@ -93,6 +93,12 @@ python3 tests/live_server.py            # http://localhost:8765/tests/report.htm
 
 Open that URL (not the file) — the same button now POSTs to `/__rerun__`, the server runs `pytest <that one test>` for real, and the row updates in place (icon, log, stat cards) with the actual new result. No server running → same button silently falls back to the clipboard-copy behavior, no error shown.
 
+### Failure replay — not a screenshot, a clip of what actually happened
+
+Most reports show one screenshot at the moment of failure — the *result*, not the *story*. This one shows the story: every `driver.get()` and every `.click()` is silently snapshotted (capped at 8 frames, throttled to avoid flooding on tight loops), and on failure those frames get assembled into a small animated GIF — the bot's last few moves leading up to the crash, autoplaying right in the row (🎬 *replay des dernières actions* badge). Click it to see it full size in the lightbox.
+
+Needs Pillow (already in `requirements.txt`). Disable with `TEST_REPLAY=0` in `.env.test` if the extra screenshot calls ever matter more than this for a very latency-sensitive suite — falls back to the old single static screenshot.
+
 ## Scaling to 1000+ tests
 
 - **Session-scoped browsers**: `admin_driver` / `user_driver` are one browser for the *entire run*, not one per test. Login happens once (lazily), persists via cookies. `clear_browser_cache` (autouse) wipes cache/localStorage between tests without logging out — keeps memory flat over hundreds of tests.
