@@ -167,7 +167,13 @@ def pytest_runtest_makereport(item, call):
     try:
         driver.save_screenshot(path)
         if extras:
-            report.extra.append(extras.image(path))
+            # pytest-html uses this path AS-IS as the <img src>, resolved relative to
+            # report.html's own location (tests/report.html) — not relative to CWD (project
+            # root, where pytest actually runs from). Without this rebase the path keeps its
+            # "tests/" prefix and the browser looks for tests/tests/screenshots/... (404,
+            # broken image icon). Rebase it relative to the tests/ dir specifically.
+            report_relative_path = os.path.relpath(path, start='tests')
+            report.extra.append(extras.image(report_relative_path))
     except Exception:
         pass
 
@@ -181,6 +187,19 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_html_report_title(report):
     report.title = 'Test End-to-End — Rapport'
+
+
+def pytest_html_results_summary(prefix, summary, postfix, session):
+    """Injects report_theme.js — a full custom dashboard rendered from pytest-html's own
+    data-jsonblob (the only supported injection point for raw HTML/script; pytest-html
+    rebuilds #results-table from scratch on every filter/sort, so DOM patches on it don't
+    survive — reading the same JSON and rendering our own view sidesteps that entirely)."""
+    js_path = os.path.join(os.path.dirname(__file__), 'report_theme.js')
+    try:
+        with open(js_path, encoding='utf-8') as f:
+            postfix.append(f'<script>{f.read()}</script>')
+    except OSError:
+        pass
 
 
 # ── Category column — security/seo/a11y/... visible at a glance, no need to open each row ──
