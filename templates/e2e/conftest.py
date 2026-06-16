@@ -82,10 +82,10 @@ def _capture_frame(driver) -> None:
     _frame_buffers.setdefault(_current_test_id, collections.deque(maxlen=REPLAY_MAX_FRAMES)).append(png)
 
 
-if REPLAY_ENABLED:
-    from selenium.webdriver.remote.webdriver import WebDriver as _SeleniumWebDriver
-    from selenium.webdriver.remote.webelement import WebElement as _SeleniumWebElement
+from selenium.webdriver.remote.webdriver import WebDriver as _SeleniumWebDriver
+from selenium.webdriver.remote.webelement import WebElement as _SeleniumWebElement
 
+if REPLAY_ENABLED:
     _original_get = _SeleniumWebDriver.get
     _original_click = _SeleniumWebElement.click
 
@@ -104,6 +104,70 @@ if REPLAY_ENABLED:
 
     _SeleniumWebDriver.get = _patched_get
     _SeleniumWebElement.click = _patched_click
+
+
+# ── Self-healing selectors — narrow and conservative on purpose. When a By.ID or By.NAME
+# lookup finds nothing, try exactly ONE fallback (the same value as a different common
+# attribute — id<->name<->data-testid) before giving up. No fuzzy text matching, no "closest
+# element" heuristics — those guess, and a test silently interacting with the wrong element
+# is worse than a clear failure. If the narrow fallback works, the healing is logged AND
+# surfaced loudly in the report (never silent) so the selector actually gets fixed instead
+# of quietly papering over drift forever.
+SELF_HEAL_ENABLED = os.getenv('TEST_SELF_HEAL', '1') == '1'
+
+_heal_events: dict[str, list[str]] = {}
+
+if SELF_HEAL_ENABLED:
+    from selenium.webdriver.common.by import By as _By
+    from selenium.common.exceptions import NoSuchElementException as _NoSuchElementException
+
+    _FALLBACK_STRATEGY = {
+        _By.ID:   lambda v: (_By.CSS_SELECTOR, f'[name="{v}"], [data-testid="{v}"]'),
+        _By.NAME: lambda v: (_By.CSS_SELECTOR, f'[id="{v}"], [data-testid="{v}"]'),
+    }
+
+    _original_driver_find = _SeleniumWebDriver.find_element
+    _original_element_find = _SeleniumWebElement.find_element
+
+    def _record_heal(by, value, fallback_desc) -> None:
+        if _current_test_id is None:
+            return
+        msg = f'{by}="{value}" introuvable — repli {fallback_desc} a fonctionné'
+        _heal_events.setdefault(_current_test_id, []).append(msg)
+        log.warning(f'[SelfHeal] {msg}')
+
+    def _attempt_heal(context, original_finder, by, value):
+        builder = _FALLBACK_STRATEGY.get(by)
+        if not builder or not value:
+            return None
+        fb_by, fb_value = builder(value)
+        try:
+            element = original_finder(context, fb_by, fb_value)
+        except Exception:
+            return None
+        _record_heal(by, value, f'{fb_by}="{fb_value}"')
+        return element
+
+    def _patched_driver_find(self, by=_By.ID, value=None):
+        try:
+            return _original_driver_find(self, by, value)
+        except _NoSuchElementException:
+            healed = _attempt_heal(self, _original_driver_find, by, value)
+            if healed is not None:
+                return healed
+            raise
+
+    def _patched_element_find(self, by=_By.ID, value=None):
+        try:
+            return _original_element_find(self, by, value)
+        except _NoSuchElementException:
+            healed = _attempt_heal(self, _original_element_find, by, value)
+            if healed is not None:
+                return healed
+            raise
+
+    _SeleniumWebDriver.find_element = _patched_driver_find
+    _SeleniumWebElement.find_element = _patched_element_find
 
 
 def _build_replay_gif(frames: list[bytes], final_png_path: str, out_path: str) -> bool:
@@ -144,6 +208,7 @@ def pytest_runtest_setup(item):
     _current_test_id = item.nodeid
     _frame_buffers.pop(item.nodeid, None)
     _last_capture_ts.pop(item.nodeid, None)
+    _heal_events.pop(item.nodeid, None)
 
 
 def pytest_runtest_logfinish(nodeid, location):
@@ -152,6 +217,7 @@ def pytest_runtest_logfinish(nodeid, location):
     # happens before this hook fires.
     _frame_buffers.pop(nodeid, None)
     _last_capture_ts.pop(nodeid, None)
+    _heal_events.pop(nodeid, None)
 
 
 # ── Visual regression — flags pixel drift against a stored baseline even on a passing test.
@@ -353,6 +419,14 @@ def pytest_runtest_makereport(item, call):
     # screenshot/replay logic below.
     _session_results[item.nodeid] = report.outcome
 
+    healed = _heal_events.get(item.nodeid)
+    report.healed_count = len(healed) if healed else 0
+    if healed and extras:
+        report.extra.append(extras.text(
+            '\n'.join(healed),
+            name='⚠ Sélecteur auto-réparé — à corriger dans pages/*.py',
+        ))
+
     if VISUAL_ENABLED:
         driver_for_visual = next(
             (item.funcargs.get(n) for n in ('admin_driver', 'user_driver', 'guest_driver', 'mobile_driver')
@@ -449,6 +523,7 @@ def pytest_html_results_table_header(cells):
     cells.insert(2, '<th>Category</th>')
     cells.insert(3, '<th>Visuel</th>')
     cells.insert(4, '<th>Stabilité</th>')
+    cells.insert(5, '<th>Sélecteur</th>')
 
 
 def pytest_html_results_table_row(report, cells):
@@ -474,6 +549,10 @@ def pytest_html_results_table_row(report, cells):
     else:
         stability_label = '—'
     cells.insert(4, f'<td>{stability_label}</td>')
+
+    healed_count = getattr(report, 'healed_count', 0)
+    selector_label = f'auto-réparé ×{healed_count}' if healed_count else '—'
+    cells.insert(5, f'<td>{selector_label}</td>')
 
 
 # ── Auto-fix hook (mechanism only — empty FIXES by default, see utils/auto_fix.py) ──

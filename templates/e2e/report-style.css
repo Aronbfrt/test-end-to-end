@@ -32,6 +32,7 @@ html, body {
 }
 .tee-alert--visual { background: rgba(137, 87, 229, .12); color: #c9a6ff; border-color: rgba(137,87,229,.35); }
 .tee-alert--flaky { background: rgba(210, 153, 34, .12); color: #e3b341; border-color: rgba(210,153,34,.35); }
+.tee-alert--healed { background: rgba(88, 166, 255, .12); color: #79c0ff; border-color: rgba(88,166,255,.35); }
 
 .tee-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
 .tee-stat {
@@ -141,6 +142,7 @@ html, body {
 .tee-chip--replay { background: rgba(137, 87, 229, .12); color: #c9a6ff; border-color: rgba(137,87,229,.35); font-size: 11px; padding: 3px 9px; display: block; width: fit-content; margin-bottom: 6px; }
 .tee-chip--visual { background: rgba(137, 87, 229, .12); color: #c9a6ff; border-color: rgba(137,87,229,.35); font-size: 11px; padding: 3px 9px; }
 .tee-chip--flaky { background: rgba(210, 153, 34, .12); color: #e3b341; border-color: rgba(210,153,34,.35); font-size: 11px; padding: 3px 9px; }
+.tee-chip--healed { background: rgba(88, 166, 255, .12); color: #79c0ff; border-color: rgba(88,166,255,.35); font-size: 11px; padding: 3px 9px; }
 
 /* Image lightbox — click a screenshot thumbnail to see it full size */
 .tee-lightbox {

@@ -111,6 +111,12 @@ A test that needs a retry to pass is telling you something: it's not reliable, e
 
 Sequential runs only — under `pytest-xdist` (`-n auto`) each worker only sees its own subset of tests and writing history concurrently would race, so history accumulation is skipped there (documented limitation, not a silent bug). Tune with `TEST_HISTORY_MAX_RUNS` or disable with `TEST_FLAKY_DETECTION=0`.
 
+### Self-healing selectors — narrow on purpose, never silent
+
+When a `By.ID` or `By.NAME` lookup finds nothing, one fallback is tried — the same value as the other common attribute (id↔name↔data-testid) — before giving up. No fuzzy text matching, no "closest element" guessing: those approaches can silently interact with the wrong element, which is worse than a clean failure. If the narrow fallback works, the test continues, but the healing is never quiet about it — a `🩹 auto-réparé ×N` chip on the row, a `🩹 N sélecteur(s) auto-réparé(s)` alert in the hero, the exact original/fallback locators logged and attached to the report. It papers over the symptom for this run; the selector in `pages/*.py` still needs the real fix.
+
+Disable with `TEST_SELF_HEAL=0` if a drifted selector should hard-fail instead of healing — useful right after a deliberate markup change, when you want to know about every affected test rather than have them quietly keep passing.
+
 ## Scaling to 1000+ tests
 
 - **Session-scoped browsers**: `admin_driver` / `user_driver` are one browser for the *entire run*, not one per test. Login happens once (lazily), persists via cookies. `clear_browser_cache` (autouse) wipes cache/localStorage between tests without logging out — keeps memory flat over hundreds of tests.
