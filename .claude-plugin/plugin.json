@@ -1,0 +1,10 @@
+{
+  "name": "e2e-tester",
+  "description": "Zero-manual-work E2E test generator for any stack. /e2e-init for guided setup, /e2e-audit for full automatic site audit (basic + SEO + security + a11y + performance + responsive), discovered from the code via static analysis. Idempotent on re-run.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Aron Beaufort"
+  },
+  "homepage": "https://github.com/Aronbfrt/claude-e2e-tester",
+  "repository": "https://github.com/Aronbfrt/claude-e2e-tester"
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "e2e-tester",
+  "metadata": {
+    "description": "Zero-manual-work E2E test generator for any stack — pytest + Selenium, discovered from the code via static analysis."
+  },
+  "owner": {
+    "name": "Aron Beaufort"
+  },
+  "plugins": [
+    {
+      "name": "e2e-tester",
+      "description": "/e2e-init (guided setup) + /e2e-audit (full automatic audit: basic, SEO, security, a11y, performance, responsive). Session-scoped browsers, Page Object Model, auto-installing bootstrap, enriched HTML report.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Aron Beaufort"
+      },
+      "source": "./",
+      "category": "testing",
+      "homepage": "https://github.com/Aronbfrt/claude-e2e-tester",
+      "tags": ["testing", "e2e", "selenium", "pytest", "security", "seo", "accessibility"]
+    }
+  ]
+}

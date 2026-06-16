@@ -1,0 +1,23 @@
+; Copy this file to the PROJECT ROOT as `pytest.ini` (not inside tests/) — pytest reads
+; config relative to rootdir, and tests/ needs to stay a plain package (tests/__init__.py).
+[pytest]
+testpaths = tests
+addopts =
+    -v --tb=short
+    --durations=10
+    --html=tests/report.html --self-contained-html --css=tests/report-style.css
+    --junitxml=tests/junit.xml
+    --reruns 1 --reruns-delay 2
+log_cli = true
+log_cli_level = INFO
+markers =
+    slow: marks tests as slow (deselect with -m "not slow")
+    stripe: marks tests requiring Stripe test mode
+    admin: marks tests requiring admin login
+    smoke: critical-path tests only, run on every push
+    regression: full regression suite, run before release
+    a11y: accessibility (axe-core) checks
+    responsive: viewport/breakpoint checks
+    performance: load-time / console-error budget checks
+    seo: on-page and sitewide SEO checks
+    security: non-destructive security probes (headers, CSRF, SQLi/XSS reflection, auth bypass)

@@ -1,0 +1,36 @@
+/* Custom pytest-html overlay — bigger summary counters, color-coded rows, readable tracebacks.
+   pytest-html's built-in Passed/Failed/Skipped/Error filter checkboxes + sort-by-column stay as-is. */
+
+body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #15171c; color: #e6e6e6; }
+h1, h2 { color: #f5f5f5; }
+#environment td, #environment th { color: #e6e6e6; background: #1f2229; }
+
+.summary { background: #1f2229; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; }
+.summary span.passed   { color: #3fb950; font-weight: 700; }
+.summary span.failed   { color: #f85149; font-weight: 700; }
+.summary span.error    { color: #f85149; font-weight: 700; }
+.summary span.skipped  { color: #d29922; font-weight: 700; }
+.summary span.xfailed  { color: #8957e5; font-weight: 700; }
+
+#results-table { border-radius: 8px; overflow: hidden; }
+#results-table th { background: #1f2229; color: #cfd2d8; text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+#results-table tbody tr { background: #191c22; border-left: 4px solid transparent; }
+#results-table tbody tr.passed  { border-left-color: #3fb950; }
+#results-table tbody tr.failed  { border-left-color: #f85149; }
+#results-table tbody tr.error   { border-left-color: #f85149; }
+#results-table tbody tr.skipped { border-left-color: #d29922; }
+#results-table tbody tr:hover { background: #232730; }
+
+.log { background: #0d0f13; color: #d6d8df; font-family: "JetBrains Mono", Menlo, monospace; font-size: 12.5px;
+       border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; }
+
+.image { max-width: 360px; border-radius: 6px; border: 1px solid #2a2e37; margin-top: 6px; }
+
+td.col-result.passed::before  { content: "✓ "; }
+td.col-result.failed::before  { content: "✗ "; }
+td.col-result.error::before   { content: "⚠ "; }
+td.col-result.skipped::before { content: "− "; }
+
+/* Category column — security rows get a red badge, impossible to miss while scanning failures */
+td.cat-security { color: #f85149; font-weight: 700; }
+td.cat-security::before { content: "🔒 "; }

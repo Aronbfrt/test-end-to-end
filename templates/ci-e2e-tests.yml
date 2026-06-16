@@ -1,0 +1,51 @@
+name: E2E tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Bootstrap (auto-installs deps)
+        run: python3 tests/bootstrap.py --collect-only -q
+
+      - name: Start app
+        run: |
+          # adapt: php -S localhost:8000 -t public &  /  npm run start &  /  mvn spring-boot:run &
+          sleep 2
+
+      - name: Run smoke tests
+        if: github.event_name == 'pull_request'
+        run: python3 tests/bootstrap.py -m smoke
+        env:
+          TEST_BASE_URL: http://localhost:8000
+          TEST_HEADLESS: '1'
+
+      - name: Run full suite (sharded for scale)
+        if: github.ref == 'refs/heads/main'
+        run: python3 tests/bootstrap.py -n auto --dist=loadscope
+        env:
+          TEST_BASE_URL: http://localhost:8000
+          TEST_HEADLESS: '1'
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            tests/report.html
+            tests/junit.xml
+            tests/screenshots/
