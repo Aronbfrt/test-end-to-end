@@ -105,10 +105,27 @@ if REPLAY_ENABLED:
 
 def _build_replay_gif(frames: list[bytes], final_png_path: str, out_path: str) -> bool:
     """Assembles captured frames + the final failure screenshot into one animated GIF.
-    Returns True on success — caller falls back to the plain static screenshot on False."""
+    Returns True on success — caller falls back to the plain static screenshot on False.
+
+    Many tests just navigate once and assert on something that doesn't change the page
+    visually (a missing meta tag, a missing header) — the captured frame and the final
+    screenshot end up pixel-identical. A "replay" with no actual movement is worse than no
+    replay at all (PIL even collapses truly identical consecutive frames down to one on
+    save, silently producing a single-frame "GIF" that looks like nothing happened). Drop
+    consecutive duplicates by raw bytes before saving, and bail out to the plain screenshot
+    if fewer than 2 distinct frames remain — no point animating a still image.
+    """
     try:
-        images = [Image.open(io.BytesIO(b)).convert('RGB') for b in frames]
-        images.append(Image.open(final_png_path).convert('RGB'))
+        with open(final_png_path, 'rb') as f:
+            raw_frames = [*frames, f.read()]
+        deduped = [raw_frames[0]]
+        for b in raw_frames[1:]:
+            if b != deduped[-1]:
+                deduped.append(b)
+        if len(deduped) < 2:
+            return False
+
+        images = [Image.open(io.BytesIO(b)).convert('RGB') for b in deduped]
         w, h = images[0].size
         scale = min(1.0, 480 / w)
         if scale < 1.0:
@@ -278,8 +295,14 @@ def pytest_runtest_makereport(item, call):
         # Replay GIF — the captured filmstrip (if any) plus this final frame, shown instead
         # of the single static screenshot. Falls back to the plain screenshot if there
         # weren't enough frames buffered or Pillow isn't installed.
+        #
+        # Threshold is >=1, not >=2: most generated tests are a single driver.get() followed
+        # by an assertion (SEO/a11y/perf checks never click anything) — that one captured
+        # frame plus the final failure screenshot already makes a meaningful 2-image
+        # before/after GIF. Requiring 2 buffered frames meant almost none of those tests
+        # ever got a replay at all, only multi-step flows (auth, checkout, forms) did.
         frames = list(_frame_buffers.get(item.nodeid, ()))
-        if REPLAY_ENABLED and len(frames) >= 2:
+        if REPLAY_ENABLED and len(frames) >= 1:
             gif_path = path.rsplit('.', 1)[0] + '_replay.gif'
             if _build_replay_gif(frames, path, gif_path):
                 media_path = gif_path
