@@ -3,6 +3,7 @@ Import convention: every internal import uses the `tests.` prefix (tests/__init_
 this a package; pytest adds the project root to sys.path because of that __init__.py).
 """
 import io
+import json
 import os
 import shutil
 import time
@@ -26,8 +27,10 @@ except ImportError:
 
 try:
     from PIL import Image
+    from tests.utils.visual import check_visual_regression
 except ImportError:
     Image = None
+    check_visual_regression = None
 
 load_dotenv('.env.test')
 
@@ -151,14 +154,82 @@ def pytest_runtest_logfinish(nodeid, location):
     _last_capture_ts.pop(nodeid, None)
 
 
+# ── Visual regression — flags pixel drift against a stored baseline even on a passing test.
+# Baselines are screen/font/OS-dependent, gitignored by default — regenerate per machine.
+VISUAL_ENABLED = os.getenv('TEST_VISUAL', '1') == '1' and check_visual_regression is not None
+
+
+# ── Flaky-test detection — a lightweight JSONL history of past runs' outcomes per test.
+# A test that flips between Passed/Failed across recent runs without any code change is a
+# stability problem worth surfacing on its own, separate from "is it red right now". Most
+# pytest+Selenium setups just retry and throw the signal away (pytest-rerunfailures masks
+# it); this keeps it visible instead.
+HISTORY_PATH     = os.getenv('TEST_HISTORY_FILE', 'tests/.test-history.jsonl')
+HISTORY_MAX_RUNS = int(os.getenv('TEST_HISTORY_MAX_RUNS', '20'))
+FLAKY_ENABLED    = os.getenv('TEST_FLAKY_DETECTION', '1') == '1'
+
+_history_runs: list[dict] = []
+_session_results: dict[str, str] = {}
+
+
+def _load_history() -> None:
+    global _history_runs
+    if not FLAKY_ENABLED or not os.path.exists(HISTORY_PATH):
+        return
+    try:
+        with open(HISTORY_PATH, encoding='utf-8') as f:
+            lines = f.readlines()[-HISTORY_MAX_RUNS:]
+        _history_runs = [json.loads(line) for line in lines if line.strip()]
+    except Exception:
+        _history_runs = []
+
+
+def _flaky_info(test_id: str) -> tuple[int, int] | None:
+    """Returns (n_distinct_outcomes, n_runs_seen) across recent history, excluding the
+    current run. None if this test has no history yet."""
+    outcomes = [run['results'][test_id] for run in _history_runs if test_id in run.get('results', {})]
+    if not outcomes:
+        return None
+    return len(set(outcomes)), len(outcomes)
+
+
+def _save_history() -> None:
+    if not FLAKY_ENABLED or not _session_results:
+        return
+    try:
+        os.makedirs(os.path.dirname(HISTORY_PATH) or '.', exist_ok=True)
+        existing = []
+        if os.path.exists(HISTORY_PATH):
+            with open(HISTORY_PATH, encoding='utf-8') as f:
+                existing = f.readlines()
+        record = json.dumps({'timestamp': time.time(), 'results': _session_results})
+        kept = existing[-(HISTORY_MAX_RUNS - 1):] if HISTORY_MAX_RUNS > 1 else []
+        with open(HISTORY_PATH, 'w', encoding='utf-8') as f:
+            f.writelines(kept + [record + '\n'])
+    except Exception:
+        pass
+
+
 # ── Same overwrite philosophy as tests/report.html: each run replaces the previous one,
 # nothing accumulates run after run. Wipe screenshots from the last run before this one starts
 # (skip under xdist workers — only the master process should do it, or workers would race
 # each other and delete screenshots a sibling worker just wrote).
 def pytest_sessionstart(session):
+    _load_history()  # safe to do per-worker too — read-only, no race
     if hasattr(session.config, 'workerinput'):
         return
     shutil.rmtree(SCREENSHOTS, ignore_errors=True)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # Under xdist (-n auto), each worker runs a disjoint subset of tests in its own process —
+    # the master never sees individual results, and workers writing concurrently to the same
+    # file would race. Simplest safe choice: flaky history only accumulates on a plain
+    # sequential run (no -n). Known limitation, not a silent bug — visual regression and the
+    # replay GIF aren't affected, this only concerns the cross-run stability signal.
+    if hasattr(session.config, 'workerinput'):
+        return
+    _save_history()
 
 
 # ── CLI option: override env at runtime (pytest --env=staging) ────────────────
@@ -274,7 +345,34 @@ def pytest_runtest_makereport(item, call):
     # until pytest-html's own ordering guarantees make 'extras' safe to switch to.
     report.extra = getattr(report, 'extra', [])
 
-    if report.when != 'call' or not report.failed:
+    if report.when != 'call':
+        return
+
+    # Track this run's outcome for the flaky-history file, and run the visual-regression
+    # check — both happen on every test regardless of pass/fail, unlike the failure-only
+    # screenshot/replay logic below.
+    _session_results[item.nodeid] = report.outcome
+
+    if VISUAL_ENABLED:
+        driver_for_visual = next(
+            (item.funcargs.get(n) for n in ('admin_driver', 'user_driver', 'guest_driver', 'mobile_driver')
+             if item.funcargs.get(n) is not None),
+            None,
+        )
+        if driver_for_visual is not None:
+            try:
+                os.makedirs(SCREENSHOTS, exist_ok=True)
+                diff_name = item.nodeid.replace('/', '_').replace('::', '__') + '_visualdiff.png'
+                diff_path = os.path.join(SCREENSHOTS, diff_name)
+                diff_pct, diff_img = check_visual_regression(driver_for_visual, item.nodeid, diff_path)
+                report.visual_diff_pct = diff_pct
+                if diff_img and extras:
+                    rel = os.path.relpath(diff_img, start='tests')
+                    report.extra.append(extras.image(rel, name=f'Régression visuelle ({diff_pct:.1f}% des pixels)'))
+            except Exception:
+                pass
+
+    if not report.failed:
         return
 
     driver = next(
@@ -343,12 +441,14 @@ def pytest_html_results_summary(prefix, summary, postfix, session):
         pass
 
 
-# ── Category column — security/seo/a11y/... visible at a glance, no need to open each row ──
+# ── Category / Visual / Stability columns — visible at a glance, no need to open each row ──
 CATEGORY_MARKERS = ['security', 'seo', 'a11y', 'responsive', 'performance', 'admin', 'stripe', 'smoke']
 
 
 def pytest_html_results_table_header(cells):
     cells.insert(2, '<th>Category</th>')
+    cells.insert(3, '<th>Visuel</th>')
+    cells.insert(4, '<th>Stabilité</th>')
 
 
 def pytest_html_results_table_row(report, cells):
@@ -356,6 +456,24 @@ def pytest_html_results_table_row(report, cells):
     label = ', '.join(cats) or '-'
     css_class = ' class="cat-security"' if 'security' in cats else ''
     cells.insert(2, f'<td{css_class}>{label}</td>')
+
+    diff_pct = getattr(report, 'visual_diff_pct', None)
+    if diff_pct is None:
+        visual_label = '—'
+    elif diff_pct == 0.0:
+        visual_label = 'identique'
+    else:
+        visual_label = f'Δ{diff_pct:.1f}%'
+    cells.insert(3, f'<td>{visual_label}</td>')
+
+    flaky = _flaky_info(report.nodeid) if FLAKY_ENABLED else None
+    if flaky and flaky[0] > 1:
+        stability_label = f'instable ({flaky[0]}/{flaky[1]})'
+    elif flaky:
+        stability_label = 'stable'
+    else:
+        stability_label = '—'
+    cells.insert(4, f'<td>{stability_label}</td>')
 
 
 # ── Auto-fix hook (mechanism only — empty FIXES by default, see utils/auto_fix.py) ──

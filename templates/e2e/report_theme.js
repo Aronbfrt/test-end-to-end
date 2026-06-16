@@ -45,6 +45,8 @@
       // but remember if it ever rerun (shown as a small badge, not as a separate row).
       const last = runs[runs.length - 1];
       const everRerun = runs.length > 1;
+      // Columns (see conftest.py's table_header/table_row hooks): 0 result, 1 testId,
+      // 2 category, 3 visual diff, 4 stability/flaky, 5 duration, 6 links.
       const cells = last.resultsTableRow.map(textOfHtml);
       const catHtml = last.resultsTableRow[2] || '';
       const category = textOfHtml(catHtml) || '-';
@@ -52,6 +54,10 @@
       // dropped by the HTML parser outside a <table> context, so the class is lost even
       // though the text survives; comparing the already-extracted text is simpler AND correct)
       const isSecurity = category.toLowerCase() === 'security';
+      const visualLabel = (cells[3] || '—').trim();
+      const hasVisualRegression = visualLabel.startsWith('Δ');
+      const stabilityLabel = (cells[4] || '—').trim();
+      const isFlaky = stabilityLabel.startsWith('instable');
       const parts = testId.split('::')[0].split('/'); // "tests/seo/test_seo.py" -> ["tests","seo","test_seo.py"]
       const domain = parts.length > 2 ? parts[1] : 'autre';
       const images = (last.extras || []).filter((e) => e.format_type === 'image').map((e) => e.path || e.content);
@@ -61,7 +67,11 @@
         result: last.result,
         category,
         isSecurity,
-        duration: cells[3] || '',
+        visualLabel,
+        hasVisualRegression,
+        stabilityLabel,
+        isFlaky,
+        duration: cells[5] || '',
         log: last.log || '',
         images,
         everRerun,
@@ -99,6 +109,8 @@
     // Skipped). Count tests that needed at least one retry instead — that's the number
     // anyone actually wants when they see "Relances".
     const rerunCount = model.tests.filter((t) => t.everRerun).length;
+    const visualCount = model.tests.filter((t) => t.hasVisualRegression).length;
+    const flakyCount = model.tests.filter((t) => t.isFlaky).length;
     const env = data.environment || {};
     const chips = Object.keys(env).slice(0, 4).map((k) => `<span class="tee-chip">${escapeHtml(k)}: ${escapeHtml(JSON.stringify(env[k]).slice(0, 40))}</span>`).join('');
 
@@ -109,7 +121,11 @@
           <div class="tee-hero__title">${escapeHtml(data.title || 'Test End-to-End')}</div>
           <div class="tee-hero__sub">${total} tests · ${Object.keys(model.domains).length} domaines</div>
         </div>
-        ${securityFails > 0 ? `<div class="tee-alert">🔒 ${securityFails} alerte${securityFails > 1 ? 's' : ''} sécurité</div>` : ''}
+        <div class="tee-alerts">
+          ${securityFails > 0 ? `<div class="tee-alert">🔒 ${securityFails} alerte${securityFails > 1 ? 's' : ''} sécurité</div>` : ''}
+          ${visualCount > 0 ? `<div class="tee-alert tee-alert--visual">👁 ${visualCount} régression${visualCount > 1 ? 's' : ''} visuelle${visualCount > 1 ? 's' : ''}</div>` : ''}
+          ${flakyCount > 0 ? `<div class="tee-alert tee-alert--flaky">🎲 ${flakyCount} test${flakyCount > 1 ? 's' : ''} instable${flakyCount > 1 ? 's' : ''}</div>` : ''}
+        </div>
       </div>
       <div class="tee-stats">
         ${statCard('Passed', 'Réussis', c.Passed + c.XPassed)}
@@ -167,6 +183,8 @@
         <span class="tee-row__name">${escapeHtml(shortName)}</span>
         ${t.category && t.category !== '-' ? `<span class="tee-chip tee-chip--cat ${t.isSecurity ? 'tee-chip--security' : ''}">${t.isSecurity ? '🔒 ' : ''}${escapeHtml(t.category)}</span>` : ''}
         ${t.everRerun ? '<span class="tee-chip tee-chip--rerun">↻ relancé</span>' : ''}
+        ${t.hasVisualRegression ? `<span class="tee-chip tee-chip--visual" title="Pixels différents de la baseline enregistrée">👁 ${escapeHtml(t.visualLabel)}</span>` : ''}
+        ${t.isFlaky ? `<span class="tee-chip tee-chip--flaky" title="A déjà donné des résultats différents sur les derniers runs">🎲 ${escapeHtml(t.stabilityLabel)}</span>` : ''}
         ${rerunBtn}
         <span class="tee-row__duration">${escapeHtml(t.duration)}</span>
         <span class="tee-row__chevron">▾</span>

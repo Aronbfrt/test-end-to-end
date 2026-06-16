@@ -3,6 +3,8 @@ tests/report.html
 tests/junit.xml
 tests/tests.log
 tests/screenshots/
+tests/.visual-baselines/
+tests/.test-history.jsonl
 tests/.pytest_cache/
 tests/__pycache__/
 **/__pycache__/

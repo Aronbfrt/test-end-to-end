@@ -99,6 +99,18 @@ Most reports show one screenshot at the moment of failure — the *result*, not 
 
 Needs Pillow (already in `requirements.txt`). Disable with `TEST_REPLAY=0` in `.env.test` if the extra screenshot calls ever matter more than this for a very latency-sensitive suite — falls back to the old single static screenshot.
 
+### Visual regression — catches what no assertion ever checks for
+
+Every test gets compared to a stored baseline screenshot, pass or fail. A test can be 100% functionally green and still mean the button moved, the header turned invisible, or a CSS regression broke the layout — none of that shows up in an `assert`. This does: a `👁 ΔX%` chip appears on the row, and a `👁 N régressions visuelles` alert in the hero, the moment pixel drift crosses the threshold.
+
+First run for a given test creates its baseline (nothing to compare yet). Baselines live in `tests/.visual-baselines/`, gitignored by default — they're screen/font/OS-dependent, so commit-and-share isn't reliable across machines; regenerate per environment. After an intentional UI change, delete the test's baseline (or the whole folder) so it stops being flagged forever. Tune sensitivity with `TEST_VISUAL_THRESHOLD` (% of differing pixels, default 1.0) or disable with `TEST_VISUAL=0`.
+
+### Flaky-test detection — the signal pytest-rerunfailures normally throws away
+
+A test that needs a retry to pass is telling you something: it's not reliable, even though the report shows green at the end. Most setups discard that signal entirely. This keeps a lightweight history (`tests/.test-history.jsonl`, last 20 runs by default) of every test's outcome, and flags `🎲 instable (2/3)` the moment a test has disagreed with itself across recent runs — separate from "is it red right now".
+
+Sequential runs only — under `pytest-xdist` (`-n auto`) each worker only sees its own subset of tests and writing history concurrently would race, so history accumulation is skipped there (documented limitation, not a silent bug). Tune with `TEST_HISTORY_MAX_RUNS` or disable with `TEST_FLAKY_DETECTION=0`.
+
 ## Scaling to 1000+ tests
 
 - **Session-scoped browsers**: `admin_driver` / `user_driver` are one browser for the *entire run*, not one per test. Login happens once (lazily), persists via cookies. `clear_browser_cache` (autouse) wipes cache/localStorage between tests without logging out — keeps memory flat over hundreds of tests.
