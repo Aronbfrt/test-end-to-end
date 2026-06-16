@@ -98,6 +98,11 @@ def check_no_debug_mode_banner(driver) -> None:
 def check_admin_requires_auth(driver, admin_path: str, base_url: str) -> None:
     driver.get(base_url + admin_path)
     body = driver.page_source.lower()
-    looks_authenticated = 'tableau de bord' in body or 'dashboard' in body and 'login' not in driver.current_url.lower()
-    assert not looks_authenticated or 'login' in driver.current_url.lower() or 'connexion' in driver.current_url.lower(), \
+    current_url = driver.current_url.lower()
+    on_login_page = 'login' in current_url or 'connexion' in current_url
+    # both conditions required together — a login page that merely *mentions* "tableau de
+    # bord" in its copy (e.g. "connecte-toi pour accéder au tableau de bord") must not count
+    # as a bypass just because the words appear somewhere in the page.
+    looks_authenticated = ('tableau de bord' in body or 'dashboard' in body) and not on_login_page
+    assert not looks_authenticated, \
         f"[SÉCURITÉ] {admin_path} accessible sans authentification — bypass complet de l'accès admin. Fix : appliquer un middleware/garde d'authentification sur chaque route admin."

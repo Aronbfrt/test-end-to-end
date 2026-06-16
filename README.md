@@ -8,6 +8,26 @@
 
 ---
 
+## Le problème que ça résout
+
+Écrire une suite de tests end-to-end correcte prend des jours : trouver toutes les routes, écrire les sélecteurs, gérer l'auth, penser au SEO, à la sécurité, à l'accessibilité, au responsive — et la maintenir à jour à chaque changement de code. La plupart des projets n'en ont juste pas, ou une poignée de tests qui datent d'il y a six mois.
+
+`test-end-to-end` lit le code du projet (routes, formulaires, entités admin) et génère la suite à la place de l'humain : pytest + Selenium, structurée proprement, avec les checks qualité qui comptent vraiment (pas juste "la page charge"). Une commande, zéro saisie manuelle, et un rapport qui explique chaque échec au lieu de juste dire "assert failed".
+
+## Comment ça marche
+
+1. **Découverte** — analyse statique du code (pas de crawl live) : grep les routes selon le framework détecté (`composer.json` → PHP, `pom.xml` → Spring, `manage.py` → Django, `app/` → Next.js, etc.), extrait les formulaires et leurs champs, repère les entités admin.
+2. **Génération** — remplit un template de tests éprouvé (structure validée sur une vraie suite de 300+ tests en prod) avec les vraies routes/sélecteurs trouvés. Jamais de placeholder laissé en plan.
+3. **Exécution** — `pytest` + Selenium, navigateurs partagés par rôle (pas un par test) pour scaler à 1000+ tests sans exploser le temps de run.
+4. **Rapport** — dashboard custom (pas le tableau pytest-html brut) : groupes par domaine, filtres par catégorie, recherche, chaque échec sécu/SEO explique le risque et le fix, screenshot cliquable en grand, bouton qui relance vraiment le test si le rapport tourne via le petit serveur local inclus.
+5. **Idempotent** — relancer `/e2e-audit` plus tard ne réécrit pas ce qui existe déjà ; ça ajoute les nouvelles routes et signale ce qui semble périmé.
+
+## Pour qui
+
+Quiconque utilise Claude Code sur un projet web (peu importe le langage backend) et veut une vraie couverture E2E sans y passer une semaine : développeur solo, petite équipe sans QA dédiée, ou juste pour avoir un garde-fou avant chaque déploiement.
+
+---
+
 ## Installation
 
 ```

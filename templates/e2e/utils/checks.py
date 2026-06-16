@@ -32,7 +32,11 @@ def check_load_budget(driver, budget_ms: int = LOAD_TIME_BUDGET_MS) -> None:
 
 def check_no_console_errors(driver, allow: list[str] | None = None) -> None:
     allow = allow or []
-    errors = [e for e in driver.get_log('browser') if e.get('level') == 'SEVERE']
+    try:
+        logs = driver.get_log('browser')
+    except Exception:
+        return  # navigateur sans API de logs console (Firefox/geckodriver) — rien à vérifier
+    errors = [e for e in logs if e.get('level') == 'SEVERE']
     errors = [e for e in errors if not any(a in e.get('message', '') for a in allow)]
     assert not errors, f'erreurs console : {errors}'
 

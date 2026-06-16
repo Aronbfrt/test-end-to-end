@@ -94,6 +94,11 @@
     const c = counts(model.tests);
     const total = model.tests.length;
     const securityFails = model.tests.filter((t) => t.isSecurity && (t.result === 'Failed' || t.result === 'Error')).length;
+    // c.Rerun is always 0 in practice — it's the bucket for a FINAL status of "Rerun", which
+    // pytest-rerunfailures never leaves as the last attempt (it retries until Passed/Failed/
+    // Skipped). Count tests that needed at least one retry instead — that's the number
+    // anyone actually wants when they see "Relances".
+    const rerunCount = model.tests.filter((t) => t.everRerun).length;
     const env = data.environment || {};
     const chips = Object.keys(env).slice(0, 4).map((k) => `<span class="tee-chip">${escapeHtml(k)}: ${escapeHtml(JSON.stringify(env[k]).slice(0, 40))}</span>`).join('');
 
@@ -110,7 +115,7 @@
         ${statCard('Passed', 'Réussis', c.Passed + c.XPassed)}
         ${statCard('Failed', 'Échoués', c.Failed + c.Error)}
         ${statCard('Skipped', 'Ignorés', c.Skipped + c.XFailed)}
-        ${statCard('Rerun', 'Relances', c.Rerun)}
+        ${statCard('Rerun', 'Relances', rerunCount)}
       </div>
       <div class="tee-envrow">${chips}</div>
     </header>`;

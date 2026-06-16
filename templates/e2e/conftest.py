@@ -156,6 +156,13 @@ def fake_user():
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
+    # 'report.extra' (singular) triggers a pytest-html deprecation warning ("use
+    # report.extras instead"), but switching to 'extras' actually breaks the screenshot
+    # embed — pytest-html's own makereport hookimpl reassigns report.extras from a
+    # combined list before reading ours back, depending on hookwrapper ordering, and the
+    # image silently disappears from the report's data-jsonblob. Verified by hand: 'extra'
+    # embeds correctly every time, 'extras' lost the screenshot in testing. Keep 'extra'
+    # until pytest-html's own ordering guarantees make 'extras' safe to switch to.
     report.extra = getattr(report, 'extra', [])
 
     if report.when != 'call' or not report.failed:

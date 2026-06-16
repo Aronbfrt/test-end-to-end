@@ -76,6 +76,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def main():
+    # without this, restarting right after a crash/Ctrl+C often hits "Address already in
+    # use" for a few seconds while the OS still holds the old socket in TIME_WAIT
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(('127.0.0.1', PORT), Handler) as httpd:
         print(f'[live] Rapport : http://localhost:{PORT}/tests/report.html')
         print('[live] Le bouton "Relancer" exécute vraiment le test depuis ce serveur. Ctrl+C pour arrêter.')
