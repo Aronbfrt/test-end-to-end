@@ -1,10 +1,10 @@
-# Test End-to-End — plugin Claude Code
+<p align="center"><img src="docs/assets/logo.png" alt="Test End-to-End" width="640"></p>
 
-**C'est la révolution des tests end-to-end.**
+<p align="center"><b>C'est la révolution des tests end-to-end.</b></p>
 
-Générateur de tests E2E zéro effort manuel. pytest + Selenium, n'importe quel langage backend, tout découvert depuis le code lui-même — aucune route à saisir à la main.
+<p align="center">Générateur de tests E2E zéro effort manuel — pytest + Selenium, n'importe quel langage backend, tout découvert depuis le code lui-même.</p>
 
-![Démo terminal](docs/assets/demo.gif)
+<p align="center"><img src="docs/assets/demo.gif" alt="Démo terminal" width="560"></p>
 
 ## Installation
 
@@ -22,10 +22,6 @@ Générateur de tests E2E zéro effort manuel. pytest + Selenium, n'importe quel
 
 Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit`.
 
-## Le pipeline
-
-![Pipeline DevOps](docs/assets/devops-pipeline.png)
-
 ## Ce que tu obtiens
 
 - **Page Object Model** — sélecteurs dans `tests/pages/`, jamais en dur dans un test
@@ -39,19 +35,23 @@ Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le 
 
 Voir `templates/e2e/README.md` pour la référence complète de structure une fois installé dans un projet.
 
-## Le rapport
+<details>
+<summary><b>Le pipeline</b> (cliquer pour déplier)</summary>
+<br>
+<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="680"></p>
+</details>
 
-![Rapport E2E — thème sombre, colonne Catégorie, screenshots embarqués](docs/report-screenshot.png)
+<details>
+<summary><b>Aperçu du rapport</b> (cliquer pour déplier)</summary>
+<br>
+<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonne Catégorie, screenshots embarqués" width="680"></p>
+</details>
 
 ## Contributeurs
 
 - [Aron Beaufort](https://github.com/Aronbfrt) — créateur & mainteneur
 
 PR bienvenues — voir `templates/e2e/README.md` pour les conventions à suivre (Page Object Model, dossiers plats par domaine, messages d'assertion qui expliquent le pourquoi, pas juste le quoi).
-
----
-
-<p align="center"><img src="docs/assets/logo.png" alt="Test End-to-End" width="420"></p>
 
 ## Licence
 
