@@ -53,6 +53,16 @@ Quiconque utilise Claude Code sur un projet web (peu importe le langage backend)
 
 Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit`.
 
+## Lancer les tests
+
+```bash
+pytest                  # headless (défaut, CI-safe)
+pytest --headed         # Chrome visible — voir les tests s'exécuter en direct
+pytest --headed -x      # visible + stop au premier échec
+pytest -m smoke         # seulement les tests critiques
+pytest tests/seo/       # un dossier
+```
+
 ---
 
 ## Le pipeline
