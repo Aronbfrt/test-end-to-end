@@ -1,0 +1,124 @@
+# .claudeignore — Ultra Minifier
+# Blocks Claude Code from reading files with zero reasoning value
+
+# Dependencies
+node_modules/
+vendor/
+bower_components/
+.pnp.*
+
+# Lock files (massive, useless for reasoning)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Pipfile.lock
+poetry.lock
+Cargo.lock
+composer.lock
+Gemfile.lock
+bun.lockb
+go.sum
+
+# Compiled assets (never edit directly)
+assets/css/output.css
+assets/css/*.min.css
+
+# Build output
+dist/
+build/
+out/
+.output/
+.next/
+.nuxt/
+.svelte-kit/
+.vercel/
+.netlify/
+target/
+__pycache__/
+*.pyc
+*.pyo
+*.class
+*.o
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Bundled/minified
+*.min.js
+*.min.css
+*.bundle.js
+*.chunk.js
+*.map
+
+# Version control
+.git/
+
+# IDE
+.idea/
+.vscode/settings.json
+.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Env/secrets
+.env
+.env.*
+*.pem
+*.key
+*.cert
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test artifacts
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+*.lcov
+__snapshots__/
+
+# Binary/media
+*.sqlite
+*.sqlite3
+*.db
+*.ico
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.mp4
+*.mp3
+*.wav
+*.ttf
+*.woff
+*.woff2
+*.eot
+*.pdf
+*.zip
+*.tar.gz
+*.rar
+
+# Misc
+.docker/
+.terraform/
+.serverless/
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+tmp/
+temp/

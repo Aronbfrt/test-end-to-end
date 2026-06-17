@@ -82,8 +82,11 @@ Ask only what can't be read from the code. Each answer unlocks the next step. St
 
 Do not ask about routes, forms, or field names — read them from the code.
 
-## Step 3 — Bootstrap infra (infrastructure only)
+## Step 3 — Bootstrap infra selon le framework choisi
 
+Lire `TEST_FRAMEWORK` dans `.env.test` (défini au Step 0) :
+
+**selenium / playwright-python :**
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
@@ -96,7 +99,34 @@ cat $T/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 chmod +x tests/bootstrap.py tests/run.sh 2>/dev/null || true
 ```
 
-**Ne jamais copier** : `auth/`, `admin/`, `admin_clients/`, `checkout/`, `contact/`, `home/` — générés seulement si la feature existe.
+**playwright-ts :**
+```bash
+mkdir -p tests
+cat > playwright.config.ts << 'EOF'
+import { defineConfig } from '@playwright/test';
+export default defineConfig({ use: { baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000' } });
+EOF
+npm install -D @playwright/test && npx playwright install
+```
+
+**cypress :**
+```bash
+mkdir -p cypress/e2e cypress/support/pages cypress/fixtures
+cat > cypress.config.js << 'EOF'
+const { defineConfig } = require('cypress');
+module.exports = defineConfig({ e2e: { baseUrl: process.env.TEST_BASE_URL || 'http://localhost:3000', specPattern: 'cypress/e2e/**/*.cy.js' } });
+EOF
+npm install -D cypress
+```
+
+**robot :**
+```bash
+mkdir -p tests/resources tests/variables
+echo -e "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
+pip install robotframework robotframework-seleniumlibrary
+```
+
+**Ne jamais créer** : `auth/`, `admin/`, `checkout/`, `contact/`, `home/` — générés seulement si la feature existe.
 
 ## Step 4 — Adapter l'infra aux conventions du projet
 
@@ -144,13 +174,11 @@ pytest tests/public tests/seo -v --headed
 
 Corriger ce qui échoue (mauvaise URL, sélecteur absent) avant de passer à la suite.
 
-## Step 7 — CI (optionnel)
+## Step 7 — CI/CD (optionnel)
 
-```bash
-mkdir -p .github/workflows
-cp tests/ci-e2e-tests.yml .github/workflows/e2e-tests.yml
-```
-Adapter le step "Start app" à la commande réelle du projet.
+Proposer de générer un workflow CI adapté au framework et à la plateforme détectée (même logique que /e2e-audit Step 5). Détecter plateforme depuis `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile` — sinon proposer GitHub Actions.
+
+Générer le fichier adapté au `TEST_FRAMEWORK` choisi au Step 0. Détecter `<start_command>` et `<port>` depuis `package.json`, `Makefile`, ou `CLAUDE.md`.
 
 ## Variables `.env.test`
 

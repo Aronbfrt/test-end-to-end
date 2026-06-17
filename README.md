@@ -2,7 +2,7 @@
 
 <p align="center"><b>C'est la révolution des tests end-to-end.</b></p>
 
-<p align="center">Générateur de tests E2E zéro effort manuel — pytest + Selenium, n'importe quel langage backend, tout découvert depuis le code lui-même.</p>
+<p align="center">Générateur de tests E2E zéro effort manuel — Selenium · Playwright · Cypress · Robot Framework, n'importe quel langage backend, tout découvert depuis le code lui-même.</p>
 
 <p align="center"><img src="docs/assets/demo.gif" alt="Démo terminal" width="560"></p>
 
@@ -50,19 +50,37 @@ Quiconque utilise Claude Code sur un projet web (peu importe le langage backend)
 
 | Commande | Action |
 |---|---|
-| `/e2e-init` | Setup guidé — copie le template, routes/forms remplis étape par étape |
-| `/e2e-audit` | Audit automatique complet — découvre chaque route/form/entité par analyse statique, génère tests basiques + SEO + sécurité + accessibilité + performance + responsive, les lance, corrige les échecs en boucle. Zéro saisie manuelle. Idempotent : un re-run synchronise les nouvelles routes sans toucher aux tests déjà écrits à la main. |
+| `/e2e-init` | Setup guidé — onboarding framework, bootstrap adaptatif, routes/forms remplis étape par étape |
+| `/e2e-audit` | Audit automatique complet — onboarding framework, découverte statique 14+ stacks, génère tests + API headless + sécurité + SEO + a11y + perf + responsive, lance, corrige en boucle, génère CI/CD. Idempotent. |
+| `/e2e-coverage` | Carte de couverture — quelles routes ont des tests, lesquelles n'en ont pas. % global + formulaires sans test sécurité. |
+| `/e2e-update` | Sync tests après changements code — ajoute tests pour nouvelles routes, flag xfail les routes supprimées, met à jour les sélecteurs. Jamais de suppression. |
 
-Déclencheurs langage naturel (si mappés dans ton `CLAUDE.md`) : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit`.
+Déclencheurs langage naturel : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit` · "couverture des tests" → `/e2e-coverage` · "mettre à jour les tests" → `/e2e-update`.
 
 ## Lancer les tests
 
+Selon le framework choisi au premier setup (`TEST_FRAMEWORK` dans `.env.test`) :
+
 ```bash
-pytest                  # headless (défaut, CI-safe)
-pytest --headed         # Chrome visible — voir les tests s'exécuter en direct
-pytest --headed -x      # visible + stop au premier échec
-pytest -m smoke         # seulement les tests critiques
-pytest tests/seo/       # un dossier
+# Selenium + pytest / Playwright Python
+pytest                         # headless
+pytest --headed                # Chrome visible
+pytest --headed -x             # stop au premier échec
+pytest -m smoke                # tests critiques seulement
+pytest tests/seo/              # un dossier
+
+# Playwright TypeScript
+npx playwright test            # headless
+npx playwright test --headed   # visible
+npx playwright test --ui       # interface graphique
+
+# Cypress
+npx cypress run                # headless
+npx cypress open               # interface graphique interactive
+
+# Robot Framework
+robot tests/                   # headless
+robot --variable BROWSER:chrome tests/   # Chrome visible
 ```
 
 ## Migration automatique des tests existants
