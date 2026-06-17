@@ -178,6 +178,7 @@ export default defineConfig({ use: { baseURL: process.env.TEST_BASE_URL || 'http
 EOF
 npm install -D @playwright/test && npx playwright install
 [ -f .env.test ] || printf "TEST_FRAMEWORK=playwright-ts\nTEST_BASE_URL=http://localhost:3000\n" > .env.test
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **cypress** (JavaScript) :
@@ -189,6 +190,7 @@ module.exports = defineConfig({ e2e: { baseUrl: process.env.TEST_BASE_URL || 'ht
 EOF
 npm install -D cypress
 [ -f .env.test ] || printf "TEST_FRAMEWORK=cypress\nTEST_BASE_URL=http://localhost:3000\n" > .env.test
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **robot** (Robot Framework) :
@@ -197,6 +199,7 @@ mkdir -p tests/resources tests/variables
 echo "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
 pip install robotframework robotframework-seleniumlibrary
 [ -f .env.test ] || printf "TEST_FRAMEWORK=robot\nTEST_BASE_URL=http://localhost:3000\n" > .env.test
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **Ne jamais copier (Python seulement)** : `auth/`, `admin/`, `admin_clients/`, `checkout/`, `contact/`, `home/` — créés uniquement si la feature est trouvée en Step 2.

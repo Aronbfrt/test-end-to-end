@@ -107,6 +107,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({ use: { baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000' } });
 EOF
 npm install -D @playwright/test && npx playwright install
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **cypress :**
@@ -117,6 +118,7 @@ const { defineConfig } = require('cypress');
 module.exports = defineConfig({ e2e: { baseUrl: process.env.TEST_BASE_URL || 'http://localhost:3000', specPattern: 'cypress/e2e/**/*.cy.js' } });
 EOF
 npm install -D cypress
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **robot :**
@@ -124,6 +126,7 @@ npm install -D cypress
 mkdir -p tests/resources tests/variables
 echo -e "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
 pip install robotframework robotframework-seleniumlibrary
+cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 
 **Ne jamais créer** : `auth/`, `admin/`, `checkout/`, `contact/`, `home/` — générés seulement si la feature existe.

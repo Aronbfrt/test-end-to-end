@@ -199,9 +199,8 @@ def shared_state():
 
 @pytest.fixture(scope='function')
 def api():
-    """requests.Session for direct HTTP calls — seed/teardown data without the UI."""
+    """requests.Session for direct HTTP calls — use as: api.get(BASE_URL + '/path')."""
     s = requests.Session()
-    s.base_url = API_URL
     yield s
     s.close()
 
