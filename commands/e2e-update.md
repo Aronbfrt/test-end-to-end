@@ -23,7 +23,7 @@ Construire une map de ce qui est testé :
 - Quels tests portent un marqueur "généré automatiquement" vs écrits à la main :
   - Python : `# migrated from` / `# converted from`
   - TypeScript/JavaScript : `// migrated from` / `// converted from`
-  - Robot : `[Documentation]    migrated from ...`
+  - Robot : `[Documentation]    migrated from ...` / `[Documentation]    converted from ...`
 
 **Distinguer tests générés vs manuels :** un test sans ces marqueurs est manuel → ne jamais le modifier automatiquement.
 

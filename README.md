@@ -104,7 +104,7 @@ Tu as déjà des tests ? `/e2e-audit` les détecte et les convertit automatiquem
 
 - Sélecteurs extraits dans le Page Object du framework (jamais inline dans les tests)
 - L'intention du test est préservée exactement — seule la syntaxe change
-- Chaque test converti est marqué `# converted from` / `// converted from` / `[Documentation] converted from`
+- Chaque test converti est marqué `# migrated from` / `// migrated from` / `[Documentation]    migrated from` (Robot)
 - Le fichier original est supprimé après conversion réussie
 
 ## Auto-fix en direct
