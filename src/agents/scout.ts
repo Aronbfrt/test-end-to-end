@@ -498,7 +498,7 @@ export async function run(
 
   // ── 2. AST parsing ──────────────────────────────────────────────────────────
   const tsFiles = files.filter((f) => /\.(ts|tsx|js|jsx)$/.test(f));
-  const project = new Project({ addFilesFromTsConfig: false, skipAddingFilesFromTsConfig: true });
+  const project = new Project({ skipAddingFilesFromTsConfig: true });
 
   for (const f of tsFiles) {
     try { project.addSourceFileAtPath(f); } catch { /* skip unparseable files */ }

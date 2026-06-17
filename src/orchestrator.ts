@@ -267,20 +267,26 @@ export async function run(config: RunConfig): Promise<void> {
     });
 
     // ── Phase 4: triage (level 2+) ──────────────────────────────────────────
+    let triageResult: import('./agents/coroner.js').TriageResult | null = null;
     if (config.level >= 2 && config.command === 'audit') {
       setState('TRIAGING');
-      // Coroner reads the test runner output from the shared work dir.
-      await dispatch<void>({
+      const traceId = `run-${Date.now()}`;
+      triageResult = await dispatch<import('./agents/coroner.js').TriageResult>({
         type: 'TRIAGE_CRASH',
-        traceId: `run-${Date.now()}`,
+        traceId,
       });
+      log(`triage verdict: ${triageResult.verdict} (confidence: ${(triageResult.confidence * 100).toFixed(0)}%)`);
     }
 
     // ── Phase 5: auto-patch (level 3 / repair command) ──────────────────────
     if (config.command === 'repair' || config.level === 3) {
       setState('PATCHING');
-      // Ghostwriter is invoked by coroner's output — placeholder JSON here.
-      log('Ghostwriter on standby — awaiting coroner bug report');
+      const bugReport = triageResult?.bugReport;
+      if (bugReport) {
+        await dispatch<void>({ type: 'WRITE_PATCH', bugReport });
+      } else {
+        log('Ghostwriter on standby — no BACKEND_BUG triage result to act on');
+      }
     }
 
     setState('DONE');
