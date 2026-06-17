@@ -18,9 +18,9 @@
 
 1. **Lecture des conventions** — avant de générer quoi que ce soit, lit 3–5 fichiers sources pour détecter le style du projet (naming, patterns de test existants, structure des dossiers).
 2. **Découverte** — analyse statique (pas de crawl live) sur 14+ stacks : PHP vanilla · Laravel · Symfony · Spring Boot · Next.js · Nuxt · Vue · Svelte · Angular · Django · Flask · FastAPI · Rails · Go · Rust · Elixir. Extrait les vraies routes, les vrais champs de formulaire, les vraies entités.
-3. **Migration** — si des tests existent déjà (Jest, Cypress, Playwright, Robot, PHPUnit, RSpec, JUnit, Gherkin…), les convertit en Python/pytest en préservant l'intention, le style, et les patterns (Page Objects, helpers, fixtures) de la personne.
+3. **Migration** — si des tests existent déjà (Jest, Cypress, Playwright, Robot, PHPUnit, RSpec, JUnit, Gherkin…), les convertit dans le format du framework choisi en préservant l'intention, le style, et les patterns (Page Objects, helpers, fixtures) de la personne.
 4. **Génération adaptative** — crée uniquement les dossiers qui correspondent aux features trouvées. Pas d'`auth/` sans login. Pas d'`admin/` sans back-office. Pas de `checkout/` sans paiement.
-5. **Exécution + auto-fix** — `pytest --headed`, analyse chaque échec, corrige et relance en boucle jusqu'à 3 rounds. Ce qui reste rouge après 3 rounds = vrai bug dans l'app.
+5. **Exécution + auto-fix** — lance le runner du framework choisi en visible (`pytest --headed` / `npx playwright test --headed` / `npx cypress run --headed` / `robot`), analyse chaque échec, corrige et relance en boucle jusqu'à 3 rounds. Ce qui reste rouge après 3 rounds = vrai bug dans l'app.
 6. **Rapport** — dashboard custom : groupes par domaine, screenshot/replay GIF sur les échecs, badge sécu 🔒, colonnes visuel/stabilité/sélecteur.
 7. **Idempotent** — relancer `/e2e-audit` ajoute les nouvelles routes sans écraser les tests existants.
 
@@ -148,7 +148,7 @@ Les tests sécu ne sont **jamais modifiés** — un échec sécu = vulnérabilit
 - **Responsive complet** — débordement horizontal multi-breakpoints, cibles tactiles, images qui scalent, taille de police lisible sur mobile
 - **Performance au-delà du chargement** — scripts bloquants, poids total de la page, taille du DOM, First Contentful Paint, compression gzip/brotli
 - **Rapport HTML enrichi** — échecs avec screenshot/replay + erreurs console embarqués direct dans la ligne, thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur (sécu = badge rouge 🔒)
-- **Zéro install** — `tests/run.sh` installe automatiquement les paquets pip manquants
+- **Zéro install** — pour Selenium/Playwright Python : `tests/run.sh` installe automatiquement les paquets pip manquants. Pour Playwright TS/Cypress : `npm install` suffit. Pour Robot Framework : `pip install robotframework robotframework-seleniumlibrary`.
 - **N'importe quelle stack** — PHP, Java/Spring, Next.js, Django, Flask, Rails, Go, Rust, Elixir — la découverte de routes s'adapte selon le fichier marqueur (`composer.json`, `pom.xml`, `manage.py`...)
 
 Voir `templates/e2e/README.md` pour la référence complète de structure une fois installé dans un projet.
