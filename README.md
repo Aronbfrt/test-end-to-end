@@ -148,7 +148,7 @@ Les tests sécu ne sont **jamais modifiés** — un échec sécu = vulnérabilit
 - **Responsive complet** — débordement horizontal multi-breakpoints, cibles tactiles, images qui scalent, taille de police lisible sur mobile
 - **Performance au-delà du chargement** — scripts bloquants, poids total de la page, taille du DOM, First Contentful Paint, compression gzip/brotli
 - **Rapport HTML enrichi** — échecs avec screenshot/replay + erreurs console embarqués direct dans la ligne, thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur (sécu = badge rouge 🔒)
-- **Zéro install** — pour Selenium/Playwright Python : `tests/run.sh` installe automatiquement les paquets pip manquants. Pour Playwright TS/Cypress : `npm install` suffit. Pour Robot Framework : `pip install robotframework robotframework-seleniumlibrary`.
+- **Zéro install** — pour Selenium/Playwright Python : `tests/run.sh` installe automatiquement les paquets pip manquants. Pour Playwright TS/Cypress : `npm install` suffit. Pour Robot Framework : `pip install robotframework robotframework-seleniumlibrary robotframework-requests`.
 - **N'importe quelle stack** — PHP, Java/Spring, Next.js, Django, Flask, Rails, Go, Rust, Elixir — la découverte de routes s'adapte selon le fichier marqueur (`composer.json`, `pom.xml`, `manage.py`...)
 
 Voir `templates/e2e/README.md` pour la référence complète de structure une fois installé dans un projet.

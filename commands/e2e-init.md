@@ -124,7 +124,7 @@ cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || t
 **robot :**
 ```bash
 mkdir -p tests/resources tests/variables
-echo -e "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
+printf "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome\n" > tests/variables/variables.robot
 pip install robotframework robotframework-seleniumlibrary robotframework-requests
 cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
@@ -182,10 +182,10 @@ Lancer les tests publics + SEO selon `TEST_FRAMEWORK` :
 # selenium / playwright-python
 pytest tests/public tests/seo -v --headed
 
-# playwright-ts (seo_checks = Python uniquement, pas de tests/seo/ pour ce framework)
+# playwright-ts (tests/seo/ non généré par /e2e-init — /e2e-audit le génère nativement)
 npx playwright test tests/public/ --headed
 
-# cypress (idem — pas de cypress/e2e/seo/ pour Cypress)
+# cypress (idem — /e2e-audit génère cypress/e2e/seo/ ; /e2e-init ne le fait pas)
 npx cypress run --spec "cypress/e2e/public/**" --headed
 
 # robot (idem)

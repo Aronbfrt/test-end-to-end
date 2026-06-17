@@ -196,7 +196,7 @@ cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || t
 **robot** (Robot Framework) :
 ```bash
 mkdir -p tests/resources tests/variables
-echo "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
+printf "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome\n" > tests/variables/variables.robot
 pip install robotframework robotframework-seleniumlibrary robotframework-requests
 [ -f .env.test ] || printf "TEST_FRAMEWORK=robot\nTEST_BASE_URL=http://localhost:3000\n" > .env.test
 cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true

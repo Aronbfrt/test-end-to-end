@@ -1,5 +1,6 @@
 """Generic, project-agnostic helpers. Import from any test file."""
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -69,7 +70,7 @@ def login(driver, email: str, password: str, login_path: str = '/login') -> None
     driver.find_element(By.NAME, 'email').send_keys(email)
     driver.find_element(By.NAME, 'password').send_keys(password)
     driver.find_element(By.CSS_SELECTOR, '[type=submit]').click()
-    WebDriverWait(driver, 10).until(lambda d: login_path not in d.current_url)
+    WebDriverWait(driver, 10).until(lambda d: urlparse(d.current_url).path != login_path)
 
 
 def get_load_time_ms(driver) -> float:
