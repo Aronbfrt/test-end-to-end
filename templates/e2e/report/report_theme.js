@@ -40,6 +40,7 @@
 
   function buildModel(data) {
     const tests = [];
+    if (!data || !data.tests) return tests;
     Object.entries(data.tests).forEach(([testId, runs]) => {
       // pytest-rerunfailures: keep only the LAST attempt as the test's real outcome,
       // but remember if it ever rerun (shown as a small badge, not as a separate row).
@@ -47,8 +48,8 @@
       const everRerun = runs.length > 1;
       // Columns (see conftest.py's table_header/table_row hooks): 0 result, 1 testId,
       // 2 category, 3 visual diff, 4 stability/flaky, 5 self-heal, 6 duration, 7 links.
-      const cells = last.resultsTableRow.map(textOfHtml);
-      const catHtml = last.resultsTableRow[2] || '';
+      const cells = (last.resultsTableRow || []).map(textOfHtml);
+      const catHtml = (last.resultsTableRow || [])[2] || '';
       const category = textOfHtml(catHtml) || '-';
       // (not classOfHtml(catHtml) — a bare <td> assigned via innerHTML on a <div> gets
       // dropped by the HTML parser outside a <table> context, so the class is lost even

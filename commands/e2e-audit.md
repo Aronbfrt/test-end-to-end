@@ -630,7 +630,7 @@ Cypress :
 ```javascript
 // cypress/e2e/security/security_<form_name>.cy.js
 describe('Security — <form_name>', () => {
-  it('no SQL error leaked', () => { cy.visit('<path>'); cy.get('<input>').type("' OR 1=1 --"); cy.get('<submit>').click(); cy.get('body').should('not.contain', 'SQL'); });
+  it('no SQL error leaked', () => { cy.visit('<path>'); cy.get('<input>').type("' OR 1=1 --"); cy.get('<submit>').click(); cy.get('body').invoke('text').then((t) => { expect(t.toLowerCase()).to.not.contain('sql'); }); });
   it('XSS input reflected escaped', () => { cy.visit('<path>'); cy.get('<input>').type('<script>alert(1)</script>'); cy.get('<submit>').click(); cy.get('body').invoke('html').should('not.contain', '<script>'); });
 });
 ```
@@ -644,7 +644,7 @@ test.describe('Security — <form_name>', () => {
     await page.goto('<path>');
     await page.fill('<input_selector>', "' OR 1=1 --");
     await page.click('<submit_selector>');
-    await expect(page.locator('body')).not.toContainText('SQL');
+    expect((await page.locator('body').innerText()).toLowerCase()).not.toContain('sql');
   });
   test('XSS input reflected escaped', async ({ page }) => {
     await page.goto('<path>');
