@@ -342,6 +342,110 @@ H1 Present
     Close Browser
 ```
 
+**A11y pour playwright-ts/cypress/robot** — `checks.py` / `axe_selenium_python` Python-only :
+
+```typescript
+// tests/accessibility/accessibility.spec.ts (playwright-ts)
+// npm install @axe-core/playwright
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('no critical a11y violations', async ({ page }) => {
+  await page.goto('/');
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  const blocking = violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+  expect(blocking, JSON.stringify(blocking.map(v => v.description))).toHaveLength(0);
+});
+```
+```javascript
+// cypress/e2e/accessibility/accessibility.cy.js — npm install cypress-axe
+import 'cypress-axe';
+describe('Accessibility', () => {
+  it('no critical violations', () => {
+    cy.visit('/'); cy.injectAxe();
+    cy.checkA11y(null, { includedImpacts: ['critical', 'serious'] });
+  });
+});
+```
+```robot
+*** Settings ***
+Library    SeleniumLibrary
+*** Test Cases ***
+Images Have Alt
+    [Tags]    a11y
+    Open Browser    ${BASE_URL}    ${BROWSER}
+    ${imgs}=    Get WebElements    css:img:not([alt])
+    Should Be Empty    ${imgs}    msg=Images missing alt attribute
+    Close Browser
+```
+
+**Performance pour playwright-ts/cypress/robot** :
+
+```typescript
+// tests/performance/performance.spec.ts
+import { test, expect } from '@playwright/test';
+test('page load < 4s', async ({ page }) => {
+  await page.goto('/');
+  const ms = await page.evaluate(() => { const t = performance.timing; return t.loadEventEnd - t.navigationStart; });
+  expect(ms).toBeLessThan(4000);
+});
+```
+```javascript
+// cypress/e2e/performance/performance.cy.js
+describe('Performance', () => {
+  it('page load < 4s', () => {
+    cy.visit('/');
+    cy.window().then(w => { const t = w.performance.timing; expect(t.loadEventEnd - t.navigationStart).to.be.lessThan(4000); });
+  });
+});
+```
+```robot
+*** Settings ***
+Library    SeleniumLibrary
+*** Test Cases ***
+Page Load Under 4s
+    [Tags]    performance
+    Open Browser    ${BASE_URL}    ${BROWSER}
+    ${ms}=    Execute Javascript    return performance.timing.loadEventEnd - performance.timing.navigationStart;
+    Should Be True    ${ms} < 4000    msg=Load ${ms}ms > 4s
+    Close Browser
+```
+
+**Responsive pour playwright-ts/cypress/robot** :
+
+```typescript
+// tests/responsive/responsive.spec.ts
+import { test, expect } from '@playwright/test';
+test('no horizontal overflow mobile', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 393, height: 851 } });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  await ctx.close();
+});
+```
+```javascript
+// cypress/e2e/responsive/responsive.cy.js
+describe('Responsive', () => {
+  it('no horizontal overflow mobile', () => {
+    cy.viewport(393, 851); cy.visit('/');
+    cy.window().then(w => { expect(w.document.documentElement.scrollWidth).to.be.lte(w.document.documentElement.clientWidth + 1); });
+  });
+});
+```
+```robot
+*** Settings ***
+Library    SeleniumLibrary
+*** Test Cases ***
+No Horizontal Overflow Mobile
+    [Tags]    responsive
+    Open Browser    ${BASE_URL}    ${BROWSER}
+    Set Window Size    393    851
+    ${overflow}=    Execute Javascript    return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    Should Be Equal    ${overflow}    ${False}    msg=Horizontal overflow on mobile
+    Close Browser
+```
+
 ### Files to generate only if discovered
 
 Générer **uniquement** si la feature est trouvée en Step 2. Adapter l'extension selon `TEST_FRAMEWORK` :
@@ -355,7 +459,7 @@ Générer **uniquement** si la feature est trouvée en Step 2. Adapter l'extensi
 | Checkout | `tests/checkout/test_checkout.py` | `tests/checkout/checkout.spec.ts` | `cypress/e2e/checkout/checkout.cy.js` | `tests/checkout/checkout.robot` |
 | Feature custom | `tests/<feat>/test_<feat>.py` | `tests/<feat>/<feat>.spec.ts` | `cypress/e2e/<feat>/<feat>.cy.js` | `tests/<feat>/<feat>.robot` |
 
-Si admin trouvé, écrire le path dans `.env.test` : `TEST_ADMIN_DASHBOARD_PATH=<path_découvert>` (lu par `conftest.py` via `os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')`). Pour les autres frameworks : stocker le path admin dans `cypress.config.js` → `env.adminPath` (Cypress), `playwright.config.ts` → `use.adminPath` (Playwright TS), `tests/variables/variables.robot` → `${ADMIN_PATH}` (Robot).
+Si admin trouvé, ajouter dans `.env.test` (si clé absente uniquement) : `TEST_ADMIN_DASHBOARD_PATH=<path_découvert>` (lu par `conftest.py` via `os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')`). Pour les autres frameworks : stocker le path admin dans `cypress.config.js` → `env.adminPath` (Cypress), `playwright.config.ts` → `use.adminPath` (Playwright TS), `tests/variables/variables.robot` → `${ADMIN_PATH}` (Robot).
 
 ### Tests API headless (sans navigateur)
 
