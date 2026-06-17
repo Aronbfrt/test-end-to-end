@@ -150,7 +150,7 @@ Bootstrap selon le framework choisi en Step 0 (`TEST_FRAMEWORK` dans `.env.test`
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
-cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py tests/
+cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
 cp -r $T/utils $T/features $T/report $T/pages tests/
 cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
 cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
@@ -564,12 +564,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install -r tests/requirements.txt
+      - uses: browser-actions/setup-chrome@v1
+      - run: python3 tests/bootstrap.py --collect-only -q  # auto-installe les dépendances
       - run: |
           # Démarrer l'app (adapter à ce projet)
           <start_command_detected_from_code> &
           sleep 5
-      - run: pytest --tb=short -q
+      - run: python3 tests/run.sh --tb=short -q
         env:
           TEST_BASE_URL: http://localhost:<port>
           TEST_HEADLESS: "1"

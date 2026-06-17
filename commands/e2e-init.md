@@ -90,7 +90,7 @@ Lire `TEST_FRAMEWORK` dans `.env.test` (défini au Step 0) :
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
-cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py tests/
+cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
 cp -r $T/utils $T/features $T/report $T/pages tests/
 cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
 cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
