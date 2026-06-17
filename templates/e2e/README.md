@@ -170,7 +170,7 @@ Copy `tests/admin_clients/test_admin_clients.py`, rename the class, set `RESOURC
 
 ## CI
 
-Copy `ci-e2e-tests.yml` to `.github/workflows/e2e-tests.yml`, adapt the "Start app" step to the project's boot command.
+Run `/e2e-audit` or `/e2e-init` — both auto-generate a CI workflow (GitHub Actions / GitLab CI / etc.) adapted to the chosen framework at the end of setup (Step 6 of `/e2e-audit`).
 
 ## gitignore
 

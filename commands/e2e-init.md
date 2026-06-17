@@ -60,9 +60,9 @@ TEST_BASE_URL=<url>
 | `cypress` | `cypress/e2e/**/*.cy.js` + cypress.config.js | `npx cypress run` |
 | `robot` | `tests/**/*.robot` + resources | `robot` |
 
-## Step 1 — Read the project before asking anything
+## Step 1 — Read the project silently (après Step 0)
 
-Before the first question, silently read:
+Après les réponses du Step 0, lire le projet sans poser de question :
 - Stack marker files (`composer.json`, `package.json`, `manage.py`, `pom.xml`, `go.mod`…) → detect language + framework
 - 3–5 source files to detect naming conventions (camelCase vs snake_case, class vs function style)
 - Existing test files if any → detect patterns already in use (Page Objects, helpers, fixtures, assertion style)
@@ -130,53 +130,70 @@ pip install robotframework robotframework-seleniumlibrary
 
 ## Step 4 — Adapter l'infra aux conventions du projet
 
-### `tests/utils/helpers.py`
-- `BASE_URL` → valeur depuis `TEST_BASE_URL` dans `.env.test`
-- `login()` → adapter `login_path` + sélecteurs de champs avec les vrais noms trouvés dans le HTML (pas `name=email` par défaut)
+Adapter selon `TEST_FRAMEWORK` :
 
-### `tests/utils/checks.py`
-- `LOAD_TIME_BUDGET_MS` / `MAX_IMAGE_BYTES` → budgets réalistes pour ce stack
+### selenium / playwright-python
+- `tests/utils/helpers.py` → `BASE_URL` depuis `TEST_BASE_URL`, `login()` avec les vrais sélecteurs trouvés dans le HTML
+- `tests/utils/checks.py` → budgets `LOAD_TIME_BUDGET_MS` / `MAX_IMAGE_BYTES` réalistes pour ce stack
+- `tests/pages/*.py` → vider les placeholders, remplir avec les vrais sélecteurs. Un fichier par groupe de pages.
+- `tests/conftest.py` → `TEST_ADMIN_DASHBOARD_PATH` (réel ou vide), `TEST_AUTH_URL_HINTS`, credentials depuis `.env.test`
 
-### `tests/pages/`
-- Vider les fichiers placeholder et remplir avec les vrais sélecteurs trouvés dans le HTML/templates
-- Nommer les classes selon la convention du projet (camelCase si le projet est camelCase)
-- Un fichier par groupe de pages logiquement liées
+### playwright-ts
+- `playwright.config.ts` → `baseURL` depuis `TEST_BASE_URL`, ajouter `use.adminPath` si admin trouvé
+- `tests/pages/*.ts` → interfaces/classes avec les vrais sélecteurs. Un fichier par groupe de pages.
+- Fixtures dans `tests/fixtures.ts` si auth nécessaire
 
-### `tests/conftest.py`
-- `TEST_ADMIN_DASHBOARD_PATH` → chemin réel si admin trouvé, sinon laisser vide (la fixture sera skippée)
-- `TEST_AUTH_URL_HINTS` → sous-chaînes de l'URL de login de ce projet (`login,signin,auth`…)
-- Credentials dans `.env.test` — jamais en dur dans conftest.py
+### cypress
+- `cypress.config.js` → `baseUrl` depuis `TEST_BASE_URL`, `env.adminPath` si admin trouvé
+- `cypress/support/pages/*.js` → objets avec les vrais sélecteurs. Un fichier par groupe de pages.
+- `cypress/support/commands.js` → commandes custom (login, etc.) avec les vrais champs HTML
+
+### robot
+- `tests/variables/variables.robot` → `${BASE_URL}`, `${BROWSER}`, `${ADMIN_PATH}` si admin trouvé
+- `tests/resources/*.resource` → Keywords avec les vrais sélecteurs. Un fichier par groupe de pages.
+- Credentials dans `.env.test` — jamais en dur dans les fichiers robot
 
 ## Step 5 — Générer les dossiers domaine (adaptatif)
 
-Créer **uniquement** les dossiers correspondant aux features réellement trouvées :
+Créer **uniquement** les dossiers correspondant aux features réellement trouvées. Chemins selon `TEST_FRAMEWORK` :
 
-| Feature trouvée | Dossier créé |
-|---|---|
-| Pages publiques | `tests/public/` (toujours, déjà copié) |
-| Formulaire de contact | `tests/contact/` |
-| Login/register | `tests/auth/` |
-| Zone admin | `tests/admin/` |
-| Entité CRUD (products, orders…) | `tests/admin_<entité>/` |
-| Checkout/paiement | `tests/checkout/` |
-| Feature spécifique au projet | `tests/<nom_feature>/` |
+| Feature | Python | Playwright TS | Cypress | Robot |
+|---|---|---|---|---|
+| Pages publiques | `tests/public/` | `tests/public/` | `cypress/e2e/public/` | `tests/public/` |
+| Contact | `tests/contact/` | `tests/contact/` | `cypress/e2e/contact/` | `tests/contact/` |
+| Auth | `tests/auth/` | `tests/auth/` | `cypress/e2e/auth/` | `tests/auth/` |
+| Admin | `tests/admin/` | `tests/admin/` | `cypress/e2e/admin/` | `tests/admin/` |
+| CRUD entité | `tests/admin_<e>/` | `tests/admin_<e>/` | `cypress/e2e/admin_<e>/` | `tests/admin_<e>/` |
+| Checkout | `tests/checkout/` | `tests/checkout/` | `cypress/e2e/checkout/` | `tests/checkout/` |
+| Feature custom | `tests/<feat>/` | `tests/<feat>/` | `cypress/e2e/<feat>/` | `tests/<feat>/` |
 
 Pour chaque dossier créé :
-- Nom de la classe de test = ce qu'elle teste (`TestProductCatalog`, pas `TestAdmin`)
-- Sélecteurs uniquement depuis `tests/pages/`, jamais inline
-- Assertions sur le vrai comportement attendu pour ce projet
+- Sélecteurs uniquement depuis le Page Object du framework — jamais inline dans les tests
+- Assertions sur le comportement réel attendu pour ce projet, pas "page loads"
 
 ## Step 6 — Vérification
 
+Lancer les tests publics + SEO selon `TEST_FRAMEWORK` :
+
 ```bash
+# selenium / playwright-python
 pytest tests/public tests/seo -v --headed
+
+# playwright-ts
+npx playwright test tests/public/ tests/seo/ --headed
+
+# cypress
+npx cypress run --spec "cypress/e2e/public/**,cypress/e2e/seo/**" --headed
+
+# robot
+robot tests/public/ tests/seo/
 ```
 
 Corriger ce qui échoue (mauvaise URL, sélecteur absent) avant de passer à la suite.
 
 ## Step 7 — CI/CD (optionnel)
 
-Proposer de générer un workflow CI adapté au framework et à la plateforme détectée (même logique que /e2e-audit Step 5). Détecter plateforme depuis `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile` — sinon proposer GitHub Actions.
+Proposer de générer un workflow CI adapté au framework et à la plateforme détectée (même logique que /e2e-audit Step 6). Détecter plateforme depuis `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile` — sinon proposer GitHub Actions.
 
 Générer le fichier adapté au `TEST_FRAMEWORK` choisi au Step 0. Détecter `<start_command>` et `<port>` depuis `package.json`, `Makefile`, ou `CLAUDE.md`.
 
@@ -198,9 +215,23 @@ TEST_SCREENSHOTS=tests/screenshots
 ## Commandes utiles
 
 ```bash
+# selenium / playwright-python
 pytest                        # tout, headless
 pytest --headed               # Chrome visible
 pytest -m smoke               # chemin critique seulement
 pytest tests/auth/ -v         # un dossier
 pytest --env=staging          # contre TEST_BASE_URL_STAGING
+
+# playwright-ts
+npx playwright test           # tout, headless
+npx playwright test --headed  # visible
+npx playwright test --ui      # interface graphique
+
+# cypress
+npx cypress run               # tout, headless
+npx cypress open              # interface graphique interactive
+
+# robot
+robot tests/                  # tout
+robot --variable BROWSER:chrome tests/   # Chrome visible
 ```

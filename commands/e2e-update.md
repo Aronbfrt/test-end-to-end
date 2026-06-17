@@ -17,7 +17,10 @@ Re-lancer la découverte statique (même logique que /e2e-audit Step 2) → éta
 Construire une map de ce qui est testé :
 - Quelles routes sont couvertes (grep `driver.get`, `cy.visit`, `page.goto`, `Open Browser`)
 - Quels sélecteurs sont utilisés (lire `tests/pages/*.py` ou `cypress/support/pages/`)
-- Quels tests sont marqués `# migrated from`, `# converted from` vs écrits à la main
+- Quels tests portent un marqueur "généré automatiquement" vs écrits à la main :
+  - Python : `# migrated from` / `# converted from`
+  - TypeScript/JavaScript : `// migrated from` / `// converted from`
+  - Robot : `[Documentation]    migrated from ...`
 
 **Distinguer tests générés vs manuels :** un test sans ces marqueurs est manuel → ne jamais le modifier automatiquement.
 
@@ -77,15 +80,15 @@ it.skip('...', () => { /* route supprimée ? à vérifier */ });
 ════════════════════════════════════════
 
 ➕ AJOUTÉS (N)
-  + GET  /api/webhooks         → tests/api/test_webhooks.py (généré)
-  + POST /products/bulk-import → tests/products/test_bulk_import.py (généré)
+  + GET  /api/webhooks         → <chemin selon framework> (généré)
+  + POST /products/bulk-import → <chemin selon framework> (généré)
 
 ⚠ FLAGGÉS (N)
-  ⚠ GET  /old-checkout         → tests/checkout/test_checkout.py::TestCheckout::test_flow
-      [route introuvable dans le code — marqué xfail]
+  ⚠ GET  /old-checkout         → <fichier test>::<test>
+      [route introuvable dans le code — marqué skip/xfail]
 
 🔧 SÉLECTEURS MIS À JOUR (N)
-  ~ /contact  field "nom" → "first_name"  dans tests/pages/public_pages.py
+  ~ /contact  field "nom" → "first_name"  dans <Page Object selon framework>
 
 ─ INCHANGÉS (N)
   Tests manuels non touchés : N

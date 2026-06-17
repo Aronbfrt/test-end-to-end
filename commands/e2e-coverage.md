@@ -48,11 +48,11 @@ Afficher dans ce format :
 ════════════════════════════════════════════════
 
 ✓ COUVERT (N)
-  ✓ GET  /                    → tests/public/test_public.py::TestPublic::test_home
-  ✓ POST /contact             → tests/contact/test_contact.py::TestContact::test_submit
+  ✓ GET  /                    → <chemin test selon framework>::<nom test>
+  ✓ POST /contact             → <chemin test selon framework>::<nom test>
 
 ⚠ PARTIEL (N)
-  ⚠ GET  /products            → visité dans test_public, pas d'assertion produit
+  ⚠ GET  /products            → visité mais sans assertion métier
 
 ✗ NON COUVERT (N)
   ✗ GET  /api/orders
