@@ -31,9 +31,11 @@ Quiconque utilise Claude Code sur un projet web (peu importe le langage backend)
 ## Installation
 
 ```
-/plugin marketplace add Aronbfrt/test-end-to-end
+/plugin marketplace add https://github.com/Aronbfrt/test-end-to-end
 /plugin install test-end-to-end@test-end-to-end
 ```
+
+> **Note :** la forme courte `Aronbfrt/test-end-to-end` utilise SSH et échoue sans clé GitHub configurée. L'URL HTTPS complète fonctionne sans configuration supplémentaire.
 
 ## Commandes
 
