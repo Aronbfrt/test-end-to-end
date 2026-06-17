@@ -1,5 +1,5 @@
 ---
-description: Initialize E2E test structure (pytest + Selenium) step by step. Guided setup — adapts to the project's actual stack, routes, and conventions. Use /e2e-audit for fully automatic zero-input setup.
+description: Initialize E2E test structure step by step. Guided setup with framework choice (Selenium/Playwright/Cypress/Robot), adapts to the project's stack, routes, and conventions. Use /e2e-audit for fully automatic zero-input setup.
 ---
 
 # /e2e-init
