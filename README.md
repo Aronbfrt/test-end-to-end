@@ -65,9 +65,9 @@ pytest tests/seo/       # un dossier
 
 ## Auto-fix en direct
 
-`/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle :
+`/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle, **Chrome ouvert en visible** pour voir chaque test s'exécuter en direct :
 
-1. Lance `pytest` sur la suite complète
+1. Lance `pytest --headed` sur la suite complète
 2. Pour chaque test qui échoue, analyse le `--tb=short` et corrige immédiatement :
    - Mauvais sélecteur → met à jour `tests/pages/*.py`
    - Mauvaise URL dans le test → corrige le path
