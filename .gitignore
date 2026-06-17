@@ -20,3 +20,6 @@ tests/.pytest_cache/
 .vscode/
 .idea/
 prompt massif.txt
+.e2e-cache.json
+dist/
+node_modules/
