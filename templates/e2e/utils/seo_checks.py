@@ -56,7 +56,8 @@ def check_status_200(driver) -> None:
 def check_robots_txt_reachable(driver, base_url: str) -> None:
     driver.get(base_url + '/robots.txt')
     src = driver.page_source.lower()
-    assert '404' not in driver.title.lower(), '[SEO] /robots.txt inaccessible — les robots ne peuvent pas lire les directives de crawl ni l\'emplacement du sitemap'
+    assert '404' not in driver.title.lower() and 'not found' not in src and '404' not in src, \
+        '[SEO] /robots.txt inaccessible — les robots ne peuvent pas lire les directives de crawl ni l\'emplacement du sitemap'
 
 
 def check_sitemap_reachable(driver, base_url: str) -> None:
