@@ -8,6 +8,58 @@ Guided E2E test setup. Asks one question at a time, reads the project's real cod
 
 Use `/e2e-audit` instead if you want everything automatic (zero questions, zero manual input).
 
+## Step 0 — Onboarding (première fois uniquement)
+
+**Vérifier d'abord :** si `.env.test` contient `TEST_FRAMEWORK=`, sauter directement au Step 1. Si des réponses sont déjà dans le prompt, ne pas reposer ces questions.
+
+Poser **4 à 5 questions** sous forme de liste numérotée avec propositions. Adapter selon ce qui est déjà connu.
+
+---
+
+**1. Quel framework de test veux-tu utiliser ?**
+> a) Selenium + pytest (Python) — universel, tout backend
+> b) Playwright Python — moderne, async, snapshots
+> c) Playwright TypeScript — si projet JS/TS
+> d) Cypress — si projet React/Vue/Next.js/Nuxt
+> e) Robot Framework — style keyword/acceptance testing
+> f) Je fais confiance au plugin (détection auto)
+
+**2. Tu veux voir les tests s'exécuter en direct ou en arrière-plan ?**
+> a) Headless — invisible, rapide, CI-ready (défaut)
+> b) Visible (headed) — voir Chrome s'exécuter en direct
+
+**3. Quelle est l'URL de ton environnement de dev ?**
+*(skip si trouvable dans `.env`, scripts `package.json`, ou déjà dit dans le prompt)*
+> Répondre librement : `http://localhost:3000`
+
+**4. Quelles catégories de tests veux-tu générer ?**
+> a) Tout (fonctionnel + SEO + sécurité + accessibilité + performance + responsive)
+> b) Fonctionnel seulement
+> c) Sécurité + fonctionnel
+> d) Choix libre — écrire les catégories
+
+**5. Y a-t-il des zones protégées dans l'app (login, admin) ?** *(skip si détectable depuis le code)*
+> a) Oui, login seulement
+> b) Oui, login + espace admin séparé
+> c) Non, tout est public
+
+---
+
+Écrire dans `.env.test` après les réponses :
+```
+TEST_FRAMEWORK=<selenium|playwright-python|playwright-ts|cypress|robot>
+TEST_HEADLESS=<1 ou 0>
+TEST_BASE_URL=<url>
+```
+
+| Choix | Fichiers générés | Runner |
+|---|---|---|
+| `selenium` | `tests/**/*.py` + conftest.py | `pytest` |
+| `playwright-python` | `tests/**/*.py` + conftest.py | `pytest-playwright` |
+| `playwright-ts` | `tests/**/*.spec.ts` + playwright.config.ts | `npx playwright test` |
+| `cypress` | `cypress/e2e/**/*.cy.js` + cypress.config.js | `npx cypress run` |
+| `robot` | `tests/**/*.robot` + resources | `robot` |
+
 ## Step 1 — Read the project before asking anything
 
 Before the first question, silently read:
