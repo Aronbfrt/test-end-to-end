@@ -74,12 +74,32 @@ Lire chaque fichier en entier, comprendre l'intention de chaque test, puis le r�
 
 **Si aucun test existant :** aller directement au bootstrap.
 
-### 1c — Bootstrap infra
+### 1c — Bootstrap infra (infra uniquement — zéro dossier domaine hardcodé)
 
 ```bash
 test -f tests/conftest.py
 ```
-Si `tests/` n'existe pas encore : copier le template (`cp -r ~/.claude/templates/e2e ./tests/`, déplacer `pytest.ini` + `.env.test` à la racine, appliquer `gitignore-snippet.txt`, `chmod +x`). Si `tests/` existe déjà → ne rien écraser, compléter seulement.
+
+Si `tests/` n'existe pas encore, copier **uniquement** les fichiers d'infrastructure :
+
+```bash
+T=~/.claude/templates/e2e
+mkdir -p tests
+# Infrastructure pure — pas de dossier domaine
+cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py tests/
+cp -r $T/utils $T/features $T/report $T/pages tests/
+# Dossiers cross-cutting (s'appliquent à tout projet)
+cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
+# Fichiers racine
+cp $T/../pytest.ini.project-root ./pytest.ini 2>/dev/null || true
+cp $T/../.env.test.example .env.test 2>/dev/null || true
+cat $T/../gitignore-snippet.txt >> .gitignore 2>/dev/null || true
+chmod +x tests/bootstrap.py tests/run.sh 2>/dev/null || true
+```
+
+**Ne jamais copier** : `auth/`, `admin/`, `admin_clients/`, `checkout/`, `contact/`, `home/` — ces dossiers sont créés uniquement si la feature correspondante est trouvée en Step 2.
+
+Si `tests/` existe déjà → ne rien écraser, compléter seulement.
 
 ## Step 2 — Découverte complète par analyse statique (zéro crawl live, zéro devinette)
 

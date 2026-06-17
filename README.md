@@ -12,15 +12,17 @@
 
 Écrire une suite de tests end-to-end correcte prend des jours : trouver toutes les routes, écrire les sélecteurs, gérer l'auth, penser au SEO, à la sécurité, à l'accessibilité, au responsive — et la maintenir à jour à chaque changement de code. La plupart des projets n'en ont juste pas, ou une poignée de tests qui datent d'il y a six mois.
 
-`test-end-to-end` lit le code du projet (routes, formulaires, entités admin) et génère la suite à la place de l'humain : pytest + Selenium, structurée proprement, avec les checks qualité qui comptent vraiment (pas juste "la page charge"). Une commande, zéro saisie manuelle, et un rapport qui explique chaque échec au lieu de juste dire "assert failed".
+`test-end-to-end` lit le code du projet et génère une suite qui s'adapte à ce qui existe réellement — pas un template générique imposé. Un projet Laravel reçoit des tests Laravel. Un projet Next.js reçoit des tests Next.js. Un projet sans admin ne reçoit pas de dossier `tests/admin/` vide.
 
 ## Comment ça marche
 
-1. **Découverte** — analyse statique du code (pas de crawl live) : grep les routes selon le framework détecté (`composer.json` → PHP, `pom.xml` → Spring, `manage.py` → Django, `app/` → Next.js, etc.), extrait les formulaires et leurs champs, repère les entités admin.
-2. **Génération** — remplit un template de tests éprouvé (structure validée sur une vraie suite de 300+ tests en prod) avec les vraies routes/sélecteurs trouvés. Jamais de placeholder laissé en plan.
-3. **Exécution** — `pytest` + Selenium, navigateurs partagés par rôle (pas un par test) pour scaler à 1000+ tests sans exploser le temps de run.
-4. **Rapport** — dashboard custom (pas le tableau pytest-html brut) : groupes par domaine, filtres par catégorie, recherche, chaque échec sécu/SEO explique le risque et le fix, screenshot cliquable en grand, bouton qui relance vraiment le test si le rapport tourne via le petit serveur local inclus.
-5. **Idempotent** — relancer `/e2e-audit` plus tard ne réécrit pas ce qui existe déjà ; ça ajoute les nouvelles routes et signale ce qui semble périmé.
+1. **Lecture des conventions** — avant de générer quoi que ce soit, lit 3–5 fichiers sources pour détecter le style du projet (naming, patterns de test existants, structure des dossiers).
+2. **Découverte** — analyse statique (pas de crawl live) sur 14+ stacks : PHP vanilla · Laravel · Symfony · Spring Boot · Next.js · Nuxt · Vue · Svelte · Angular · Django · Flask · FastAPI · Rails · Go · Rust · Elixir. Extrait les vraies routes, les vrais champs de formulaire, les vraies entités.
+3. **Migration** — si des tests existent déjà (Jest, Cypress, Playwright, Robot, PHPUnit, RSpec, JUnit, Gherkin…), les convertit en Python/pytest en préservant l'intention, le style, et les patterns (Page Objects, helpers, fixtures) de la personne.
+4. **Génération adaptative** — crée uniquement les dossiers qui correspondent aux features trouvées. Pas d'`auth/` sans login. Pas d'`admin/` sans back-office. Pas de `checkout/` sans paiement.
+5. **Exécution + auto-fix** — `pytest --headed`, analyse chaque échec, corrige et relance en boucle jusqu'à 3 rounds. Ce qui reste rouge après 3 rounds = vrai bug dans l'app.
+6. **Rapport** — dashboard custom : groupes par domaine, screenshot/replay GIF sur les échecs, badge sécu 🔒, colonnes visuel/stabilité/sélecteur.
+7. **Idempotent** — relancer `/e2e-audit` ajoute les nouvelles routes sans écraser les tests existants.
 
 ## Pour qui
 

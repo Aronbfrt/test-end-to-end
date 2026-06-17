@@ -55,7 +55,10 @@ USER_EMAIL           = os.getenv('TEST_USER_EMAIL',  'user@example.com')
 USER_PASS            = os.getenv('TEST_USER_PASS',   'password')
 API_URL              = os.getenv('TEST_API_URL', helpers_module.BASE_URL)
 SCREENSHOTS          = os.getenv('TEST_SCREENSHOTS', 'tests/screenshots')
-ADMIN_DASHBOARD_PATH = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '/admin/dashboard')
+# Empty string = no admin area in this project → admin_driver fixture is skipped
+ADMIN_DASHBOARD_PATH = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')
+# Comma-separated substrings that indicate a redirect to login (adapt to the project's auth URLs)
+AUTH_URL_HINTS       = [h.strip() for h in os.getenv('TEST_AUTH_URL_HINTS', 'login,signin,connexion,auth,session').split(',')]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -135,9 +138,12 @@ def pytest_runtest_logfinish(nodeid, location):
 
 @pytest.fixture(scope='session')
 def admin_driver():
+    if not ADMIN_DASHBOARD_PATH:
+        pytest.skip('No admin area detected — set TEST_ADMIN_DASHBOARD_PATH to enable')
+        return
     d = make_driver()
     d.get(url(ADMIN_DASHBOARD_PATH))
-    if 'login' in d.current_url.lower() or 'connexion' in d.current_url.lower():
+    if any(hint in d.current_url.lower() for hint in AUTH_URL_HINTS):
         login(d, ADMIN_EMAIL, ADMIN_PASS)
     yield d
     d.quit()
