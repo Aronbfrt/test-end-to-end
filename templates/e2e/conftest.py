@@ -19,6 +19,7 @@ tests/__init__.py makes this a package; pytest adds the project root to sys.path
 import logging
 import os
 import shutil
+from urllib.parse import urlparse
 
 import pytest
 import requests
@@ -144,7 +145,10 @@ def admin_driver():
     d = make_driver()
     d.get(url(ADMIN_DASHBOARD_PATH))
     if any(hint in d.current_url.lower() for hint in AUTH_URL_HINTS):
-        login(d, ADMIN_EMAIL, ADMIN_PASS)
+        # Use the actual redirected login path, not the /login default, so apps
+        # using /connexion, /signin, etc. don't get navigated to the wrong URL.
+        actual_login_path = urlparse(d.current_url).path
+        login(d, ADMIN_EMAIL, ADMIN_PASS, login_path=actual_login_path)
         # Post-login redirect may land elsewhere — navigate back to admin area.
         d.get(url(ADMIN_DASHBOARD_PATH))
     yield d
