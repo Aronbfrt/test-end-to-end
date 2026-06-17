@@ -7,6 +7,7 @@ Never add a fix that mutates data destructively or runs in prod.
 """
 import logging
 import re
+from selenium.webdriver.common.by import By
 
 log = logging.getLogger('e2e')
 
@@ -28,7 +29,7 @@ FIXES: list[tuple[str, callable]] = []
 
 def get_page_text(driver) -> str:
     try:
-        return driver.find_element('tag name', 'body').text
+        return driver.find_element(By.TAG_NAME, 'body').text
     except Exception:
         return ''
 

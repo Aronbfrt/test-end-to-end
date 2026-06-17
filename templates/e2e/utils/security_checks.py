@@ -97,10 +97,12 @@ def check_no_debug_mode_banner(driver) -> None:
 
 
 def check_admin_requires_auth(driver, admin_path: str, base_url: str) -> None:
+    import os
+    hints = [h.strip() for h in os.getenv('TEST_AUTH_URL_HINTS', 'login,signin,connexion,auth,session').split(',')]
     driver.get(base_url + admin_path)
     body = driver.page_source.lower()
     current_url = driver.current_url.lower()
-    on_login_page = 'login' in current_url or 'connexion' in current_url
+    on_login_page = any(hint in current_url for hint in hints)
     # both conditions required together — a login page that merely *mentions* "tableau de
     # bord" in its copy (e.g. "connecte-toi pour accéder au tableau de bord") must not count
     # as a bypass just because the words appear somewhere in the page.

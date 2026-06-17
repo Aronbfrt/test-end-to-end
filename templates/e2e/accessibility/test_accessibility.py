@@ -52,5 +52,6 @@ class TestHomepageAccessibility:
 @pytest.mark.a11y
 class TestAdminAccessibility:
     def test_01_form_fields_have_labels(self, admin_driver):
-        # admin_driver is already on ADMIN_DASHBOARD_PATH (set in conftest) — no re-navigation needed
+        admin_path = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '/admin/dashboard')
+        admin_driver.get(url(admin_path))
         check_form_labels(admin_driver)
