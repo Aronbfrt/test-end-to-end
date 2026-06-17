@@ -82,24 +82,61 @@ Adapt `INPUT` per form's actual free-text field. Skip forms with no free-text in
 
 Fill `SEO_PAGES` in `tests/seo/test_seo.py` with every public + listing/detail page found. For a catalog-style site, include one representative detail page (e.g. first product found via a quick DB/fixture read), not all of them — SEO checks are structural, one sample per template is enough.
 
-## Step 4 — Run everything
+## Step 4 — Run + auto-fix loop
+
+`bootstrap.py` auto-installs missing deps. If the app isn't running yet, check `CLAUDE.md`/`package.json`/`README` for the real start command — don't guess.
+
+Run the full suite, then **fix and re-run in a loop** until green or genuinely stuck:
 
 ```bash
-./tests/run.sh
+pytest --tb=short 2>&1 | tee /tmp/pytest_output.txt
 ```
-`bootstrap.py` auto-installs whatever's missing. If the app isn't running yet, say so and ask the user to start it (don't guess a start command for an unfamiliar stack — check `CLAUDE.md`/`package.json`/`README` first for the actual one before asking).
 
-## Step 5 — Report back
+### Diagnose each failure and fix immediately:
 
-Summarize, in this order:
+**Test is wrong** (bad selector, wrong URL, wrong assertion, too strict for this site) → fix the test file, re-run that single test:
+```bash
+pytest tests/<module>::<TestClass>::<test_name> --tb=short
+```
 
-1. **Security findings** (if any failed) — each one already carries `[SECURITY] <what> — <why> — <fix>` in its assertion message (see `utils/security_checks.py`). Relay that message verbatim, don't paraphrase it away. These are flagged in `tests/report.html` with a red 🔒 badge in the Category column — point the user there.
-2. **SEO findings** — same pattern, `[SEO] <what> — <why>` messages.
-3. **Functional failures** (auth, admin, checkout, contact) — what broke and where.
-4. **Skipped tests** — every skip in this template carries an explicit `reason=`; relay it (e.g. "no mobile nav toggle found — skip is correct, not a bug, if the site genuinely has no mobile menu").
-5. **Pass count / total**, link to `tests/report.html`.
+**App is broken** (real bug — missing header, broken form, wrong redirect) → this is a finding, NOT a test fix. Keep the test, flag it in the report.
 
-Never say "tests passed" without checking the actual exit code and reading `tests/report.html` numbers — pytest can exit 0 even with skips, and a wall of skips hiding real coverage gaps is itself a finding worth surfacing.
+**Fixture/config issue** (wrong `BASE_URL`, missing `.env.test` value, wrong admin path) → fix `.env.test` or `conftest.py`, re-run.
+
+**Selector drifted** → update `tests/pages/*.py` with the real current selector. Never hardcode selectors in test files.
+
+### Fix iteration rules:
+
+- Fix up to **3 consecutive failures** on the same test before marking it "needs human review"
+- After each fix: re-run the fixed test alone, then run the full suite once all fixes are done
+- Max **3 full suite iterations** total — remaining failures after 3 rounds = real findings
+- Never delete a failing test to make the suite green
+- Never touch security test assertions — a security test failure = real vulnerability, report it
+
+### Auto-fixable vs. real finding:
+
+| Symptom | Auto-fix | Report as finding |
+|---|---|---|
+| Wrong selector in test | ✅ Fix `pages/*.py` | — |
+| URL mismatch in test | ✅ Fix test path | — |
+| Test asserts HTTPS but runs HTTP locally | ✅ Update assertion | note it |
+| Missing HTTP security header | — | 🔒 Real finding |
+| No sitemap.xml | — | SEO finding |
+| Broken auth flow | — | Functional finding |
+| Server error 500 | — | Functional finding |
+
+## Step 5 — Final report
+
+After the fix loop, summarize in order:
+
+1. **Security findings** — relay `[SECURITY] <what> — <why> — <fix>` verbatim. Red 🔒 in `tests/report.html`.
+2. **SEO findings** — `[SEO] <what> — <why>` verbatim.
+3. **Functional failures** — what broke and where (auth, admin, checkout, contact).
+4. **Skipped tests** — relay `reason=` verbatim (a skip is correct if the feature genuinely doesn't exist).
+5. **Auto-fixes applied** — every test file changed and why.
+6. **Pass count / total**, link to `tests/report.html`.
+
+Never say "tests passed" without checking the actual exit code — pytest exits 0 even with skips, and a wall of skips hiding coverage gaps is itself a finding.
 
 ## Re-running after code changes
 
