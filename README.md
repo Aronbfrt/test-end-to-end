@@ -1,168 +1,175 @@
 <p align="center">
-  <img src="docs/assets/report-screenshot.png" alt="test-end-to-end — V-Infinite" width="760">
+  <img src="docs/assets/logo.svg" alt="test-end-to-end V-Infinite" width="480">
 </p>
 
-<h1 align="center">test-end-to-end — V-Infinite</h1>
+<p align="center">
+  <a href="https://github.com/Aronbfrt/test-end-to-end/releases"><img src="https://img.shields.io/badge/version-2.0.0-6366f1?style=for-the-badge&logoColor=white" alt="Version"></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/MCP-natif-5046e4?style=for-the-badge&logo=anthropic&logoColor=white" alt="MCP">
+  <img src="https://img.shields.io/badge/build-passing-22c55e?style=for-the-badge" alt="Build">
+  <img src="https://img.shields.io/badge/licence-MIT-f59e0b?style=for-the-badge" alt="MIT">
+</p>
 
-<p align="center"><i>The autonomous cognitive QA factory for Claude Code.</i></p>
+<h3 align="center">L'usine de QA cognitive autonome pour Claude Code.</h3>
 
 <p align="center">
-  <a href="https://github.com/Aronbfrt/test-end-to-end/releases"><img src="https://img.shields.io/badge/version-2.0.0-6366f1?style=for-the-badge&logo=github&logoColor=white" alt="Version"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
-  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-native-5046e4?style=for-the-badge&logo=anthropic&logoColor=white" alt="MCP"></a>
-  <img src="https://img.shields.io/badge/build-passing-22c55e?style=for-the-badge&logo=checkmarx&logoColor=white" alt="Build">
-  <img src="https://img.shields.io/badge/license-MIT-f59e0b?style=for-the-badge" alt="MIT">
+  Aucun prompt humain requis. Analyse ton code, génère les tests E2E, diagnostique chaque crash par vision IA,<br>
+  corrige les sélecteurs cassés, et ouvre des Pull Requests avec des patchs chirurgicaux — de manière entièrement autonome.
 </p>
 
 <p align="center">
   <a href="#-architecture"><b>Architecture</b></a> ·
-  <a href="#-commands"><b>Commands</b></a> ·
+  <a href="#️-commandes"><b>Commandes</b></a> ·
   <a href="#-shadow-personas"><b>Shadow Personas</b></a> ·
-  <a href="#-dashboard--real-time-analytics"><b>Dashboard</b></a> ·
-  <a href="#-installation"><b>Install</b></a>
+  <a href="#-dashboard--analytics-temps-réel"><b>Dashboard</b></a> ·
+  <a href="#-installation"><b>Installation</b></a>
 </p>
 
 ---
 
-> **Zero human prompt required.** Drop it on any codebase — `test-end-to-end` reverse-engineers your routes, generates a full Playwright POM test suite, triages every crash with AI vision, heals broken selectors automatically, and opens surgical Pull Requests. All while routing 94.6% of processing through local Ollama inference, spending near-zero Anthropic tokens.
+> **Zéro prompt humain.** Drop it on any codebase — `test-end-to-end` reverse-engineer tes routes, génère une suite Playwright POM complète, diagnostique chaque crash avec la vision IA, répare les sélecteurs automatiquement, et ouvre des PRs chirurgicales. Le tout en routant **94,6% du traitement via Ollama local**, consommant quasi zéro token Anthropic.
 
 ---
 
-## ✦ Key metrics
+## ✦ Performances mesurées
 
-> `0 TypeScript errors` · `94.6% token reduction` on real pages · `73 files bypassed` on cache hit · `20 hotspots ranked` from 12-month Git forensics · `< 800ms` cold scan on 73-file repo
+> `0 erreur TypeScript` · `94,6% de réduction des tokens` sur pages réelles · `73 fichiers bypassés` en cache chaud · `20 hotspots Git` classés sur 12 mois · `< 800ms` scan complet sur 73 fichiers
 
 ---
 
 ## ⚡ Architecture
 
+<p align="center">
+  <img src="docs/assets/devops-pipeline.png" alt="Pipeline V-Infinite — du code source aux Pull Requests autonomes" width="720">
+  <br>
+  <i>Pipeline complet — du scan AST à la Pull Request autonome en passant par la Vision QA et l'auto-correction.</i>
+</p>
+
+```
+              ┌─────────────────────────────────────────────────────┐
+              │          CLI  /  Serveur MCP stdio                  │
+              │   --level=1|2|3  --chaos  --predictive  --mcp       │
+              └──────────────────────┬──────────────────────────────┘
+                                     │
+              ┌──────────────────────▼──────────────────────────────┐
+              │                  Orchestrateur                       │
+              │  ① cache.ts  ────  SHA-256  ──  Zero-Token Bypass   │
+              │  ② Ollama  ─── inférence locale (AST · strings)     │
+              │  ③ compressor.ts  ────  Byte-State  ──  94,6% off   │
+              └──┬──────────┬──────────┬──────────┬─────────────────┘
+                 │          │          │          │
+          ┌──────▼──┐  ┌────▼────┐ ┌──▼─────┐ ┌─▼────────┐  ┌──────────┐
+          │  Scout  │  │Artisan  │ │Coroner │ │Ghostwri- │  │ Evolver  │
+          │         │  │         │ │        │ │  ter     │  │          │
+          │ AST     │  │ POM gen │ │ 5xx →  │ │ Patch[]  │  │ Self-    │
+          │ Routes  │  │ Personas│ │ Vision │ │ Branch   │  │ patch    │
+          │ Docs    │  │ Chaos   │ │ SHIELD │ │ gh PR    │  │ /src     │
+          │ Git log │  │         │ │ QA     │ │          │  │          │
+          └────┬────┘  └────┬────┘ └───┬────┘ └────┬─────┘  └────┬─────┘
+               │            │          │            │              │
+               └────────────┴──────────┘            │              │
+                     RouteMap JSON                   ▼              ▼
+                                               Pull Request   evolution-log
+                                               documentée      .jsonl
+```
+
 ```mermaid
-flowchart TD
-    CLI["🖥️  CLI / MCP Server\n─────────────────\n--level=1|2|3\n--chaos --predictive"]
-
-    subgraph CORE["  Orchestrator — State Machine  "]
-        direction TB
-        CACHE["🗄️  cache.ts\nSHA-256 fingerprints\nZero-Token Bypass"]
-        OLLAMA["🦙  Ollama Bypass\nllama3.2 local inference\nAST · string tasks"]
-        STATE["IDLE → SCANNING → CACHE_CHECK\n→ DISPATCHING → TRIAGING\n→ PATCHING → DONE"]
-    end
-
-    subgraph COMPRESS["  compressor.ts — Byte-State  "]
-        direction LR
-        P1["Pass 1\nPurge noise\nscript · style · aria-hidden"]
-        P2["Pass 2\nFold siblings\n≥3 identical → ×N"]
-        P3["Pass 3\nHex token dict\n{t, a, c, x}"]
-        P1 --> P2 --> P3
-    end
-
-    subgraph AGENTS["  Cognitive Agents  "]
-        direction TB
-        SCOUT["🔭  Scout\nAST routes · forms\nDoc alignment\nGit forensics hotspots"]
-        ARTISAN["🎨  Artisan\nPOM test generation\nShadow Personas\nChaos injection"]
-        CORONER["🔬  Coroner\nTriage 5xx vs drift\nVision QA (Claude)\nSHIELD pixel-diff"]
-        GHOST["👻  Ghostwriter\nLocate handler\nClaude Patch[]\ngit e2e-patch/* · gh PR"]
-        EVOLVER["🧬  Evolver\nSelf-patch /src\nEvolution log\nGuard 3×/24h"]
-    end
-
-    subgraph REPORT["  Output  "]
-        HTML["📊  report.html\nConfidence Index 0–100\nRoute Impact Map\nWS live log"]
-        PR["🔀  Pull Request\nSurgical fix\nVerified · documented"]
-    end
-
-    CLI --> CORE
-    CORE --> CACHE
-    CACHE -->|"stale files only"| OLLAMA
-    OLLAMA -->|"cheap tasks local"| COMPRESS
-    COMPRESS -->|"94.6% smaller"| AGENTS
-    AGENTS --> SCOUT
-    SCOUT -->|"RouteMap JSON"| ARTISAN
-    ARTISAN -->|"tests/"| CORONER
-    CORONER -->|"BACKEND_BUG"| GHOST
-    CORONER -->|"SELECTOR_DRIFT"| EVOLVER
-    GHOST --> PR
-    CORONER --> HTML
-    GHOST --> HTML
+graph LR
+    A([🖥️ CLI / MCP]) --> B[Orchestrateur]
+    B --> C{Cache SHA-256}
+    C -->|fichier inchangé| D[⚡ Zero-Token Bypass]
+    C -->|fichier modifié| E[🦙 Ollama local]
+    E --> F[Byte-State 94.6%↓]
+    F --> G[🔭 Scout]
+    G -->|RouteMap| H[🎨 Artisan]
+    H -->|tests/| I[🔬 Coroner]
+    I -->|5xx| J[👻 Ghostwriter]
+    I -->|drift| K[🧬 Evolver]
+    J --> L([🔀 Pull Request])
+    I --> M([📊 report.html])
+    J --> M
 ```
 
 ---
 
-## 📁 Project layout
+## 📁 Structure du projet
 
 ```
 test-end-to-end/
 │
-├── src/                        TypeScript MCP engine (V-Infinite)
-│   ├── index.ts                CLI + MCP stdio server (6 tools)
-│   ├── orchestrator.ts         State machine · Ollama routing · agent dispatch
+├── src/                          Moteur TypeScript MCP (V-Infinite)
+│   ├── index.ts                  CLI + serveur MCP stdio (6 outils)
+│   ├── orchestrator.ts           Machine d'état · bypass Ollama · dispatch agents
 │   ├── agents/
-│   │   ├── scout.ts            AST · doc alignment · Git forensics
-│   │   ├── artisan.ts          POM generator · Shadow Personas · Chaos
-│   │   ├── coroner.ts          Triage · Vision QA · SHIELD pixel-diff
-│   │   ├── ghostwriter.ts      Bug patch · e2e-patch/* branch · PR
-│   │   └── evolver.ts          Self-improvement · evolution-log.jsonl
+│   │   ├── scout.ts              AST · alignement doc · forensique Git
+│   │   ├── artisan.ts            Génération POM · Shadow Personas · Chaos
+│   │   ├── coroner.ts            Triage · Vision QA · SHIELD pixel-diff
+│   │   ├── ghostwriter.ts        Patch bug · branche e2e-patch/* · PR
+│   │   └── evolver.ts            Auto-amélioration · evolution-log.jsonl
 │   ├── utils/
-│   │   ├── cache.ts            SHA-256 fingerprints — atomic crash-safe writes
-│   │   ├── compressor.ts       Byte-State DOM compressor (95% reduction)
-│   │   └── logDigest.ts        Crash → triptyque (assertion + DOM + console)
+│   │   ├── cache.ts              Empreintes SHA-256 — écriture atomique crash-safe
+│   │   ├── compressor.ts         Compresseur DOM Byte-State (réduction 95%)
+│   │   └── logDigest.ts          Crash → triptyque (assertion + DOM + console)
 │   └── server/
-│       └── app.ts              Express + WebSocket dashboard + CI/CD report
+│       └── app.ts                Express + WebSocket dashboard + rapport CI/CD
 │
-├── commands/                   Claude Code slash commands (Python/legacy stack)
+├── commands/                     Commandes slash Claude Code (stack Python/legacy)
 │   ├── e2e-audit.md
 │   ├── e2e-init.md
 │   ├── e2e-coverage.md
 │   └── e2e-update.md
 │
 ├── templates/
-│   ├── e2e/                    Python · Selenium · Playwright · Cypress · Robot
-│   ├── playwright/             playwright.config.ts blueprint
-│   └── cypress/                cypress.config.ts blueprint
+│   ├── e2e/                      Python · Selenium · Playwright · Cypress · Robot
+│   ├── playwright/               Blueprint playwright.config.ts
+│   └── cypress/                  Blueprint cypress.config.ts
 │
-├── .e2e-cache.json             File fingerprint registry (git-ignored)
-├── package.json                v2.0.0
-└── tsconfig.json               ES2022 strict
+├── docs/assets/                  Captures d'écran · logo · démo
+├── .e2e-cache.json               Registre d'empreintes (git-ignoré)
+├── package.json                  v2.0.0
+└── tsconfig.json                 ES2022 strict
 ```
 
 ---
 
-## 🖥️  Commands
+## 🖥️  Commandes
 
-### Slash commands — Python / legacy stack
+### Commandes slash — stack Python / legacy
 
-| Command | What it does |
+| Commande | Description |
 |---|---|
-| `/e2e-init` | Guided setup — framework choice, env vars, install |
-| `/e2e-audit` | Full audit: basic + SEO + security + a11y + perf + responsive |
-| `/e2e-coverage` | Route/form/API coverage map with % and gaps |
-| `/e2e-update` | Smart sync after code changes — protects manual tests |
+| `/e2e-init` | Setup guidé — choix du framework, variables d'env, bootstrap |
+| `/e2e-audit` | Audit complet : basic + SEO + sécurité + a11y + perf + responsive |
+| `/e2e-coverage` | Carte de couverture routes/forms/API avec % et gaps |
+| `/e2e-update` | Sync intelligent après changements code — protège les tests manuels |
 
-### CLI — TypeScript V-Infinite stack
+### CLI — stack TypeScript V-Infinite
 
 ```bash
 npm install && npm run build
 
-node dist/index.js <command> [flags]
+node dist/index.js <commande> [flags]
 ```
 
-| Command | Description |
+| Commande | Description |
 |---|---|
-| `init` | Stack detection · SHA-256 cache seed · POM scaffold |
-| `audit` | Full audit + coroner triage + ghostwriter (level 2+) |
-| `shadow` | Zero-Prompt Reverse Testing + all 3 Shadow Personas |
-| `diff` | Scope to `git diff` · `--predictive` hotspot overlay |
-| `repair` | Load coroner triage → ghostwriter patch → PR |
+| `init` | Détection stack · empreintes cache · scaffold POM |
+| `audit` | Audit complet + triage coroner + ghostwriter (level 2+) |
+| `shadow` | Reverse Testing zéro-prompt + les 3 Shadow Personas |
+| `diff` | Scope sur `git diff` uniquement · `--predictive` hotspot overlay |
+| `repair` | Charge triage coroner → ghostwriter → PR |
 
-| Flag | Effect |
+| Flag | Effet |
 |---|---|
-| `--level=1` | Local AST only — 0 LLM calls |
-| `--level=2` | Hybrid: Vision QA on selector failure *(default)* |
-| `--level=3` | Meta-Agent Infinite: Personas + Ghostwriter + Evolver |
-| `--chaos` | Network faults · double-click race · i18n permutations |
-| `--predictive` | 12-month Git forensics → Psychological Code Hotspots |
-| `--reset-cache` | Wipe `.e2e-cache.json`, force full rescan |
-| `--mcp` | Start as MCP stdio server |
+| `--level=1` | AST local uniquement — 0 appel LLM |
+| `--level=2` | Hybride : Vision QA sur échec sélecteur *(défaut)* |
+| `--level=3` | Méta-Agent Infini : Personas + Ghostwriter + Evolver |
+| `--chaos` | Pannes réseau · double-clic · permutations i18n |
+| `--predictive` | Forensique Git 12 mois → Psychological Code Hotspots |
+| `--reset-cache` | Vide `.e2e-cache.json`, force re-scan complet |
+| `--mcp` | Démarre comme serveur MCP stdio |
 
-### MCP tools — nested AI orchestration
+### Outils MCP — orchestration IA imbriquée
 
 ```jsonc
 // .mcp.json
@@ -171,91 +178,91 @@ node dist/index.js <command> [flags]
     "e2e": {
       "command": "node",
       "args": ["dist/index.js", "--mcp"],
-      "cwd": "/absolute/path/to/test-end-to-end"
+      "cwd": "/chemin/absolu/vers/test-end-to-end"
     }
   }
 }
 ```
 
-Available tools: `e2e_init` · `e2e_audit` · `e2e_shadow` · `e2e_diff` · `e2e_repair` · `e2e_diagnostics`
+Outils disponibles : `e2e_init` · `e2e_audit` · `e2e_shadow` · `e2e_diff` · `e2e_repair` · `e2e_diagnostics`
 
 ---
 
 ## 🦙 Zero-Token Bypass
 
-> When Ollama is detected on the host, all AST parsing, string classification and selector ranking route through **local inference** — zero Anthropic API cost.
+> Quand Ollama est détecté sur la machine, toutes les tâches d'analyse AST et de classification de chaînes routent vers l'**inférence locale** — zéro coût API Anthropic.
 
-When a file's SHA-256 fingerprint matches the cache, the agent is never invoked:
-
-```
-Run 1 (cold)  — 73 files → 73 stale  (0  bypassed)   full scan
-Run 2 (warm)  — 73 files → 0  stale  (73 bypassed)   100% cache hit, 0 tokens
-```
-
-The Byte-State compressor reduces DOM payloads for Vision QA calls:
+Quand l'empreinte SHA-256 d'un fichier correspond au cache, l'agent n'est jamais invoqué :
 
 ```
-18 580 B raw HTML  →  1 002 B Byte-State  →  94.6% reduction
+Exécution 1 (froide)  — 73 fichiers → 73 périmés  (0  bypassés)   scan complet
+Exécution 2 (chaude)  — 73 fichiers → 0  périmé   (73 bypassés)   100% cache, 0 token
+```
+
+Le compresseur Byte-State réduit les payloads DOM pour les appels Vision QA :
+
+```
+18 580 octets HTML brut  →  1 002 octets Byte-State  →  94,6% de réduction
 ```
 
 ---
 
 ## 👤 Shadow Personas
 
-Activated with `--chaos` or `--level=3`. Three cognitive extreme profiles stress every route.
+Activé avec `--chaos` ou `--level=3`. Trois profils cognitifs extrêmes mettent sous stress chaque route.
 
-| Persona | Injected behaviour |
+| Persona | Comportement injecté |
 |---|---|
-| `frustrated_user` | Rage-click ×3 on every interactive element · form abandonment mid-fill · back-nav mid-flow |
-| `impulsive_buyer` | Skips required fields · forces checkout submission · ignores validation |
-| `malicious_attacker` | XSS × 6 payloads · SQLi × 5 · path traversal · prompt injection (if AI route detected) |
-| `chaos_network` | Offline mid-form · 200ms/req throttle · double-submit idempotency check |
+| `frustrated_user` | Rage-clic ×3 sur chaque élément interactif · abandon de formulaire à mi-remplissage · navigation arrière en plein flux |
+| `impulsive_buyer` | Saute les champs obligatoires · force la soumission checkout · ignore la validation |
+| `malicious_attacker` | XSS × 6 payloads · SQLi × 5 · path traversal · prompt injection (si route IA détectée) |
+| `chaos_network` | Déconnexion mid-form · throttle 200ms/req · vérification idempotence double-soumission |
 
-> **Security note:** `malicious_attacker` auto-detects AI-powered routes (`/chat`, `/ask`, `/gpt`, `/assistant` …) and runs prompt injection payloads against them.
+> **Note sécurité :** `malicious_attacker` détecte automatiquement les routes IA (`/chat`, `/ask`, `/gpt`, `/assistant` …) et lance des injections de prompt contre elles.
 
 ---
 
-## 🔬 SHIELD — Pixel-Diff Anti-False-Alert
+## 🔬 SHIELD — Anti-Fausse Alerte Pixel-Diff
 
-Coroner compares failure screenshot vs baseline using a pure-JS PNG decoder (no native deps) and perceptual RGBA distance.
+Le Coroner compare le screenshot d'échec au baseline via un décodeur PNG pur JS (sans dépendances natives) et une distance euclidienne RGBA par pixel.
 
-| Parameter | Value | Purpose |
+| Paramètre | Valeur | Rôle |
 |---|---|---|
-| Tolerance | `32 / 255` per channel | Absorbs ClearType, font hinting, OS anti-aliasing |
-| Threshold | `1%` of total pixels | Minimum real difference before alert fires |
-| Below threshold | `SHIELD ABSORBED — cosmetic noise` | No alert raised |
-| Above threshold | Vision QA activated | Claude claude-sonnet-4-6 multimodal identifies resilient selector |
+| Tolérance | `32 / 255` par canal | Absorbe ClearType, hinting de police, anti-aliasing OS |
+| Seuil | `1%` des pixels totaux | Différence minimale pour déclencher une alerte |
+| En dessous du seuil | `SHIELD ABSORBÉ — bruit cosmétique` | Aucune alerte levée |
+| Au-dessus du seuil | Vision QA activée | Claude claude-sonnet-4-6 multimodal identifie le nouveau sélecteur |
 
-**Triage decision tree:**
+**Arbre de décision triage :**
 
 ```
 HTTP 5xx            →  BACKEND_BUG    →  Ghostwriter
-HTTP 200 + selector →  ASSERTION_BUG  →  fix test logic
-HTTP 200, no selector
-  SHIELD ≤ 1%       →  SELECTOR_DRIFT →  Vision QA → new CSS → POM updated
-  SHIELD > 5%       →  LAYOUT_CHANGE  →  escalate to human
+HTTP 200 + sélecteur trouvé  →  ASSERTION_BUG  →  corriger la logique de test
+HTTP 200, sélecteur manquant
+  SHIELD ≤ 1%       →  SELECTOR_DRIFT →  Vision QA → nouveau CSS → POM mis à jour
+  diff visuel > 5%  →  LAYOUT_CHANGE  →  escalade humaine
 ```
 
 ---
 
-## 📊 Confidence Index
+## 📊 Indice de Confiance Applicative
 
-Every `report.html` and PR comment embeds a 0–100 score:
+Chaque `report.html` et commentaire PR embarque un score 0–100 :
 
 ```
-CI  =  passRate     × 60
-     + cacheBonus   × 10   (cached files / total)
-     + tokenBonus   × 10   (tokens saved / total)
-     + coverage     × 20   (passed / total)
-     − secFails     × 5    (failed attacker-persona tests)
-     → clamped 0–100
+IC  =  tauxRéussite  × 60
+     + bonusCache    × 10   (fichiers en cache / total)
+     + bonusTokens   × 10   (tokens économisés / total)
+     + couverture    × 20   (tests réussis / total)
+     − échecsSecurité × 5  (tests persona attaquant échoués)
+     → borné 0–100
 ```
 
 ---
 
-## 🔮 Dashboard & Real-Time Analytics
+## 🔮 Dashboard & Analytics Temps Réel
 
-The Express + WebSocket server (`src/server/app.ts`) streams every agent log line, state transition, and screenshot to the browser in real time.
+Le serveur Express + WebSocket (`src/server/app.ts`) streame en temps réel chaque ligne de log d'agent, chaque transition d'état et chaque screenshot vers le navigateur.
 
 ```bash
 node --input-type=module <<'EOF'
@@ -266,166 +273,172 @@ EOF
 ```
 
 <p align="center">
-  <img src="docs/assets/dashboard-preview.png" alt="Live dashboard — Route Impact Map and real-time log stream" width="720">
+  <img src="docs/assets/demo.gif" alt="Démo en temps réel — stream WebSocket des agents en action" width="720">
   <br>
-  <i>Live dashboard — Route Impact Map (green/amber/red), Confidence Index badge, WebSocket log stream, one-click Auto-Patch button.</i>
+  <i>Stream temps réel — chaque ligne de log des 5 agents apparaît instantanément dans le navigateur via WebSocket.</i>
 </p>
 
 <p align="center">
-  <img src="docs/assets/report-screenshot.png" alt="Standalone report.html — Confidence Index and test matrix" width="720">
+  <img src="docs/assets/report-screenshot.png" alt="Dashboard — Route Impact Map et Indice de Confiance" width="720">
   <br>
-  <i>Standalone <code>report.html</code> — fully self-contained, embeds CI score, route tree and crash replays. Zero external assets.</i>
+  <i>Dashboard — Indice de Confiance (IC), Route Impact Map (vert/orange/rouge), tableau de tests complet et bouton Auto-Patch.</i>
 </p>
 
-**Dashboard endpoints:**
+<p align="center">
+  <img src="docs/assets/devops-pipeline.png" alt="Pipeline CI/CD — rapport autonome injecté en commentaire PR" width="720">
+  <br>
+  <i>Pipeline CI/CD — <code>report.html</code> autonome (zéro asset externe) et commentaire PR avec badge IC injecté automatiquement.</i>
+</p>
+
+**Endpoints du dashboard :**
 
 | Route | Description |
 |---|---|
-| `GET /` | report.html (or onboarding screen) |
-| `GET /api/status` | Orchestrator state + Ollama capability JSON |
-| `GET /api/report` | Full report HTML as JSON payload |
-| `POST /api/repair` | Queue ghostwriter for a traceId |
-| `WS /ws` | Bidirectional live event stream |
+| `GET /` | report.html (ou écran d'onboarding) |
+| `GET /api/status` | État orchestrateur + capacité Ollama en JSON |
+| `GET /api/report` | HTML du rapport complet en payload JSON |
+| `POST /api/repair` | Déclenche le ghostwriter pour un traceId |
+| `WS /ws` | Stream d'événements bidirectionnel temps réel |
 
-**WebSocket event types:** `LOG` · `STATE` · `SCREENSHOT` · `METRIC` · `HOTSPOT` · `REPORT_READY`
+**Types d'événements WebSocket :** `LOG` · `STATE` · `SCREENSHOT` · `METRIC` · `HOTSPOT` · `REPORT_READY`
 
 ---
 
-## 🧬 Git Forensics — Psychological Code Hotspots
+## 🧬 Forensique Git — Psychological Code Hotspots
 
-> `--predictive` analyses the last 12 months of `git log`. Commits are scored for stress markers, cross-weighted with file churn, and the top 20 risky files receive denser test coverage.
+> `--predictive` analyse les 12 derniers mois de `git log`. Les commits sont scorés selon les marqueurs de stress, croisés avec la fréquence de modification, et les 20 fichiers les plus risqués reçoivent une couverture de tests renforcée.
 
-| Commit pattern | Stress score |
+| Pattern dans le message de commit | Score de stress |
 |---|---|
 | `fix`, `hotfix`, `urgent`, `critical`, `asap` | **+3** |
 | `wip`, `temp`, `hack`, `dirty`, `quick` | **+2** |
-| Expletives — `crap`, `wtf`, `ugh`, `damn` … | **+3** |
+| Jurons — `crap`, `wtf`, `ugh`, `damn` … | **+3** |
 | `revert`, `rollback`, `oops`, `broke` | **+2** |
-| Late-night commit (23h – 04h) | **+2** |
-| `!!` excitement | **+1** |
+| Commit après 23h ou avant 4h du matin | **+2** |
+| `!!` multiple points d'exclamation | **+1** |
 
 ```
-riskScore = churn × 1.0 + stress × 1.5
+riskScore = fréquenceModif × 1,0 + stressTotal × 1,5
 
-Example output (this repo — 12-month window):
-  1. commands/e2e-audit.md   risk=154.0  (churn=28, stress=84)
-  2. commands/e2e-init.md    risk=81.0   (churn=15, stress=44)
-  3. README.md               risk=74.0   (churn=14, stress=40)
+Exemple réel (ce dépôt — fenêtre 12 mois) :
+  1. commands/e2e-audit.md   risk=154,0  (modifs=28, stress=84)
+  2. commands/e2e-init.md    risk=81,0   (modifs=15, stress=44)
+  3. README.md               risk=74,0   (modifs=14, stress=40)
 ```
 
 ---
 
-## 🤖 Autonomous Repair Pipeline
+## 🤖 Pipeline de Réparation Autonome
 
 ```
-Test failure detected
+Échec de test détecté
         │
         ▼
-  Coroner triage
+  Triage Coroner
         │
-        ├─── HTTP 5xx ──────────────────────────────────────────────────────┐
-        │    BACKEND_BUG                                                     │
-        │    Ghostwriter:                                                    │
-        │      1. locateHandler()  — path slug + grep fallback              │
-        │      2. Claude Sonnet    — generates Patch[] (exact oldCode)      │
-        │      3. git checkout -b  e2e-patch/<timestamp>-<route>            │
-        │      4. applyPatch()     — surgical string replacement            │
-        │      5. npx playwright test --grep <route>  — verification        │
-        │      6. gh pr create     — documented PR (fallback: .md draft)    │
-        │                                                                    ▼
-        │                                                             Pull Request
+        ├─── HTTP 5xx ─────────────────────────────────────────────────────┐
+        │    BACKEND_BUG                                                    │
+        │    Ghostwriter :                                                  │
+        │      1. locateHandler()   chemin slug + grep de secours          │
+        │      2. Claude Sonnet     génère Patch[] (oldCode exact)         │
+        │      3. git checkout -b   e2e-patch/<timestamp>-<route>          │
+        │      4. applyPatch()      remplacement chirurgical de chaîne     │
+        │      5. npx playwright test --grep <route>   vérification        │
+        │      6. gh pr create      PR documentée (fallback : brouillon)   │
+        │                                                                   ▼
+        │                                                          Pull Request
         │
-        └─── HTTP 200 ──────────────────────────────────────────────────────┐
-             │                                                               │
-             ├── selector found    → ASSERTION_BUG  (fix test logic)        │
-             │                                                               │
-             └── selector missing                                            │
-                 │                                                           │
-                 ├── SHIELD ≤ 1%  → SELECTOR_DRIFT                          │
-                 │   Vision QA: Claude claude-sonnet-4-6 multimodal          │
-                 │   screenshot → resilient CSS → POM updated               │
-                 │                                                           │
-                 └── visual diff > 5%  → LAYOUT_CHANGE → escalate          ─┘
+        └─── HTTP 200 ─────────────────────────────────────────────────────┐
+             │                                                              │
+             ├── sélecteur trouvé   → ASSERTION_BUG  (corriger le test)    │
+             │                                                              │
+             └── sélecteur manquant                                        │
+                 │                                                          │
+                 ├── SHIELD ≤ 1%    → SELECTOR_DRIFT                       │
+                 │   Vision QA : Claude claude-sonnet-4-6 multimodal        │
+                 │   screenshot → CSS résilient → POM mis à jour           │
+                 │                                                          │
+                 └── diff visuel > 5%  → LAYOUT_CHANGE → escalade ────────┘
 ```
 
 ---
 
-## 🦠 Self-Evolution (Evolver)
+## 🦠 Auto-Évolution (Evolver)
 
-On agent failure at `--level=3`:
+En cas d'échec d'un agent avec `--level=3` :
 
-1. Reads failing agent TypeScript source from `/src`
-2. Claude analyses root cause → `improvements[]` (exact `oldCode` match, max 3)
-3. Applies surgical patch · commits `refactor(evolver): self-patch <agent>`
-4. Optional revised system prompt stored to `.e2e-work/prompts/<agent>.system.txt`
-5. Appends full record to `.e2e-work/evolution-log.jsonl`
+1. Lit le code source TypeScript de l'agent défaillant dans `/src`
+2. Claude analyse la cause racine → `improvements[]` (correspondance `oldCode` exacte, 3 max)
+3. Applique le patch chirurgical · commit `refactor(evolver): self-patch <agent>`
+4. Invite système révisée stockée dans `.e2e-work/prompts/<agent>.system.txt`
+5. Enregistrement complet dans `.e2e-work/evolution-log.jsonl`
 
-> **Guard:** after 3 failures on the same agent type within 24h, Evolver stops and escalates to human. No infinite self-modification loops.
+> **Garde-fou :** après 3 échecs sur le même type d'agent en 24h, l'Evolver s'arrête et escalade à l'humain. Aucune boucle d'auto-modification infinie.
 
 ---
 
 ## 🚀 Installation
 
-### Python / Selenium legacy stack
+### Stack Python / Selenium (commandes legacy)
 
 ```bash
-# Copy templates
+# Copier les templates
 cp -r templates/e2e/ tests/
 
-# Core dependencies
+# Dépendances de base
 pip install pytest selenium pytest-html requests
 
-# Framework-specific (install only what you use)
+# Spécifique au framework (installer uniquement ce que tu utilises)
 pip install robotframework robotframework-seleniumlibrary robotframework-requests
 pip install playwright && playwright install chromium
 npm install --save-dev @playwright/test   # Playwright TS
 npm install --save-dev cypress            # Cypress
 
-# Configure
+# Configuration
 cp tests/.env.test.example tests/.env.test
-# → Edit TEST_BASE_URL, TEST_USERNAME, TEST_PASSWORD, TEST_LOGIN_PATH
+# → Éditer TEST_BASE_URL, TEST_USERNAME, TEST_PASSWORD, TEST_LOGIN_PATH …
 ```
 
-### TypeScript V-Infinite stack
+### Stack TypeScript V-Infinite
 
 ```bash
 git clone https://github.com/Aronbfrt/test-end-to-end.git
 cd test-end-to-end
 npm install && npm run build
 
-# Run audit on your project
+# Lancer un audit sur ton projet
 node dist/index.js audit --level=2 --predictive
 
-# Start live dashboard
+# Démarrer le dashboard live (http://127.0.0.1:4321)
 node --input-type=module <<'EOF'
 import { startServer } from './dist/server/app.js';
-startServer('/path/to/your/project');
+startServer('/chemin/vers/ton/projet');
 EOF
 ```
 
 ---
 
-## ⚙️ Environment variables
+## ⚙️ Variables d'environnement
 
 ```env
-# Target application
+# Application cible
 TEST_BASE_URL=http://localhost:3000
-TEST_USERNAME=test@example.com
-TEST_PASSWORD=testpassword
+TEST_USERNAME=test@exemple.com
+TEST_PASSWORD=motdepasse
 
-# Route configuration
+# Configuration des routes
 TEST_LOGIN_PATH=/login              # /connexion, /signin, /auth/login …
 TEST_ADMIN_DASHBOARD_PATH=/admin
 TEST_AUTH_URL_HINTS=login,signin,auth
 
-# Server
+# Serveur
 E2E_PORT=4321
-OLLAMA_HOST=http://127.0.0.1:11434  # auto-detected if omitted
+OLLAMA_HOST=http://127.0.0.1:11434  # détecté automatiquement si omis
 ```
 
 ---
 
-## 🧪 Supported frameworks
+## 🧪 Frameworks supportés
 
 | Framework | `/e2e-init` | `/e2e-audit` | `/e2e-coverage` | `/e2e-update` | V-Infinite MCP |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -434,11 +447,11 @@ OLLAMA_HOST=http://127.0.0.1:11434  # auto-detected if omitted
 | **Playwright TypeScript** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Cypress** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Robot Framework** | ✅ | ✅ | ✅ | ✅ | — |
-| **MCP native (TS)** | ✅ | ✅ | — | — | ✅ |
+| **MCP natif (TS)** | ✅ | ✅ | — | — | ✅ |
 
 ---
 
 <p align="center">
-  <sub>Built with Claude Sonnet · Ollama Zero-Token Bypass · MCP Protocol · TypeScript 5.4</sub><br>
-  <sub><b>Author:</b> <a href="https://github.com/Aronbfrt">Aron Beaufort</a> · MIT License</sub>
+  Construit avec Claude Sonnet · Ollama Zero-Token Bypass · MCP Protocol · TypeScript 5.4<br>
+  <b>Auteur :</b> <a href="https://github.com/Aronbfrt">Aron Beaufort</a> · Licence MIT
 </p>
