@@ -71,12 +71,13 @@ TEST_BASE_URL=<url>
 
 Avant toute migration ou génération, lire 3 à 5 fichiers représentatifs du projet (code source, pas les tests) pour détecter :
 
-- **Langue dominante** : nommage des variables/fonctions (camelCase, snake_case, PascalCase)
-- **Style d'assertion existant** : si des tests existent déjà, lire comment ils écrivent les assertions, les setup/teardown, les noms de méthodes
-- **Structure des dossiers** : est-ce que le projet utilise `src/`, `app/`, `lib/`, modules par feature ou par type ?
+- **Langue humaine** : lire les commentaires, les messages d'erreur, les labels de formulaire pour détecter FR/EN/ES/DE/etc. → nommer les tests dans cette langue. Exemple FR : `test_connexion_echoue_sans_mot_de_passe`. Exemple EN : `test_login_fails_without_password`. Si projet multilingue → utiliser EN (langue de référence du code).
+- **Langue de code** : nommage des variables/fonctions (camelCase, snake_case, PascalCase) → respecter dans les classes et méthodes générées
+- **Style d'assertion existant** : lire comment les tests existants écrivent les assertions, les setup/teardown, les noms de méthodes
+- **Structure des dossiers** : `src/`, `app/`, `lib/`, modules par feature ou par type
 - **Patterns de test existants** : Page Object Model ? Helper functions ? Fixtures centralisées ? Data factories ?
 
-**Ces conventions dictent la façon dont les nouveaux tests seront écrits.** Un projet qui nomme tout en camelCase aura des classes `TestUserAuth` (pas `test_user_auth`). Un projet avec des helpers `createTestUser()` aura ses fixtures dans le même style.
+**Ces conventions dictent entièrement la façon dont les nouveaux tests seront écrits.** Un projet FR avec snake_case aura `def test_formulaire_contact_champs_requis`. Un projet EN camelCase Cypress aura `it('shows error when required fields are empty')`.
 
 ### 1b — Scanner les tests existants
 
@@ -292,6 +293,52 @@ Generate each file below **only** if the corresponding feature was found in Step
 - `tests/checkout/test_checkout.py` — only if Stripe/payment route found.
 - `tests/<custom_feature>/test_<custom_feature>.py` — any feature specific to this project (a booking system, a quiz, a map, a live chat, etc.) gets its own folder named after itself.
 
+### Tests API headless (sans navigateur)
+
+Pour chaque endpoint REST/API découvert en Step 2 (routes sous `/api/`, handlers JSON, GraphQL), générer des tests **sans navigateur** — plus rapides, plus stables que Selenium pour des routes purement HTTP.
+
+**Python (tous frameworks Python) :**
+```python
+# tests/api/test_api_<resource>.py
+import requests, os
+BASE = os.getenv('TEST_BASE_URL', 'http://localhost:3000')
+
+class TestApi<Resource>:
+    def test_get_<resource>_returns_200(self):
+        r = requests.get(f'{BASE}/api/<discovered_path>')
+        assert r.status_code == 200
+
+    def test_get_<resource>_returns_json(self):
+        r = requests.get(f'{BASE}/api/<discovered_path>')
+        assert r.headers.get('content-type', '').startswith('application/json')
+
+    def test_post_<resource>_invalid_payload_returns_4xx(self):
+        r = requests.post(f'{BASE}/api/<discovered_path>', json={})
+        assert r.status_code in (400, 422, 403)
+```
+
+**Cypress (pas de navigateur pour API) :**
+```javascript
+// cypress/e2e/api/api_<resource>.cy.js
+describe('API — <resource>', () => {
+  it('GET returns 200', () => { cy.request('GET', '/api/<path>').its('status').should('eq', 200); });
+  it('POST invalid payload returns 4xx', () => { cy.request({ method: 'POST', url: '/api/<path>', body: {}, failOnStatusCode: false }).its('status').should('be.within', 400, 499); });
+});
+```
+
+**Playwright TS :**
+```typescript
+// tests/api/api_<resource>.spec.ts
+import { test, expect, request } from '@playwright/test';
+test('GET /<resource> returns 200', async () => {
+  const ctx = await request.newContext({ baseURL: process.env.TEST_BASE_URL });
+  const res = await ctx.get('/api/<path>');
+  expect(res.status()).toBe(200);
+});
+```
+
+Ne générer les tests API que si des endpoints REST sont trouvés. Skiper pour les apps purement server-side sans API JSON.
+
 ### How to write each generated test
 
 Adapter le format selon `TEST_FRAMEWORK` lu dans `.env.test` :
@@ -469,6 +516,60 @@ After the fix loop, summarize in order:
 6. **Pass count / total**, link to `tests/report.html`.
 
 Never say "tests passed" without checking the actual exit code — pytest exits 0 even with skips, and a wall of skips hiding coverage gaps is itself a finding.
+
+## Step 5 (auto) — Génération CI/CD
+
+Après le rapport final, proposer automatiquement de générer le workflow CI adapté au framework et à la plateforme du projet :
+
+Détecter la plateforme CI : chercher `.github/workflows/` (GitHub Actions), `.gitlab-ci.yml` (GitLab), `Jenkinsfile`, `bitbucket-pipelines.yml`, `.circleci/`. Si rien trouvé → proposer GitHub Actions par défaut.
+
+Générer selon `TEST_FRAMEWORK` :
+
+**GitHub Actions — selenium/playwright-python :**
+```yaml
+# .github/workflows/e2e.yml
+name: E2E Tests
+on: [push, pull_request]
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r tests/requirements.txt
+      - run: |
+          # Démarrer l'app (adapter à ce projet)
+          <start_command_detected_from_code> &
+          sleep 5
+      - run: pytest --tb=short -q
+        env:
+          TEST_BASE_URL: http://localhost:<port>
+          TEST_HEADLESS: "1"
+```
+
+**GitHub Actions — playwright-ts :**
+```yaml
+      - uses: actions/setup-node@v4
+      - run: npm ci && npx playwright install --with-deps
+      - run: npx playwright test
+```
+
+**GitHub Actions — cypress :**
+```yaml
+      - uses: cypress-io/github-action@v6
+        with: { start: <start_command>, wait-on: 'http://localhost:<port>' }
+```
+
+**GitHub Actions — robot :**
+```yaml
+      - run: pip install robotframework robotframework-seleniumlibrary
+      - run: robot --outputdir results tests/
+      - uses: actions/upload-artifact@v4
+        with: { name: robot-results, path: results/ }
+```
+
+Détecter `<start_command>` et `<port>` depuis les scripts `package.json`, `Makefile`, `docker-compose.yml`, ou `CLAUDE.md`. Si introuvable → laisser un placeholder commenté à remplir.
 
 ## Re-running after code changes
 
