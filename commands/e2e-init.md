@@ -90,9 +90,9 @@ mkdir -p tests
 cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py tests/
 cp -r $T/utils $T/features $T/report $T/pages tests/
 cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
-cp $T/../pytest.ini.project-root ./pytest.ini 2>/dev/null || true
-cp $T/../.env.test.example .env.test 2>/dev/null || true
-cat $T/../gitignore-snippet.txt >> .gitignore 2>/dev/null || true
+cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
+[ -f .env.test ] || cp $T/.env.test.example .env.test 2>/dev/null || true
+cat $T/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 chmod +x tests/bootstrap.py tests/run.sh 2>/dev/null || true
 ```
 

@@ -137,26 +137,56 @@ Lire chaque fichier en entier, comprendre l'intention de chaque test, puis le r�
 test -f tests/conftest.py
 ```
 
-Si `tests/` n'existe pas encore, copier **uniquement** les fichiers d'infrastructure :
+Bootstrap selon le framework choisi en Step 0 (`TEST_FRAMEWORK` dans `.env.test`) :
 
+**selenium / playwright-python** (Python) :
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
-# Infrastructure pure — pas de dossier domaine
 cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py tests/
 cp -r $T/utils $T/features $T/report $T/pages tests/
-# Dossiers cross-cutting (s'appliquent à tout projet)
 cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
-# Fichiers racine
-cp $T/../pytest.ini.project-root ./pytest.ini 2>/dev/null || true
-cp $T/../.env.test.example .env.test 2>/dev/null || true
-cat $T/../gitignore-snippet.txt >> .gitignore 2>/dev/null || true
+cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
+[ -f .env.test ] || cp $T/.env.test.example .env.test 2>/dev/null || true
+cat $T/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 chmod +x tests/bootstrap.py tests/run.sh 2>/dev/null || true
+# playwright-python uniquement : remplacer browser.py par version playwright
+# pip install pytest-playwright && playwright install
 ```
 
-**Ne jamais copier** : `auth/`, `admin/`, `admin_clients/`, `checkout/`, `contact/`, `home/` — ces dossiers sont créés uniquement si la feature correspondante est trouvée en Step 2.
+**playwright-ts** (TypeScript) :
+```bash
+mkdir -p tests
+cat > playwright.config.ts << 'EOF'
+import { defineConfig } from '@playwright/test';
+export default defineConfig({ use: { baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000' } });
+EOF
+npm install -D @playwright/test && npx playwright install
+[ -f .env.test ] || echo "TEST_BASE_URL=http://localhost:3000" > .env.test
+```
 
-Si `tests/` existe déjà → ne rien écraser, compléter seulement.
+**cypress** (JavaScript) :
+```bash
+mkdir -p cypress/e2e cypress/support/pages cypress/fixtures
+cat > cypress.config.js << 'EOF'
+const { defineConfig } = require('cypress');
+module.exports = defineConfig({ e2e: { baseUrl: process.env.TEST_BASE_URL || 'http://localhost:3000', specPattern: 'cypress/e2e/**/*.cy.js' } });
+EOF
+npm install -D cypress
+[ -f .env.test ] || echo "TEST_BASE_URL=http://localhost:3000" > .env.test
+```
+
+**robot** (Robot Framework) :
+```bash
+mkdir -p tests/resources tests/variables
+echo "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
+pip install robotframework robotframework-seleniumlibrary
+[ -f .env.test ] || echo "TEST_BASE_URL=http://localhost:3000" > .env.test
+```
+
+**Ne jamais copier (Python seulement)** : `auth/`, `admin/`, `admin_clients/`, `checkout/`, `contact/`, `home/` — créés uniquement si la feature est trouvée en Step 2.
+
+Si `tests/` (ou `cypress/`) existe déjà → ne rien écraser, compléter seulement.
 
 ## Step 2 — Découverte complète par analyse statique (zéro crawl live, zéro devinette)
 
