@@ -63,6 +63,21 @@ pytest -m smoke         # seulement les tests critiques
 pytest tests/seo/       # un dossier
 ```
 
+## Auto-fix en direct
+
+`/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle :
+
+1. Lance `pytest` sur la suite complète
+2. Pour chaque test qui échoue, analyse le `--tb=short` et corrige immédiatement :
+   - Mauvais sélecteur → met à jour `tests/pages/*.py`
+   - Mauvaise URL dans le test → corrige le path
+   - Mauvaise config (`.env.test`, `BASE_URL`) → corrige et relance
+3. Relance le test corrigé seul pour valider le fix
+4. Recommence jusqu'à 3 fois au maximum
+5. Ce qui reste rouge après 3 rounds = **vrai bug dans l'app** → reporté comme finding, jamais supprimé
+
+Les tests sécu ne sont **jamais modifiés** — un échec sécu = vulnérabilité réelle, toujours signalé.
+
 ---
 
 ## Le pipeline
