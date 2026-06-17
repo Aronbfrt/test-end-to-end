@@ -89,14 +89,14 @@ Fill `SEO_PAGES` in `tests/seo/test_seo.py` with every public + listing/detail p
 Run the full suite, then **fix and re-run in a loop** until green or genuinely stuck:
 
 ```bash
-pytest --tb=short 2>&1 | tee /tmp/pytest_output.txt
+pytest --headed --tb=short 2>&1 | tee /tmp/pytest_output.txt
 ```
 
 ### Diagnose each failure and fix immediately:
 
 **Test is wrong** (bad selector, wrong URL, wrong assertion, too strict for this site) → fix the test file, re-run that single test:
 ```bash
-pytest tests/<module>::<TestClass>::<test_name> --tb=short
+pytest --headed tests/<module>::<TestClass>::<test_name> --tb=short
 ```
 
 **App is broken** (real bug — missing header, broken form, wrong redirect) → this is a finding, NOT a test fix. Keep the test, flag it in the report.
