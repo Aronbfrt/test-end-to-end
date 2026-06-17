@@ -127,12 +127,20 @@ Respecter les conventions lues en 1a.
 | Selenium IDE | `*.side` | JSON → parse `commands`, `open` → `driver.get()`, `click` → `find_element().click()` |
 
 **Règles de migration adaptatives (priorité absolue) :**
-- Placer le fichier converti dans `tests/<même_domaine_que_l_original>/test_<nom_original>.py` — miroir de la structure existante, pas une réorganisation forcée
-- Si l'original avait des Page Objects → les conserver dans `tests/pages/` avec le même nommage
-- Si l'original avait des helpers/fixtures → les porter dans `tests/conftest.py` ou `tests/utils/` selon le pattern déjà présent
-- Si l'original utilisait des data factories → recréer le même pattern en Python
+
+Adapter le chemin et l'extension selon `TEST_FRAMEWORK` :
+
+| Framework | Chemin cible | Marqueur migration |
+|---|---|---|
+| selenium / playwright-python | `tests/<domaine>/test_<nom>.py` | `# migrated from <fichier>` |
+| playwright-ts | `tests/<domaine>/<nom>.spec.ts` | `// migrated from <fichier>` |
+| cypress | `cypress/e2e/<domaine>/<nom>.cy.js` | `// migrated from <fichier>` |
+| robot | `tests/<domaine>/<nom>.robot` | `[Documentation]    migrated from <fichier>` |
+
+- Miroir de la structure existante — pas une réorganisation forcée
+- Si l'original avait des Page Objects → les conserver dans le dossier Page Objects du framework choisi (`tests/pages/`, `cypress/support/pages/`, `tests/resources/`)
+- Si l'original avait des helpers/fixtures → les porter dans `conftest.py` / `cypress/support/commands.js` / `tests/resources/` selon le framework
 - Préserver l'intention du test exactement — seule la syntaxe change, jamais la logique d'assertion
-- Marquer chaque test converti : `# migrated from <fichier_original>`
 - Supprimer le fichier original après conversion réussie
 - Si le fichier original utilise un config (cypress.config.*, wdio.conf.*) devenu inutile → le supprimer
 

@@ -12,7 +12,7 @@ from tests.utils.helpers import wait_for
 CARD_SUCCESS  = '4242424242424242'
 CARD_DECLINED = '4000000000000002'
 CARD_3DS      = '4000002500003155'
-CARD_EXPIRE   = '0226'  # MM/YY — far future
+CARD_EXPIRE   = '1230'  # MM/YY — far future (December 2030)
 CARD_CVC      = '424'
 
 
