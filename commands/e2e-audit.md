@@ -328,6 +328,7 @@ describe('SEO', () => {
 ```robot
 *** Settings ***
 Library    SeleniumLibrary
+Variables  ../variables/variables.robot
 *** Test Cases ***
 Title Non Vide
     [Tags]    seo
@@ -369,6 +370,7 @@ describe('Accessibility', () => {
 ```robot
 *** Settings ***
 Library    SeleniumLibrary
+Variables  ../variables/variables.robot
 *** Test Cases ***
 Images Have Alt
     [Tags]    a11y
@@ -401,6 +403,7 @@ describe('Performance', () => {
 ```robot
 *** Settings ***
 Library    SeleniumLibrary
+Variables  ../variables/variables.robot
 *** Test Cases ***
 Page Load Under 4s
     [Tags]    performance
@@ -436,6 +439,7 @@ describe('Responsive', () => {
 ```robot
 *** Settings ***
 Library    SeleniumLibrary
+Variables  ../variables/variables.robot
 *** Test Cases ***
 No Horizontal Overflow Mobile
     [Tags]    responsive
@@ -588,6 +592,7 @@ Page Objects → `cypress/support/pages/<page>.js`.
 *** Settings ***
 Library    SeleniumLibrary
 Resource   ../resources/<page>.resource
+Variables  ../variables/variables.robot
 
 *** Test Cases ***
 <Scenario Name>
@@ -659,6 +664,7 @@ Robot Framework :
 ```robot
 *** Settings ***
 Library    SeleniumLibrary
+Variables  ../variables/variables.robot
 
 *** Test Cases ***
 No SQL Error Leaked — <form_name>
