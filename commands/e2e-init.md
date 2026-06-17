@@ -125,7 +125,7 @@ cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || t
 ```bash
 mkdir -p tests/resources tests/variables
 echo -e "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
-pip install robotframework robotframework-seleniumlibrary
+pip install robotframework robotframework-seleniumlibrary robotframework-requests
 cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
 

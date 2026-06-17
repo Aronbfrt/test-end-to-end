@@ -197,7 +197,7 @@ cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || t
 ```bash
 mkdir -p tests/resources tests/variables
 echo "*** Variables ***\n\${BASE_URL}    http://localhost:3000\n\${BROWSER}    chrome" > tests/variables/variables.robot
-pip install robotframework robotframework-seleniumlibrary
+pip install robotframework robotframework-seleniumlibrary robotframework-requests
 [ -f .env.test ] || printf "TEST_FRAMEWORK=robot\nTEST_BASE_URL=http://localhost:3000\n" > .env.test
 cat ~/.claude/templates/e2e/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 ```
@@ -364,6 +364,27 @@ test('GET /<resource> returns 200', async () => {
   expect(res.status()).toBe(200);
 });
 ```
+
+**Robot Framework (nécessite RequestsLibrary) :**
+```robot
+*** Settings ***
+Library    RequestsLibrary
+Variables  ../variables/variables.robot
+
+*** Test Cases ***
+GET <resource> Returns 200
+    [Tags]    api
+    Create Session    api    ${BASE_URL}
+    ${resp}=    GET On Session    api    /api/<path>
+    Should Be Equal As Numbers    ${resp.status_code}    200
+
+POST Invalid Payload Returns 4xx
+    [Tags]    api
+    Create Session    api    ${BASE_URL}
+    ${resp}=    POST On Session    api    /api/<path>    json=&{EMPTY}    expected_status=any
+    Should Be True    ${resp.status_code} >= 400 and ${resp.status_code} < 500
+```
+Si des tests API Robot sont générés : `pip install robotframework-requests` (pas inclus dans le bootstrap de base).
 
 Ne générer les tests API que si des endpoints REST sont trouvés. Skiper pour les apps purement server-side sans API JSON.
 
@@ -646,7 +667,7 @@ jobs:
 
 **GitHub Actions — robot :**
 ```yaml
-      - run: pip install robotframework robotframework-seleniumlibrary
+      - run: pip install robotframework robotframework-seleniumlibrary robotframework-requests
       - run: robot --outputdir results tests/
       - uses: actions/upload-artifact@v4
         with: { name: robot-results, path: results/ }
