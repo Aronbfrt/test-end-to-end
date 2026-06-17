@@ -8,9 +8,20 @@ End-to-end, zero-manual-work site audit. Discovers everything from the code (nev
 
 This is the **superset** of `/e2e-init` — run this instead when the user wants "everything" rather than a guided manual setup.
 
-## Step 1 — Detect and migrate existing tests, then bootstrap infra
+## Step 1 — Analyse des conventions existantes, migration, bootstrap
 
-### Scan for existing tests first
+### 1a — Lire les conventions du projet avant de toucher quoi que ce soit
+
+Avant toute migration ou génération, lire 3 à 5 fichiers représentatifs du projet (code source, pas les tests) pour détecter :
+
+- **Langue dominante** : nommage des variables/fonctions (camelCase, snake_case, PascalCase)
+- **Style d'assertion existant** : si des tests existent déjà, lire comment ils écrivent les assertions, les setup/teardown, les noms de méthodes
+- **Structure des dossiers** : est-ce que le projet utilise `src/`, `app/`, `lib/`, modules par feature ou par type ?
+- **Patterns de test existants** : Page Object Model ? Helper functions ? Fixtures centralisées ? Data factories ?
+
+**Ces conventions dictent la façon dont les nouveaux tests seront écrits.** Un projet qui nomme tout en camelCase aura des classes `TestUserAuth` (pas `test_user_auth`). Un projet avec des helpers `createTestUser()` aura ses fixtures dans le même style.
+
+### 1b — Scanner les tests existants
 
 ```bash
 find . \( \
@@ -31,65 +42,108 @@ find . \( \
 \) 2>/dev/null | grep -v node_modules | grep -v vendor | grep -v ".git"
 ```
 
-**If existing tests found — migrate them before generating anything new:**
+**Si des tests existants sont trouvés — les migrer avant de générer quoi que ce soit :**
 
-For each test file found, read it and convert its test logic to Python/pytest:
+Lire chaque fichier en entier, comprendre l'intention de chaque test, puis le réécrire en Python/pytest en respectant les règles de conversion ET les conventions lues en 1a.
 
-| Source format | File pattern | Conversion rule |
+| Format source | Pattern fichier | Règle de conversion |
 |---|---|---|
 | Jest / Vitest | `*.test.js/ts` | `describe` → class, `it`/`test` → method, `expect(x).toBe(y)` → `assert x == y` |
 | Cypress | `*.cy.js/ts` | `cy.visit(url)` → `driver.get(url)`, `cy.get(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
 | Playwright | `*.spec.ts` | `page.goto(url)` → `driver.get(url)`, `page.locator(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
-| WebdriverIO | `wdio.conf.*` + spec files | `browser.url(url)` → `driver.get(url)`, `$(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
+| WebdriverIO | `wdio.conf.*` + specs | `browser.url(url)` → `driver.get(url)`, `$(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
 | Robot Framework | `*.robot` / `*.resource` | Each `Test Case` → pytest method, `Open Browser` → `driver.get()`, `Click Element` → `find_element().click()` |
-| Cucumber / Gherkin | `*.feature` | Each `Scenario` → class, each `Given`/`When`/`Then` step → sequential lines in one test method |
+| Cucumber / Gherkin | `*.feature` | Each `Scenario` → class, chaque step `Given`/`When`/`Then` → lignes séquentielles dans la méthode |
 | PHPUnit | `*Test.php` | `testXxx()` → `def test_xxx()`, `$this->assertEquals(a,b)` → `assert a == b` |
 | JUnit / TestNG | `*Test.java` | `@Test void testXxx()` → `def test_xxx()`, `assertEquals(a,b)` → `assert a == b` |
 | NUnit / xUnit / MSTest | `*Test.cs` | `[Test] void TestXxx()` → `def test_xxx()`, `Assert.AreEqual(a,b)` → `assert a == b` |
 | RSpec | `*_spec.rb` | `describe`/`it` → class/method, `expect(x).to eq(y)` → `assert x == y` |
 | Minitest | `*_test.rb` | `def test_xxx` → `def test_xxx`, `assert_equal a, b` → `assert a == b` |
 | Go test | `*_test.go` | `func TestXxx(t *testing.T)` → `def test_xxx()`, `t.Errorf(...)` → `assert False, "..."` |
-| Selenium IDE | `*.side` | JSON → parse `commands` array, `open` → `driver.get()`, `click` → `find_element().click()` |
+| Selenium IDE | `*.side` | JSON → parse `commands`, `open` → `driver.get()`, `click` → `find_element().click()` |
 
-Conversion rules:
-- Place converted file in `tests/<same_domain>/test_<original_name>.py`
-- All CSS/XPath/ID selectors → extracted to `tests/pages/<page_name>.py`, never inline
-- Preserve test intent exactly — only syntax changes, never the assertion logic
-- Mark each converted test: `# converted from <original_file>`
-- Delete the original file after successful conversion
-- If the original uses a config file (cypress.config.*, wdio.conf.*) that becomes unused → delete it too
+**Règles de migration adaptatives (priorité absolue) :**
+- Placer le fichier converti dans `tests/<même_domaine_que_l_original>/test_<nom_original>.py` — miroir de la structure existante, pas une réorganisation forcée
+- Si l'original avait des Page Objects → les conserver dans `tests/pages/` avec le même nommage
+- Si l'original avait des helpers/fixtures → les porter dans `tests/conftest.py` ou `tests/utils/` selon le pattern déjà présent
+- Si l'original utilisait des data factories → recréer le même pattern en Python
+- Préserver l'intention du test exactement — seule la syntaxe change, jamais la logique d'assertion
+- Marquer chaque test converti : `# migrated from <fichier_original>`
+- Supprimer le fichier original après conversion réussie
+- Si le fichier original utilise un config (cypress.config.*, wdio.conf.*) devenu inutile → le supprimer
 
-**If no existing tests found:** proceed directly to bootstrap.
+**Si aucun test existant :** aller directement au bootstrap.
 
-### Bootstrap infra
+### 1c — Bootstrap infra
 
 ```bash
 test -f tests/conftest.py
 ```
-If `tests/` doesn't exist yet: run the full `/e2e-init` copy step (`cp -r ~/.claude/templates/e2e ./tests/`, move `pytest.ini` + `.env.test` to project root, append `gitignore-snippet.txt`, `chmod +x`). Skip re-copying if `tests/` already exists — only add to it.
+Si `tests/` n'existe pas encore : copier le template (`cp -r ~/.claude/templates/e2e ./tests/`, déplacer `pytest.ini` + `.env.test` à la racine, appliquer `gitignore-snippet.txt`, `chmod +x`). Si `tests/` existe déjà → ne rien écraser, compléter seulement.
 
-## Step 2 — Discover everything via static analysis (no live crawling, no guessing)
+## Step 2 — Découverte complète par analyse statique (zéro crawl live, zéro devinette)
 
-Detect the stack first (composer.json → PHP, pom.xml/build.gradle → Java/Spring, package.json with next → Next.js, etc.), then per stack:
+### 2a — Détecter le stack exact
 
-### Routes / pages
-- **PHP vanilla**: grep router/dispatcher file(s) for path → controller mappings (`switch($_SERVER['REQUEST_URI'])`, `$router->get(...)`, front-controller patterns). Also glob `public/*.php` if routing is file-based.
-- **Spring Boot**: grep `@GetMapping`, `@PostMapping`, `@RequestMapping` across `src/main/java/**/controller/**` — extract the path value and HTTP method.
-- **Next.js**: `find app -name page.tsx -o -name page.jsx` (App Router) or `find pages -name "*.tsx"` (Pages Router) — folder/file path IS the route.
-- **Other**: ask the user only if genuinely nothing matches a known convention.
+Lire les fichiers marqueurs dans cet ordre, sans s'arrêter au premier match (un projet peut être Next.js + PHP API) :
 
-Classify each discovered route into: public page, auth page (login/register/logout), admin page, API endpoint.
+| Fichier trouvé | Stack / Framework |
+|---|---|
+| `composer.json` (sans Laravel) | PHP vanilla |
+| `composer.json` + `artisan` | Laravel |
+| `composer.json` + `bin/console` | Symfony |
+| `pom.xml` / `build.gradle` | Java (Spring Boot si `@SpringBootApplication` trouvé) |
+| `package.json` + `"next"` | Next.js (vérifier App Router `app/` vs Pages Router `pages/`) |
+| `package.json` + `"nuxt"` | Nuxt.js |
+| `package.json` + `"@angular/core"` | Angular |
+| `package.json` + `"svelte"` | Svelte / SvelteKit |
+| `package.json` + `"vue"` | Vue.js |
+| `package.json` + `"express"` | Express/Node.js |
+| `manage.py` | Django |
+| `app.py` / `wsgi.py` + `flask` in requirements | Flask |
+| `main.py` + `fastapi` in requirements | FastAPI |
+| `Gemfile` + `rails` | Ruby on Rails |
+| `go.mod` | Go (détecter gin/echo/fiber/chi dans les imports) |
+| `Cargo.toml` | Rust (détecter actix-web/axum) |
+| `mix.exs` | Elixir/Phoenix |
+| `pubspec.yaml` | Flutter/Dart |
 
-### Forms
-Grep templates/views for `<form` blocks, extract `action`/method and every `name=` attribute inside. This gives exact field names for contact forms, registration, checkout — no placeholder guessing.
+Pour chaque stack détecté, appliquer la méthode de découverte de routes correspondante ci-dessous.
 
-### Entities / admin CRUD
-- PHP: look for admin controllers handling create/edit/delete per resource, or DB migrations/schema for table names.
-- Spring: JPA `@Entity` classes + their `Repository`/`Controller` pairs.
-- Next.js: API routes under `app/api/<entity>/route.ts` or Prisma schema models.
+### 2b — Découverte des routes par stack
 
-### Auth
-Find the login route, the field names used (`email`/`username`), the session/cookie mechanism, and one path that requires authentication (for the auth-bypass security check).
+- **PHP vanilla** : grep fichier(s) router/dispatcher pour mappings path → controller (`switch($_SERVER['REQUEST_URI'])`, `$router->get(...)`, patterns front-controller). Glob `public/*.php` si routing file-based.
+- **Laravel** : grep `routes/web.php` + `routes/api.php` pour `Route::get/post/put/delete(...)`. Extraire le path et le controller.
+- **Symfony** : grep annotations `@Route(...)` ou YAML `config/routes.yaml`.
+- **Spring Boot** : grep `@GetMapping`, `@PostMapping`, `@RequestMapping` dans `src/main/java/**/controller/**`.
+- **Next.js App Router** : `find app -name "page.tsx" -o -name "page.jsx"` — le chemin dossier EST la route. Détecter aussi `route.ts` pour les API routes.
+- **Next.js Pages Router** : `find pages -name "*.tsx" -o -name "*.jsx"` (exclure `_app`, `_document`, `api/`).
+- **Django** : grep `urlpatterns` dans tous les `urls.py`. Tracer jusqu'aux views.
+- **Flask** : grep `@app.route(...)` et `@blueprint.route(...)`.
+- **FastAPI** : grep `@app.get/post/put/delete(...)` et les routers.
+- **Rails** : lire `config/routes.rb`, extraire `resources :x`, `get '...'`, `post '...'`.
+- **Express** : grep `router.get/post/put/delete(...)` et `app.get/post(...)`.
+- **Go** : grep les handlers selon le framework (gin: `r.GET(...)`, echo: `e.GET(...)`, chi: `r.Get(...)`).
+- **Nuxt/Vue/Svelte/Angular** : `find src -name "*.vue" -o -name "*.svelte"` / lire le router config pour les routes déclarées.
+
+### 2c — Découverte des formulaires
+
+Grep templates/vues pour blocs `<form`, extraire `action`/method et chaque attribut `name=` à l'intérieur. Donne les noms de champs exacts pour chaque formulaire — zéro placeholder.
+
+Pour les SPA (React/Vue/Svelte/Angular) : grep les composants pour `<form`, `onSubmit`, `handleSubmit`, `v-on:submit`, `(ngSubmit)` — extraire les noms de champs des `useState`/`ref`/`FormControl`.
+
+### 2d — Entités / CRUD admin
+
+- PHP/Laravel/Symfony : controllers admin + migrations DB pour noms de tables
+- Spring : classes `@Entity` JPA + leurs `Repository`/`Controller`
+- Next.js/Node : routes API sous `app/api/<entity>/route.ts` ou modèles Prisma/Drizzle
+- Rails : modèles `app/models/*.rb` + scaffold controllers
+- Django : modèles `models.py` + vues admin
+- Go/Rust : structs avec handlers CRUD
+
+### 2e — Authentification
+
+Trouver la route de login, les noms de champs utilisés (pas d'hypothèse `email`/`password`), le mécanisme de session (cookie, JWT, session PHP, devise, passport, etc.), et un chemin qui nécessite une auth (pour le check security auth-bypass).
 
 ## Step 3 — Generate test files (fully adaptive — zero assumed structure)
 
