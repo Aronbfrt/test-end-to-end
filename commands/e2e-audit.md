@@ -459,6 +459,8 @@ Générer **uniquement** si la feature est trouvée en Step 2. Adapter l'extensi
 | Checkout | `tests/checkout/test_checkout.py` | `tests/checkout/checkout.spec.ts` | `cypress/e2e/checkout/checkout.cy.js` | `tests/checkout/checkout.robot` |
 | Feature custom | `tests/<feat>/test_<feat>.py` | `tests/<feat>/<feat>.spec.ts` | `cypress/e2e/<feat>/<feat>.cy.js` | `tests/<feat>/<feat>.robot` |
 
+Si login trouvé avec un path différent de `/login`, ajouter dans `.env.test` (si clé absente) : `TEST_LOGIN_PATH=<path_découvert>` (ex: `/connexion`, `/signin`, `/auth/login`).
+
 Si admin trouvé, ajouter dans `.env.test` (si clé absente uniquement) : `TEST_ADMIN_DASHBOARD_PATH=<path_découvert>` (lu par `conftest.py` via `os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')`). Pour les autres frameworks : stocker le path admin dans `cypress.config.js` → `env.adminPath` (Cypress), `playwright.config.ts` → `use.adminPath` (Playwright TS), `tests/variables/variables.robot` → `${ADMIN_PATH}` (Robot).
 
 ### Tests API headless (sans navigateur)
@@ -664,7 +666,9 @@ No SQL Error Leaked — <form_name>
     Open Browser    ${BASE_URL}<path>    ${BROWSER}
     Input Text    <input_selector>    ' OR 1=1 --
     Click Element    <submit_selector>
-    Page Should Not Contain    SQL
+    ${html}=    Get Source
+    Should Not Contain    ${html}    sql syntax
+    Should Not Contain    ${html}    mysql_fetch
     Close Browser
 
 XSS Input Reflected Escaped — <form_name>

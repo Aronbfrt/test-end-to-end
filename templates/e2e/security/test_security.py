@@ -13,7 +13,8 @@ from tests.utils.security_checks import (
     check_no_open_redirect, check_no_directory_listing, check_cors_not_permissive,
 )
 
-ADMIN_PATH = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')
+ADMIN_PATH  = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')
+LOGIN_PATH  = os.getenv('TEST_LOGIN_PATH', '/login')
 
 
 @pytest.mark.security
@@ -38,7 +39,7 @@ class TestCookies:
     def test_01_secure_cookie_flags(self, api):
         # check_secure_cookies elle-même ne fait rien si la réponse ne pose aucun cookie —
         # pas un skip à gérer ici, juste un passe-plat vers le check.
-        r = api.get(BASE_URL + '/login')
+        r = api.get(BASE_URL + LOGIN_PATH)
         check_secure_cookies(r)
 
 

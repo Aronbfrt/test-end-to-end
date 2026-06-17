@@ -205,6 +205,7 @@ Générer le fichier adapté au `TEST_FRAMEWORK` choisi au Step 0. Détecter `<s
 ```env
 TEST_BASE_URL=http://localhost:8000
 TEST_ADMIN_DASHBOARD_PATH=           # laisser vide si pas d'admin
+TEST_LOGIN_PATH=/login               # adapter si login sur /connexion, /signin, etc.
 TEST_AUTH_URL_HINTS=login,signin,auth
 TEST_ADMIN_EMAIL=admin@example.com
 TEST_ADMIN_PASS=password
