@@ -12,7 +12,7 @@ TIMEOUT = 25
 # Headless toggle — set in .env.test (TEST_HEADLESS=1/0), or override per run:
 #   TEST_HEADLESS=0 pytest tests/        (visible, debug)
 #   TEST_HEADLESS=1 pytest tests/        (headless, CI/server)
-HEADLESS = os.environ.get('TEST_HEADLESS', '1') == '1'
+HEADLESS = os.environ.get('TEST_HEADLESS', '0') == '1'
 BROWSER  = os.environ.get('TEST_BROWSER', 'chrome')   # chrome | firefox
 
 # Explicit metrics instead of a named deviceName — Chrome's built-in device list (Pixel 5,
