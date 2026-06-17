@@ -13,23 +13,25 @@ Construire une liste normalisée : `METHOD PATH` (ex: `GET /products`, `POST /co
 
 ## Step 2 — Extraire les chemins testés depuis les fichiers existants
 
-Lire tous les fichiers de test et extraire les URLs/paths réellement testés :
+Lire `TEST_FRAMEWORK` dans `.env.test` pour savoir où et quoi chercher :
 
 ```bash
-# Python (selenium/playwright-python)
-grep -r "driver\.get\|url(\|BASE_URL\|\.get(url" tests/ 2>/dev/null
+# selenium / playwright-python → tests/**/*.py
+grep -rE "driver\.get|url\(|\.get\(url|BASE_URL" tests/ 2>/dev/null
 
-# Playwright TS
-grep -r "page\.goto\|baseURL\|\.navigate" tests/ 2>/dev/null
+# playwright-ts → tests/**/*.spec.ts
+grep -rE "page\.goto|baseURL|navigate" tests/ 2>/dev/null
 
-# Cypress
-grep -r "cy\.visit\|baseUrl" cypress/e2e/ 2>/dev/null
+# cypress → cypress/e2e/**/*.cy.js
+grep -rE "cy\.visit|baseUrl" cypress/e2e/ 2>/dev/null
 
-# Robot Framework
-grep -r "Open Browser\|Go To\|Navigate To" tests/ 2>/dev/null
+# robot → tests/**/*.robot
+grep -rE "Open Browser|Go To|Navigate To" tests/ 2>/dev/null
 ```
 
-Normaliser : supprimer trailing slash, query params, `BASE_URL` prefix → garder le path seul.
+Si `TEST_FRAMEWORK` absent de `.env.test` → tenter les 4 greps et merger les résultats.
+
+Normaliser : supprimer trailing slash, query params, `TEST_BASE_URL` prefix → garder le path seul.
 
 ## Step 3 — Cross-reference et rapport
 

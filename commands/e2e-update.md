@@ -8,6 +8,8 @@ Après des changements dans le code (nouvelles routes, formulaires renommés, en
 
 ## Step 1 — Redécouverte complète
 
+Lire `TEST_FRAMEWORK` dans `.env.test` — détermine la syntaxe de skip, le dossier des Page Objects, et le runner final.
+
 Re-lancer la découverte statique (même logique que /e2e-audit Step 2) → état actuel de l'app.
 
 ## Step 2 — Lire l'état actuel des tests
@@ -23,17 +25,50 @@ Construire une map de ce qui est testé :
 
 | Changement détecté | Action |
 |---|---|
-| Nouvelle route sans test | Générer le test dans le bon dossier (comme Step 3 de /e2e-audit) |
-| Nouveau champ dans formulaire existant | Ajouter le sélecteur dans `pages/*.py`, ajouter assertion dans le test existant |
-| Route supprimée | Marquer le test `@pytest.mark.xfail(reason="route supprimée ? à vérifier")` — **jamais supprimer** |
-| Sélecteur CSS/name renommé dans le HTML | Mettre à jour `pages/*.py` uniquement — pas le fichier de test |
-| Nouvelle entité CRUD admin | Créer `tests/admin_<entité>/` comme /e2e-audit Step 3 |
-| Route existante, URL changée | Mettre à jour le path dans le test généré — pas dans les tests manuels |
+| Nouvelle route sans test | Générer le test dans le bon dossier (comme Step 3 de /e2e-audit), format adapté au framework |
+| Nouveau champ dans formulaire existant | Ajouter le sélecteur dans le Page Object, ajouter assertion dans le test existant |
+| Route supprimée | Marquer le test comme skip/xfail (voir syntaxe ci-dessous) — **jamais supprimer** |
+| Sélecteur CSS/name renommé dans le HTML | Mettre à jour le Page Object uniquement — pas le fichier de test |
+| Nouvelle entité CRUD admin | Créer dossier feature comme /e2e-audit Step 3 |
+| Route existante, URL changée | Mettre à jour le path dans les tests générés — jamais dans les tests manuels |
+
+### Syntaxe "route supprimée" par framework
+
+```python
+# selenium / playwright-python
+@pytest.mark.xfail(reason="route supprimée ? à vérifier")
+def test_...(self, user_driver): ...
+```
+```typescript
+// playwright-ts
+test.skip('...', async ({ page }) => { /* route supprimée ? à vérifier */ });
+```
+```javascript
+// cypress
+it.skip('...', () => { /* route supprimée ? à vérifier */ });
+```
+```robot
+# robot
+*** Test Cases ***
+<Test Name>
+    [Tags]    skipped
+    [Documentation]    route supprimée ? à vérifier
+    Skip
+```
+
+### Page Objects par framework
+
+| Framework | Fichier à modifier | Jamais modifier |
+|---|---|---|
+| selenium / playwright-python | `tests/pages/*.py` | fichier de test |
+| playwright-ts | `tests/pages/*.ts` (ou `lib/pages/`) | `*.spec.ts` |
+| cypress | `cypress/support/pages/*.js` | `*.cy.js` |
+| robot | `tests/resources/*.resource` | `*.robot` |
 
 **Règles absolues :**
 - Jamais supprimer un test — même si la route n'existe plus
-- Jamais modifier le corps d'un test marqué comme manuel (sans `# migrated from` ni `# converted from`)
-- Modifier les Page Objects (`pages/*.py`) en premier — les tests s'adaptent automatiquement
+- Jamais modifier le corps d'un test sans marqueur `# migrated from` / `# converted from` (= manuel)
+- Modifier les Page Objects en premier — les tests s'adaptent automatiquement
 
 ## Step 4 — Rapport de synchronisation
 
@@ -62,8 +97,11 @@ Construire une map de ce qui est testé :
 Après le sync, lancer uniquement les tests modifiés/ajoutés pour valider :
 
 ```bash
-# selenium/playwright-python
+# selenium / playwright-python
 pytest --headed tests/<nouveaux_dossiers>/ --tb=short
+
+# playwright-ts
+npx playwright test tests/<nouveaux>/ --headed
 
 # cypress
 npx cypress run --spec "cypress/e2e/<nouveaux>/**" --headed
