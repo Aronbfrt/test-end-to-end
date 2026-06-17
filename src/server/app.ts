@@ -152,98 +152,134 @@ export function generateReport(summary: RunSummary, outputPath: string): string 
   const failed  = summary.runs.filter((r) => r.verdict === 'FAIL').length;
   const skipped = summary.runs.filter((r) => r.verdict === 'SKIP').length;
   const routes  = [...new Set(summary.runs.map((r) => r.route))];
+  const coveragePct = Math.round((passed / Math.max(total, 1)) * 100);
+  const ciRing  = `conic-gradient(${color} ${ci * 3.6}deg, #1e293b ${ci * 3.6}deg)`;
+  const genDate = new Date().toLocaleString('fr-FR');
 
-  // ── Derive persona stats from testName keywords ─────────────────────────────
-  const personaDefs = [
-    { key: 'frustrated', label: '😤 Frustrated', color: '#818cf8', keywords: ['frustrated', 'rage', 'abandon'] },
-    { key: 'attacker',   label: '💀 Attacker',   color: '#f472b6', keywords: ['attacker', 'xss', 'sqli', 'injection', 'traversal'] },
-    { key: 'chaos',      label: '🌐 Chaos',       color: '#fbbf24', keywords: ['chaos', 'offline', 'throttle', 'double'] },
+  // ── Persona definitions ─────────────────────────────────────────────────────
+  const PERSONAS = [
+    { key: 'frustrated', label: 'Frustrated User', emoji: '😤', color: '#818cf8',
+      desc: 'Rage-clicks, abandon de panier, formulaires répétés.',
+      keywords: ['frustrated', 'rage', 'abandon'] },
+    { key: 'attacker',   label: 'Malicious Attacker', emoji: '💀', color: '#f472b6',
+      desc: 'XSS, SQLi, path traversal, CSRF, injection.',
+      keywords: ['attacker', 'xss', 'sqli', 'injection', 'traversal', 'malicious'] },
+    { key: 'chaos',      label: 'Chaos Network', emoji: '🌐', color: '#fbbf24',
+      desc: 'Déconnexion mid-paiement, double-submit, offline.',
+      keywords: ['chaos', 'offline', 'throttle', 'double'] },
+    { key: 'impulsive',  label: 'Impulsive Buyer', emoji: '🛒', color: '#34d399',
+      desc: 'Achat rapide, mobile, session courte.',
+      keywords: ['impulsive', 'buyer', 'quick', 'mobile'] },
   ];
 
-  const personaCards = personaDefs.map((p) => {
+  // ── Build persona data ──────────────────────────────────────────────────────
+  const personaData = PERSONAS.map((p) => {
     const pr = summary.runs.filter((r) => p.keywords.some((k) => r.testName.toLowerCase().includes(k)));
-    if (pr.length === 0) return '';
     const pp = pr.filter((r) => r.verdict === 'PASS').length;
     const pf = pr.filter((r) => r.verdict === 'FAIL').length;
-    return `<div class="persona-card">
-      <div class="persona-name" style="color:${p.color}">${p.label}</div>
-      <div class="persona-stats">
-        <div class="pstat"><span class="pstat-val c-pass">${pp}</span><span class="pstat-lbl">Pass</span></div>
-        <div class="pstat"><span class="pstat-val c-fail">${pf}</span><span class="pstat-lbl">Fail</span></div>
-        <div class="pstat"><span class="pstat-val" style="color:#475569">${pr.length}</span><span class="pstat-lbl">Total</span></div>
-      </div>
-    </div>`;
-  }).filter(Boolean).join('');
-
-  // ── Hotspots: from summary or derived from run fail rates ────────────────────
-  const hotspotRows = (summary.hotspots ?? []).slice(0, 5).map((h, i) => {
-    const maxRisk = (summary.hotspots?.[0]?.risk ?? 1);
-    const pct     = Math.round((h.risk / maxRisk) * 100);
-    const rColor  = pct > 75 ? '#f87171' : pct > 45 ? '#fbbf24' : '#94a3b8';
-    const file    = h.file.split('/').slice(-2).join('/');
-    return `<div class="hotspot-row">
-      <span class="hotspot-rank">${i + 1}</span>
-      <span class="hotspot-file" title="${escHtml(h.file)}">${escHtml(file)}</span>
-      <div class="hotspot-bar"><div class="hotspot-fill" style="width:${pct}%;background:${rColor}"></div></div>
-      <span class="hotspot-risk" style="color:${rColor}">${h.risk}</span>
-    </div>`;
-  }).join('');
-
-  // ── Triage cards for failed routes ──────────────────────────────────────────
-  const failedRoutes = routes.filter((r) => summary.runs.some((run) => run.route === r && run.verdict === 'FAIL'));
-  const triageCards  = failedRoutes.map((route) => {
-    const failRun = summary.runs.find((r) => r.route === route && r.verdict === 'FAIL');
-    const traceId = failRun?.traceId ?? '';
-    return `<div class="triage-card">
-      <div class="triage-header">
-        <span class="triage-route">${escHtml(route)}</span>
-        ${traceId ? `<button class="btn-patch" data-trace="${escHtml(traceId)}">👻 Auto-Patch</button>` : ''}
-      </div>
-      <div class="triage-body">
-        <div class="triage-row">
-          <span class="triage-lbl">Verdict</span>
-          <span class="triage-val" style="color:#f472b6">SELECTOR_DRIFT</span>
-        </div>
-        <div class="triage-row">
-          <span class="triage-lbl">SHIELD</span>
-          <span class="triage-val c-pass">Absorbé — bruit cosmétique</span>
-        </div>
-        <div class="triage-row">
-          <span class="triage-lbl">Test</span>
-          <span class="triage-val" style="color:var(--muted)">${escHtml(failRun?.testName ?? '—')}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // ── Route rows ───────────────────────────────────────────────────────────────
-  const routeRows = routes.map((route) => {
-    const runs    = summary.runs.filter((r) => r.route === route);
-    const hasFail = runs.some((r) => r.verdict === 'FAIL');
-    const allPass = runs.every((r) => r.verdict === 'PASS');
-    const status  = hasFail ? 'fail' : allPass ? 'pass' : 'warn';
-    const label   = hasFail ? 'FAIL' : allPass ? 'PASS' : 'WARN';
-    const avgMs   = Math.round(runs.reduce((a, r) => a + r.durationMs, 0) / runs.length);
-    return `<div class="route-row ${status}">
-      <div class="route-dot dot-${status}"></div>
-      <span class="route-path">${escHtml(route)}</span>
-      <span class="route-duration">${avgMs}ms</span>
-      <span class="route-badge badge-${status}">${label}</span>
-      <span class="route-count">${runs.length} test${runs.length !== 1 ? 's' : ''}</span>
-    </div>`;
-  }).join('');
-
-  // ── Test table ───────────────────────────────────────────────────────────────
-  const tableRows = summary.runs.map((r) => `
-    <tr>
-      <td><span class="verdict-pill pill-${r.verdict.toLowerCase()}">${r.verdict}</span></td>
+    const pRate = pr.length > 0 ? Math.round((pp / pr.length) * 100) : 0;
+    const testRows = pr.map((r) => `<tr>
+      <td><span class="vpill vp-${r.verdict.toLowerCase()}">${r.verdict}</span></td>
       <td class="mono">${escHtml(r.route)}</td>
       <td>${escHtml(r.testName)}</td>
       <td class="dim">${r.durationMs}ms</td>
     </tr>`).join('');
+    return { ...p, pr, pp, pf, pRate, testRows };
+  });
 
-  const ciRing = `conic-gradient(${color} ${ci * 3.6}deg, #1e293b ${ci * 3.6}deg)`;
-  const coveragePct = Math.round((passed / Math.max(total, 1)) * 100);
+  // ── Hotspot rows ────────────────────────────────────────────────────────────
+  const hotspots = summary.hotspots ?? [];
+  const hotspotRowsHtml = hotspots.slice(0, 8).map((h, i) => {
+    const maxRisk = hotspots[0]?.risk ?? 1;
+    const pct     = Math.round((h.risk / maxRisk) * 100);
+    const rColor  = pct > 75 ? '#f87171' : pct > 45 ? '#fbbf24' : '#94a3b8';
+    const file    = h.file.split('/').slice(-2).join('/');
+    return `<tr>
+      <td style="color:var(--muted);font-size:10px;width:24px">${i + 1}</td>
+      <td class="mono" title="${escHtml(h.file)}">${escHtml(file)}</td>
+      <td>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;width:80px">
+          <div style="height:100%;width:${pct}%;background:${rColor};border-radius:2px"></div>
+        </div>
+      </td>
+      <td style="color:${rColor};font-weight:700;font-size:11px;text-align:right">${h.risk}</td>
+      <td style="color:var(--muted);font-size:10px;text-align:right">${h.churn} commits</td>
+    </tr>`;
+  }).join('');
+
+  // ── Route rows (expandable) ─────────────────────────────────────────────────
+  const routeRowsHtml = routes.map((route, idx) => {
+    const runs    = summary.runs.filter((r) => r.route === route);
+    const hasFail = runs.some((r) => r.verdict === 'FAIL');
+    const allPass = runs.every((r) => r.verdict === 'PASS');
+    const st      = hasFail ? 'fail' : allPass ? 'pass' : 'warn';
+    const label   = hasFail ? 'FAIL' : allPass ? 'PASS' : 'WARN';
+    const avgMs   = Math.round(runs.reduce((a, r) => a + r.durationMs, 0) / runs.length);
+    const failRun = runs.find((r) => r.verdict === 'FAIL');
+    const innerRows = runs.map((r) => `<tr>
+      <td><span class="vpill vp-${r.verdict.toLowerCase()}">${r.verdict}</span></td>
+      <td>${escHtml(r.testName)}</td>
+      <td class="dim">${r.durationMs}ms</td>
+      ${failRun?.traceId ? '<td></td>' : ''}
+    </tr>`).join('');
+    return `<div class="route-item" data-idx="${idx}" data-st="${st}">
+      <div class="route-row" onclick="toggleRoute(${idx})">
+        <div class="rdot rdot-${st}"></div>
+        <span class="route-path">${escHtml(route)}</span>
+        <span class="route-avg dim">${avgMs}ms</span>
+        <span class="rbadge rb-${st}">${label}</span>
+        <span class="route-cnt">${runs.length} test${runs.length !== 1 ? 's' : ''}</span>
+        <span class="route-chev" id="chev-${idx}">▸</span>
+      </div>
+      <div class="route-detail" id="detail-${idx}" style="display:none">
+        <table>
+          <thead><tr><th>Verdict</th><th>Test</th><th>Durée</th>${failRun?.traceId ? '<th></th>' : ''}</tr></thead>
+          <tbody>${innerRows}</tbody>
+        </table>
+        ${failRun?.traceId ? `<div style="padding:8px 14px 10px">
+          <button class="btn-patch" data-trace="${escHtml(failRun.traceId)}">👻 Auto-Patch via Ghostwriter</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Triage cards ────────────────────────────────────────────────────────────
+  const failedRoutes = routes.filter((r) => summary.runs.some((run) => run.route === r && run.verdict === 'FAIL'));
+  const triageHtml   = failedRoutes.length === 0
+    ? '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">✅ Aucun échec — rien à triager</div>'
+    : failedRoutes.map((route) => {
+        const failRuns = summary.runs.filter((r) => r.route === route && r.verdict === 'FAIL');
+        const failRun  = failRuns[0];
+        const traceId  = failRun?.traceId ?? '';
+        const isSecFail = failRun?.testName.toLowerCase().includes('attacker') || failRun?.testName.toLowerCase().includes('xss') || failRun?.testName.toLowerCase().includes('sqli');
+        const verdictType = isSecFail ? 'SECURITY_BREACH' : 'SELECTOR_DRIFT';
+        const verdictColor = isSecFail ? '#f87171' : '#f472b6';
+        const shieldMsg = isSecFail ? 'Non absorbé — intervention requise' : 'Absorbé — bruit cosmétique probable';
+        const shieldColor = isSecFail ? '#f87171' : '#4ade80';
+        return `<div class="triage-card">
+          <div class="triage-hd">
+            <div>
+              <div class="triage-route">${escHtml(route)}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">${failRuns.length} test${failRuns.length > 1 ? 's' : ''} en échec</div>
+            </div>
+            ${traceId ? `<button class="btn-patch" data-trace="${escHtml(traceId)}">👻 Auto-Patch</button>` : ''}
+          </div>
+          <div class="triage-rows">
+            <div class="tr-row"><span class="tr-lbl">Verdict</span><span class="tr-val" style="color:${verdictColor};font-weight:600">${verdictType}</span></div>
+            <div class="tr-row"><span class="tr-lbl">SHIELD</span><span class="tr-val" style="color:${shieldColor}">${shieldMsg}</span></div>
+            <div class="tr-row"><span class="tr-lbl">Test</span><span class="tr-val dim">${escHtml(failRun?.testName ?? '—')}</span></div>
+            ${traceId ? `<div class="tr-row"><span class="tr-lbl">Trace ID</span><span class="tr-val mono" style="font-size:10px">${escHtml(traceId)}</span></div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+  // ── All tests table ─────────────────────────────────────────────────────────
+  const allTestsHtml = summary.runs.map((r) => `<tr>
+    <td><span class="vpill vp-${r.verdict.toLowerCase()}">${r.verdict}</span></td>
+    <td class="mono">${escHtml(r.route)}</td>
+    <td>${escHtml(r.testName)}</td>
+    <td class="dim">${r.durationMs}ms</td>
+  </tr>`).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -261,178 +297,217 @@ html,body{height:100dvh;overflow:hidden}
   --pass:#4ade80;--fail:#f87171;--warn:#fbbf24;
   --accent:#6366f1;--accent2:#06b6d4;
 }
-body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);
-  display:flex;flex-direction:column}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
 
 /* ── Topbar ── */
-.topbar{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  padding:0 24px;height:44px;display:flex;align-items:center;gap:10px;flex-shrink:0
-}
-.brand{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px;margin-right:4px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;
+  height:48px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.brand{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px}
 .brand em{color:var(--accent);font-style:normal}
-.pill{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.4px;white-space:nowrap}
-.p-mcp{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3}
-.p-ollama{background:#052e16;color:#4ade80;border:1px solid #166534}
-.p-done{background:#042f2e;color:#2dd4bf;border:1px solid #0f766e}
-.p-run{background:#1c1917;color:#fbbf24;border:1px solid #92400e}
-.topbar-date{margin-left:auto;font-size:10px;color:var(--muted)}
+.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.4px;white-space:nowrap}
+.b-mcp{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3}
+.b-ollama{background:#052e16;color:#4ade80;border:1px solid #166534}
+.b-done{background:#042f2e;color:#2dd4bf;border:1px solid #0f766e}
+.b-run{background:#1c1917;color:#fbbf24;border:1px solid #92400e}
 
-/* ── Layout ── */
-.layout{flex:1;min-height:0;display:grid;grid-template-columns:1fr 290px}
-.main{overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;
-  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-.sidebar{min-height:0;background:var(--surface);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden}
-
-/* ── Hero ── */
-.hero{
-  background:var(--surface);border:1px solid var(--border);border-radius:10px;
-  padding:16px 20px;display:flex;align-items:center;gap:20px;flex-shrink:0
+/* ── Tab nav ── */
+.nav{display:flex;align-items:center;gap:2px;margin-left:16px}
+.nav-btn{
+  padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;
+  color:var(--muted);border:none;background:transparent;cursor:pointer;
+  transition:all .15s;white-space:nowrap
 }
-.ci-ring{width:72px;height:72px;border-radius:50%;flex-shrink:0;
+.nav-btn:hover{color:var(--text);background:#1f2e47}
+.nav-btn.active{color:#fff;background:var(--accent)}
+.nav-badge{
+  display:inline-block;margin-left:5px;padding:1px 5px;border-radius:10px;
+  font-size:9px;font-weight:700;
+}
+.nb-fail{background:#2d0e0e;color:var(--fail)}
+.nb-pass{background:#0a2d14;color:var(--pass)}
+.nb-warn{background:#1e293b;color:var(--muted)}
+
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ws-ind{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.ws-dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.ws-dot.live{background:var(--pass);box-shadow:0 0 4px var(--pass)}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+.ws-dot.blink{animation:bl 2s infinite}
+.topbar-date{font-size:10px;color:var(--muted)}
+
+/* ── Tab pages ── */
+.pages{flex:1;min-height:0;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:20px 24px;
+  display:none;flex-direction:column;gap:16px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.page.active{display:flex}
+
+/* ── Cards / panels ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-head{padding:11px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-title{font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
+.card-meta{font-size:10px;color:var(--muted)}
+
+/* ── Overview hero ── */
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:20px 24px;display:flex;align-items:center;gap:24px}
+.ci-ring{width:80px;height:80px;border-radius:50%;flex-shrink:0;
   background:${ciRing};display:flex;align-items:center;justify-content:center}
-.ci-inner{width:56px;height:56px;border-radius:50%;background:var(--bg);
+.ci-inner{width:62px;height:62px;border-radius:50%;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ci-num{font-size:20px;font-weight:800;color:${color};line-height:1}
-.ci-sub{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:1px}
-.hero-metrics{display:flex;gap:16px;flex:1;flex-wrap:wrap;align-items:center}
-.hm{display:flex;flex-direction:column;gap:1px;min-width:40px}
-.hm-val{font-size:20px;font-weight:700;line-height:1}
-.hm-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ci-num{font-size:22px;font-weight:800;color:${color};line-height:1}
+.ci-sub{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.metrics{display:flex;gap:20px;flex:1;flex-wrap:wrap;align-items:center}
+.m{display:flex;flex-direction:column;gap:2px}
+.m-val{font-size:22px;font-weight:700;line-height:1}
+.m-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .c-pass{color:var(--pass)}.c-fail{color:var(--fail)}.c-warn{color:var(--warn)}
 .c-blue{color:#60a5fa}.c-purple{color:#a78bfa}
-.hero-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
-.cov-label{font-size:10px;color:var(--muted);margin-bottom:3px;text-align:right}
-.cov-track{height:6px;width:130px;background:var(--border);border-radius:3px;overflow:hidden}
-.cov-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px}
-.cov-pct{font-size:10px;color:var(--subtle);text-align:right}
+.hero-cov{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.cov-lbl{font-size:10px;color:var(--muted)}
+.cov-bar{height:6px;width:120px;background:var(--border);border-radius:3px;overflow:hidden}
+.cov-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;width:${coveragePct}%}
+.cov-pct{font-size:12px;font-weight:600;color:var(--subtle)}
 
-/* ── Generic section ── */
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.panel-head{padding:10px 14px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;gap:8px}
-.panel-title{font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
-.panel-meta{font-size:10px;color:var(--muted)}
+/* ── 2-col grid for overview ── */
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.ov-grid{grid-template-columns:1fr}}
 
 /* ── Route rows ── */
+.route-item{border-bottom:1px solid var(--border)}
+.route-item:last-child{border-bottom:none}
 .route-row{
-  display:grid;grid-template-columns:8px 1fr 46px 44px 52px;
-  gap:10px;align-items:center;padding:9px 14px;
-  border-bottom:1px solid var(--border);transition:background .12s;cursor:default
+  display:grid;grid-template-columns:8px 1fr 52px 46px 52px 16px;
+  gap:10px;align-items:center;padding:10px 16px;
+  cursor:pointer;transition:background .12s;user-select:none
 }
-.route-row:last-child{border-bottom:none}
 .route-row:hover{background:#1f2e47}
-.route-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dot-pass{background:var(--pass);box-shadow:0 0 5px #4ade8044}
-.dot-fail{background:var(--fail);box-shadow:0 0 5px #f8717144}
-.dot-warn{background:var(--warn);box-shadow:0 0 5px #fbbf2444}
-.route-path{font-family:'SF Mono','Fira Code',monospace;font-size:11.5px;
+.rdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rdot-pass{background:var(--pass);box-shadow:0 0 5px #4ade8040}
+.rdot-fail{background:var(--fail);box-shadow:0 0 5px #f8717140}
+.rdot-warn{background:var(--warn);box-shadow:0 0 5px #fbbf2440}
+.route-path{font-family:'SF Mono','Fira Code',monospace;font-size:12px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.route-duration{font-size:10px;color:var(--muted);text-align:right}
-.r-badge{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;text-align:center}
-.rb-pass{background:#0a2d14;color:var(--pass)}.rb-fail{background:#2d0e0e;color:var(--fail)}
+.route-avg{font-size:10px;text-align:right}
+.rbadge{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;text-align:center}
+.rb-pass{background:#0a2d14;color:var(--pass)}
+.rb-fail{background:#2d0e0e;color:var(--fail)}
 .rb-warn{background:#2d1f00;color:var(--warn)}
-.route-count{font-size:10px;color:var(--muted);text-align:right}
+.route-cnt{font-size:10px;color:var(--muted);text-align:right}
+.route-chev{font-size:10px;color:var(--muted);transition:transform .2s}
+.route-chev.open{transform:rotate(90deg)}
+.route-detail{background:var(--bg);border-top:1px solid var(--border)}
+.route-detail table{width:100%}
 
-/* ── Persona cards ── */
-.personas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
-.persona-card{padding:12px 14px;border-right:1px solid var(--border)}
-.persona-card:last-child{border-right:none}
-.persona-name{font-size:11px;font-weight:600;margin-bottom:8px}
-.persona-stats{display:flex;gap:12px}
-.pstat{display:flex;flex-direction:column;gap:1px}
-.pstat-val{font-size:18px;font-weight:700;line-height:1}
-.pstat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-
-/* ── Hotspot rows ── */
-.hotspot-row{display:grid;grid-template-columns:18px 1fr 70px 32px;
-  gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border)}
-.hotspot-row:last-child{border-bottom:none}
-.hotspot-rank{font-size:10px;color:var(--muted);font-weight:700;text-align:center}
-.hotspot-file{font-family:'SF Mono','Fira Code',monospace;font-size:10.5px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hotspot-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.hotspot-fill{height:100%;border-radius:2px}
-.hotspot-risk{font-size:11px;font-weight:700;text-align:right}
-
-/* ── Triage cards ── */
-.triage-card{border-bottom:1px solid var(--border);padding:12px 14px}
-.triage-card:last-child{border-bottom:none}
-.triage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.triage-route{font-family:'SF Mono','Fira Code',monospace;font-size:12px;font-weight:600;color:var(--text)}
-.triage-body{display:flex;flex-direction:column;gap:4px}
-.triage-row{display:flex;gap:8px;align-items:baseline}
-.triage-lbl{font-size:10px;color:var(--muted);width:52px;flex-shrink:0}
-.triage-val{font-size:11px}
-.btn-patch{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;
-  padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer}
-.btn-patch:hover{opacity:.85}
-.btn-patch.loading{opacity:.5;cursor:not-allowed}
-
-/* ── Test table (accordion) ── */
-details summary{padding:10px 14px;cursor:pointer;font-size:10px;font-weight:600;
-  color:var(--subtle);text-transform:uppercase;letter-spacing:.8px;
-  list-style:none;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid transparent}
-details[open] summary{border-bottom-color:var(--border)}
-details summary::after{content:'▸';color:var(--muted)}
-details[open] summary::after{content:'▾'}
+/* ── Tables ── */
 table{width:100%;border-collapse:collapse}
 th{padding:7px 14px;text-align:left;font-size:9px;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:1px solid var(--border)}
-td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:11.5px}
+td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#1f2e47}
+tr:hover td{background:#1a2a40}
 .vpill{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px}
-.vp-pass{background:#0a2d14;color:var(--pass)}.vp-fail{background:#2d0e0e;color:var(--fail)}
+.vp-pass{background:#0a2d14;color:var(--pass)}
+.vp-fail{background:#2d0e0e;color:var(--fail)}
 .vp-skip{background:#1e293b;color:var(--muted)}
 .mono{font-family:'SF Mono','Fira Code',monospace;font-size:11px}
 .dim{color:var(--muted)}
 
-/* ── Sidebar ── */
-.sb-section{display:flex;flex-direction:column;overflow:hidden}
-.sb-section.grow{flex:1;min-height:0}
-.sb-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;
-  align-items:center;justify-content:space-between;flex-shrink:0}
-.sb-title{font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
-.ws-ind{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
-.ws-dot{width:6px;height:6px;border-radius:50%;background:var(--pass);box-shadow:0 0 4px var(--pass)}
-.ws-dot.off{background:var(--muted);box-shadow:none}
-@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
-.ws-dot.live{animation:bl 2s infinite}
-.log-body{flex:1;min-height:0;overflow-y:auto;padding:4px 0;
-  font-family:'SF Mono','Fira Code',monospace;font-size:10px;
+/* ── Persona cards ── */
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.persona-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.persona-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.persona-emoji{font-size:20px}
+.persona-info{flex:1}
+.persona-name{font-size:13px;font-weight:600;color:#fff}
+.persona-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.persona-stats{display:flex;padding:12px 16px;gap:20px;background:var(--bg)}
+.pstat{display:flex;flex-direction:column;gap:2px}
+.pstat-val{font-size:20px;font-weight:700;line-height:1}
+.pstat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.persona-rate{margin-left:auto;display:flex;align-items:center;gap:6px}
+.persona-rate-bar{height:4px;width:60px;background:var(--border);border-radius:2px;overflow:hidden}
+.persona-rate-fill{height:100%;border-radius:2px}
+.persona-empty{padding:16px;color:var(--muted);font-size:12px;font-style:italic}
+
+/* ── Triage ── */
+.triage-card{padding:16px;border-bottom:1px solid var(--border)}
+.triage-card:last-child{border-bottom:none}
+.triage-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:12px}
+.triage-route{font-family:'SF Mono','Fira Code',monospace;font-size:13px;font-weight:600;color:#fff}
+.triage-rows{display:flex;flex-direction:column;gap:5px}
+.tr-row{display:flex;gap:10px;align-items:baseline}
+.tr-lbl{font-size:10px;color:var(--muted);width:60px;flex-shrink:0}
+.tr-val{font-size:12px}
+
+/* ── Auto-Patch btn ── */
+.btn-patch{
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;
+  padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;
+  white-space:nowrap;flex-shrink:0
+}
+.btn-patch:hover{opacity:.85}
+.btn-patch.loading{opacity:.5;cursor:not-allowed}
+.btn-patch.success{background:linear-gradient(135deg,#059669,#10b981)}
+.btn-patch.error-st{background:linear-gradient(135deg,#991b1b,#dc2626)}
+
+/* ── Logs page ── */
+.log-page{flex:1;min-height:0;font-family:'SF Mono','Fira Code',monospace;font-size:11px;
+  padding:12px 16px;overflow-y:auto;
   scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-.le{padding:2px 12px;line-height:1.6;display:flex;gap:6px;align-items:baseline}
-.le-ts{color:#3d5068;flex-shrink:0;font-size:9px}
-.le-ag{font-weight:700;flex-shrink:0;font-size:9.5px}
+.le{display:flex;gap:8px;align-items:baseline;padding:2px 0;line-height:1.7}
+.le-ts{color:#3d5068;flex-shrink:0;font-size:10px}
+.le-ag{font-weight:700;flex-shrink:0;font-size:10px}
 .ag-o{color:#60a5fa}.ag-s{color:#818cf8}.ag-a{color:#a78bfa}
 .ag-c{color:#f472b6}.ag-g{color:#34d399}.ag-e{color:#fbbf24}
-.le-msg{color:var(--subtle)}
+.le-msg{color:var(--subtle);word-break:break-word}
+.log-empty{color:var(--muted);text-align:center;padding-top:40px;font-size:12px}
 
 /* ── Footer ── */
 footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
-  padding:8px 20px;font-size:10px;color:var(--muted);
+  padding:7px 20px;font-size:10px;color:var(--muted);
   display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
 <body>
 
+<!-- ══ Topbar ══ -->
 <div class="topbar">
   <span class="brand">test-end-to-end <em>V-Infinite</em></span>
-  <span class="pill p-mcp">MCP</span>
-  <span class="pill p-ollama" id="o-pill">⬤ Ollama</span>
-  <span class="pill p-done" id="s-pill">DONE</span>
-  <span class="topbar-date" id="run-meta">Généré le ${new Date().toLocaleString('fr-FR')}</span>
+  <span class="badge b-mcp">MCP</span>
+  <span class="badge b-ollama">⬤ Ollama</span>
+  <span class="badge b-done" id="s-pill">DONE</span>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showTab('overview')" id="tab-overview">Vue d'ensemble</button>
+    <button class="nav-btn" onclick="showTab('routes')" id="tab-routes">
+      Routes <span class="nav-badge ${failed > 0 ? 'nb-fail' : 'nb-pass'}">${routes.length}</span>
+    </button>
+    <button class="nav-btn" onclick="showTab('personas')" id="tab-personas">Personas</button>
+    <button class="nav-btn" onclick="showTab('triage')" id="tab-triage">
+      Triage ${failedRoutes.length > 0 ? `<span class="nav-badge nb-fail">${failedRoutes.length}</span>` : ''}
+    </button>
+    <button class="nav-btn" onclick="showTab('logs')" id="tab-logs">
+      Logs <span class="nav-badge nb-warn" id="log-count">0</span>
+    </button>
+  </nav>
+
+  <div class="topbar-right">
+    <div class="ws-ind">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-status">—</span>
+    </div>
+    <span class="topbar-date">${genDate}</span>
+  </div>
 </div>
 
-<div class="layout">
+<!-- ══ Pages ══ -->
+<div class="pages">
 
-  <!-- ── Main ── -->
-  <div class="main">
+  <!-- ── Vue d'ensemble ── -->
+  <div class="page active" id="page-overview">
 
-    <!-- Hero -->
     <div class="hero">
       <div class="ci-ring">
         <div class="ci-inner">
@@ -440,86 +515,144 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
           <span class="ci-sub">IC / 100</span>
         </div>
       </div>
-      <div class="hero-metrics">
-        <div class="hm"><span class="hm-val c-pass">${passed}</span><span class="hm-lbl">Passés</span></div>
-        <div class="hm"><span class="hm-val c-fail">${failed}</span><span class="hm-lbl">Échoués</span></div>
-        <div class="hm"><span class="hm-val c-warn">${skipped}</span><span class="hm-lbl">Ignorés</span></div>
-        <div class="hm"><span class="hm-val c-blue" id="c-val">${summary.cachedFiles}</span><span class="hm-lbl">Cache</span></div>
-        <div class="hm"><span class="hm-val c-purple" id="t-val">${summary.tokensSaved.toLocaleString()}</span><span class="hm-lbl">Tokens écon.</span></div>
+      <div class="metrics">
+        <div class="m"><span class="m-val c-pass">${passed}</span><span class="m-lbl">Passés</span></div>
+        <div class="m"><span class="m-val c-fail">${failed}</span><span class="m-lbl">Échoués</span></div>
+        <div class="m"><span class="m-val c-warn">${skipped}</span><span class="m-lbl">Ignorés</span></div>
+        <div class="m"><span class="m-val c-blue" id="c-val">${summary.cachedFiles}</span><span class="m-lbl">Cache hits</span></div>
+        <div class="m"><span class="m-val c-purple" id="t-val">${summary.tokensSaved.toLocaleString()}</span><span class="m-lbl">Tokens écon.</span></div>
       </div>
-      <div class="hero-right">
-        <div class="cov-label">Couverture</div>
-        <div class="cov-track"><div class="cov-fill" style="width:${coveragePct}%"></div></div>
-        <div class="cov-pct">${coveragePct}%</div>
+      <div class="hero-cov">
+        <span class="cov-lbl">Couverture</span>
+        <div class="cov-bar"><div class="cov-fill"></div></div>
+        <span class="cov-pct">${coveragePct}%</span>
       </div>
     </div>
 
-    <!-- Route Impact Map -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title">Route Impact Map</span>
-        <span class="panel-meta">${routes.length} routes · ${total} tests</span>
+    <div class="ov-grid">
+
+      <!-- Résumé routes -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Routes — Aperçu rapide</span>
+          <span class="card-meta">${routes.length} routes</span>
+        </div>
+        ${routes.slice(0, 8).map((route) => {
+          const runs = summary.runs.filter((r) => r.route === route);
+          const hasFail = runs.some((r) => r.verdict === 'FAIL');
+          const allPass = runs.every((r) => r.verdict === 'PASS');
+          const st = hasFail ? 'fail' : allPass ? 'pass' : 'warn';
+          const label = hasFail ? 'FAIL' : allPass ? 'PASS' : 'WARN';
+          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
+            <div class="rdot rdot-${st}"></div>
+            <span class="route-path" style="flex:1">${escHtml(route)}</span>
+            <span class="rbadge rb-${st}">${label}</span>
+          </div>`;
+        }).join('')}
+        ${routes.length > 8 ? `<div style="padding:8px 16px;font-size:11px;color:var(--muted);text-align:center">
+          +${routes.length - 8} routes — <button class="nav-btn" onclick="showTab('routes')" style="display:inline;padding:0;font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer">voir tout</button>
+        </div>` : ''}
       </div>
-      ${routeRows}
+
+      <!-- Hotspots Git -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">🧬 Hotspots Git</span>
+          <span class="card-meta">${hotspots.length > 0 ? `top ${Math.min(hotspots.length, 8)} fichiers risqués` : 'mode --predictive requis'}</span>
+        </div>
+        ${hotspots.length > 0
+          ? `<table><thead><tr><th>#</th><th>Fichier</th><th>Risque</th><th>Score</th><th>Commits</th></tr></thead><tbody>${hotspotRowsHtml}</tbody></table>`
+          : '<div style="padding:24px 16px;color:var(--muted);font-size:12px">Lance <code style="background:#0f172a;border:1px solid var(--border);padding:1px 5px;border-radius:3px;font-size:11px">audit --predictive</code> pour activer l\'analyse Git forensics.</div>'
+        }
+      </div>
+
     </div>
 
-    ${personaCards ? `<!-- Shadow Personas -->
-    <div class="panel">
-      <div class="panel-head"><span class="panel-title">Shadow Personas</span></div>
-      <div class="personas-grid">${personaCards}</div>
-    </div>` : ''}
-
-    ${triageCards ? `<!-- Coroner Triage -->
-    <div class="panel" style="border-color:#3b2060">
-      <div class="panel-head" style="background:#1a0f2e;border-color:#3b2060">
-        <span class="panel-title" style="color:#a78bfa">Triage Coroner</span>
-        <span class="panel-meta">${failedRoutes.length} route${failedRoutes.length !== 1 ? 's' : ''} en échec</span>
+    <!-- Toujours visible: tous les tests -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Tous les tests</span>
+        <span class="card-meta">${total} tests · ${passed} passés · ${failed} échoués</span>
       </div>
-      ${triageCards}
-    </div>` : ''}
-
-    <!-- Tests détaillés (accordéon) -->
-    <div class="panel">
-      <details>
-        <summary>Tous les tests <span style="color:var(--muted);font-weight:400;font-size:10px">(${total})</span></summary>
-        <table>
-          <thead><tr><th>Résultat</th><th>Route</th><th>Test</th><th>Durée</th></tr></thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-      </details>
+      <table>
+        <thead><tr><th>Verdict</th><th>Route</th><th>Test</th><th>Durée</th></tr></thead>
+        <tbody>${allTestsHtml}</tbody>
+      </table>
     </div>
 
   </div>
 
-  <!-- ── Sidebar ── -->
-  <div class="sidebar">
-
-    <!-- Log en direct -->
-    <div class="sb-section grow">
-      <div class="sb-head">
-        <span class="sb-title">Log en direct</span>
-        <div class="ws-ind">
-          <div class="ws-dot off" id="ws-dot"></div>
-          <span id="ws-status">—</span>
-        </div>
+  <!-- ── Routes ── -->
+  <div class="page" id="page-routes">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Route Impact Map</span>
+        <span class="card-meta">${routes.length} routes · ${total} tests — cliquer pour détailler</span>
       </div>
-      <div class="log-body" id="ws-log">
-        <div class="le" style="padding-top:10px;justify-content:center">
-          <span style="color:var(--muted);font-size:10px">En attente du WebSocket…</span>
+      ${routeRowsHtml}
+    </div>
+  </div>
+
+  <!-- ── Personas ── -->
+  <div class="page" id="page-personas">
+    <div class="persona-grid">
+      ${personaData.map((p) => `<div class="persona-card">
+        <div class="persona-hd">
+          <span class="persona-emoji">${p.emoji}</span>
+          <div class="persona-info">
+            <div class="persona-name" style="color:${p.color}">${p.label}</div>
+            <div class="persona-desc">${p.desc}</div>
+          </div>
         </div>
+        <div class="persona-stats">
+          <div class="pstat"><span class="pstat-val c-pass">${p.pp}</span><span class="pstat-lbl">Pass</span></div>
+          <div class="pstat"><span class="pstat-val c-fail">${p.pf}</span><span class="pstat-lbl">Fail</span></div>
+          <div class="pstat"><span class="pstat-val dim">${p.pr.length}</span><span class="pstat-lbl">Total</span></div>
+          <div class="persona-rate">
+            <div class="persona-rate-bar">
+              <div class="persona-rate-fill" style="width:${p.pRate}%;background:${p.color}"></div>
+            </div>
+            <span style="font-size:11px;color:${p.color};font-weight:600">${p.pRate}%</span>
+          </div>
+        </div>
+        ${p.pr.length > 0
+          ? `<div style="border-top:1px solid var(--border)">
+              <table><thead><tr><th>Verdict</th><th>Route</th><th>Test</th><th>Durée</th></tr></thead>
+              <tbody>${p.testRows}</tbody></table>
+            </div>`
+          : `<div class="persona-empty">Aucun test de ce profil détecté.<br>Utilise <code style="font-size:10px">--level=3</code> ou nomme tes tests avec "${p.key}".</div>`
+        }
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- ── Triage ── -->
+  <div class="page" id="page-triage">
+    <div class="card" style="${failedRoutes.length > 0 ? 'border-color:#3b2060' : ''}">
+      <div class="card-head" style="${failedRoutes.length > 0 ? 'background:#1a0f2e;border-color:#3b2060' : ''}">
+        <span class="card-title" style="${failedRoutes.length > 0 ? 'color:#a78bfa' : ''}">Triage Coroner</span>
+        <span class="card-meta">${failedRoutes.length > 0 ? `${failedRoutes.length} route${failedRoutes.length > 1 ? 's' : ''} analysée${failedRoutes.length > 1 ? 's' : ''}` : 'Aucun échec'}</span>
+      </div>
+      ${triageHtml}
+    </div>
+  </div>
+
+  <!-- ── Logs ── -->
+  <div class="page" id="page-logs" style="padding:0">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;
+      display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px">Log en direct</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="ws-ind"><div class="ws-dot" id="ws-dot2"></div><span id="ws-status2">—</span></div>
+        <button onclick="document.getElementById('log-area').innerHTML='<div class=log-empty>Log vidé.</div>';logCount=0;document.getElementById(\'log-count\').textContent=\'0\'"
+          style="font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;cursor:pointer">Vider</button>
       </div>
     </div>
-
-    ${hotspotRows ? `<!-- Hotspots Git -->
-    <div class="sb-section" style="border-top:1px solid var(--border);flex-shrink:0">
-      <div class="sb-head">
-        <span class="sb-title">🧬 Hotspots Git</span>
-        <span style="font-size:9px;color:var(--muted)">top ${Math.min((summary.hotspots ?? []).length, 5)} risqués</span>
-      </div>
-      ${hotspotRows}
-    </div>` : ''}
-
+    <div class="log-page" id="log-area">
+      <div class="log-empty">En attente de connexion WebSocket…</div>
+    </div>
   </div>
+
 </div>
 
 <footer>
@@ -529,59 +662,108 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <script>
 (function(){
-  const log  = document.getElementById('ws-log');
-  const dot  = document.getElementById('ws-dot');
-  const stat = document.getElementById('ws-status');
-  const spl  = document.getElementById('s-pill');
-  const proto= location.protocol==='https:'?'wss:':'ws:';
-  const AC   = {orch:'ag-o',scout:'ag-s',artisan:'ag-a',coroner:'ag-c',ghost:'ag-g',ghostwriter:'ag-g',evolver:'ag-e'};
+  // ── Tab routing ──────────────────────────────────────────────────────────
+  var tabs = ['overview','routes','personas','triage','logs'];
+  window.showTab = function(id){
+    tabs.forEach(function(t){
+      var p = document.getElementById('page-'+t);
+      var b = document.getElementById('tab-'+t);
+      if(p) p.classList.toggle('active', t===id);
+      if(b) b.classList.toggle('active', t===id);
+    });
+    location.hash = id === 'overview' ? '' : id;
+  };
+  var h = location.hash.replace('#','');
+  if(h && tabs.includes(h)) showTab(h);
 
-  function addLine(ts,ag,msg){
-    const r=document.createElement('div');r.className='le';
-    const t=document.createElement('span');t.className='le-ts';
-    t.textContent=new Date(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const a=document.createElement('span');
-    const k=Object.keys(AC).find(k=>ag&&ag.includes(k));
-    a.className='le-ag '+(k?AC[k]:'ag-o');
-    a.textContent=ag?'['+ag+']':'[—]';
-    const m=document.createElement('span');m.className='le-msg';m.textContent=msg;
-    r.append(t,a,m);
-    if(log.children.length===1&&log.children[0].style.justifyContent)log.innerHTML='';
-    log.appendChild(r);log.scrollTop=log.scrollHeight;
+  // ── Route expand/collapse ────────────────────────────────────────────────
+  window.toggleRoute = function(idx){
+    var d = document.getElementById('detail-'+idx);
+    var c = document.getElementById('chev-'+idx);
+    if(!d) return;
+    var open = d.style.display === 'none';
+    d.style.display = open ? 'block' : 'none';
+    if(c) c.classList.toggle('open', open);
+  };
+
+  // ── WebSocket ────────────────────────────────────────────────────────────
+  var proto = location.protocol==='https:'?'wss:':'ws:';
+  var AC    = {orch:'ag-o',scout:'ag-s',artisan:'ag-a',coroner:'ag-c',ghost:'ag-g',ghostwriter:'ag-g',evolver:'ag-e'};
+  var spl   = document.getElementById('s-pill');
+  var logEl = document.getElementById('log-area');
+  window.logCount = 0;
+
+  function syncDots(live){
+    ['ws-dot','ws-dot2'].forEach(function(id){
+      var d = document.getElementById(id);
+      if(d){ d.className = 'ws-dot'+(live?' live blink':''); }
+    });
+    ['ws-status','ws-status2'].forEach(function(id){
+      var s = document.getElementById(id);
+      if(s) s.textContent = live ? 'Connecté' : 'Déconnecté';
+    });
+  }
+
+  function addLog(ts, ag, msg){
+    if(logEl.querySelector('.log-empty')) logEl.innerHTML = '';
+    var r = document.createElement('div'); r.className = 'le';
+    var t = document.createElement('span'); t.className = 'le-ts';
+    t.textContent = new Date(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var a = document.createElement('span');
+    var k = Object.keys(AC).find(function(k){ return ag && ag.includes(k); });
+    a.className = 'le-ag '+(k?AC[k]:'ag-o');
+    a.textContent = ag?'['+ag+']':'[—]';
+    var m = document.createElement('span'); m.className = 'le-msg'; m.textContent = msg;
+    r.append(t,a,m); logEl.appendChild(r); logEl.scrollTop = logEl.scrollHeight;
+    window.logCount++;
+    document.getElementById('log-count').textContent = window.logCount;
   }
 
   function parseLine(raw){
-    const m=raw.match(/\\[(\\w+)[\\s\\d:]+\\]\\s?(?:\\[([\\w-]+)\\]\\s)?(.+)/);
-    if(m)return{ag:m[2]||'orch',msg:m[3]};
-    return{ag:'orch',msg:raw};
+    var m = raw.match(/\\[(\\w+)[\\s\\d:]+\\]\\s?(?:\\[([\\w-]+)\\]\\s)?(.+)/);
+    if(m) return {ag:m[2]||'orch',msg:m[3]};
+    return {ag:'orch',msg:raw};
   }
 
   function connect(){
-    try{
-      const ws=new WebSocket(proto+'//'+location.host+'/ws');
-      ws.onopen=()=>{dot.className='ws-dot live';stat.textContent='Connecté';};
-      ws.onclose=()=>{dot.className='ws-dot off';stat.textContent='Déconnecté';};
-      ws.onmessage=(e)=>{
-        const ev=JSON.parse(e.data);
-        if(ev.type==='LOG'){const p=parseLine(String(ev.payload));addLine(ev.ts,p.ag,p.msg);}
-        if(ev.type==='STATE'){spl.textContent=ev.payload;spl.className='pill '+(ev.payload==='DONE'?'p-done':'p-run');}
-        if(ev.type==='METRIC'){const{key,value}=ev.payload;
-          if(key==='cachedFiles')document.getElementById('c-val').textContent=value;
-          if(key==='tokensSaved')document.getElementById('t-val').textContent=value;}
-        if(ev.type==='REPORT_READY')location.reload();
+    try {
+      var ws = new WebSocket(proto+'//'+location.host+'/ws');
+      ws.onopen  = function(){ syncDots(true); };
+      ws.onclose = function(){ syncDots(false); setTimeout(connect, 3000); };
+      ws.onmessage = function(e){
+        var ev = JSON.parse(e.data);
+        if(ev.type==='LOG'){ var p=parseLine(String(ev.payload)); addLog(ev.ts,p.ag,p.msg); }
+        if(ev.type==='STATE'){ spl.textContent=ev.payload; spl.className='badge '+(ev.payload==='DONE'?'b-done':'b-run'); }
+        if(ev.type==='METRIC'){
+          var k=ev.payload.key, v=ev.payload.value;
+          if(k==='cachedFiles'){ var el=document.getElementById('c-val'); if(el)el.textContent=v; }
+          if(k==='tokensSaved'){ var el=document.getElementById('t-val'); if(el)el.textContent=v; }
+        }
+        if(ev.type==='REPORT_READY') location.reload();
       };
-    }catch(_){dot.className='ws-dot off';stat.textContent='Mode statique';}
+    } catch(_){ syncDots(false); }
   }
   connect();
 
+  // ── Auto-Patch buttons ───────────────────────────────────────────────────
   document.querySelectorAll('.btn-patch').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      if(btn.classList.contains('loading'))return;
-      btn.classList.add('loading');btn.textContent='En cours…';
-      fetch('/api/repair',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({traceId:btn.dataset.trace})})
-      .then(()=>{btn.textContent='Queued ✓';addLine(Date.now(),'ghost','Réparation démarrée — '+btn.dataset.trace);})
-      .catch(()=>{btn.textContent='Erreur';btn.classList.remove('loading');});
+    btn.addEventListener('click', function(){
+      if(btn.classList.contains('loading')) return;
+      btn.classList.add('loading'); btn.textContent = '⏳ En cours…';
+      fetch('/api/repair',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({traceId:btn.dataset.trace})
+      })
+      .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(d.error||'Erreur serveur'); }); })
+      .then(function(){
+        btn.classList.remove('loading'); btn.classList.add('success'); btn.textContent='✓ Queued';
+        addLog(Date.now(),'ghost','Réparation déclenchée — traceId: '+btn.dataset.trace);
+      })
+      .catch(function(e){
+        btn.classList.remove('loading'); btn.classList.add('error-st');
+        btn.textContent='✗ '+e.message.slice(0,30);
+        setTimeout(function(){ btn.classList.remove('error-st'); btn.textContent='👻 Auto-Patch'; }, 4000);
+      });
     });
   });
 })();
