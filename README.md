@@ -65,14 +65,22 @@ pytest tests/seo/       # un dossier
 
 ## Migration automatique des tests existants
 
-Tu as déjà des tests en Jest, Cypress, Playwright ou PHPUnit ? `/e2e-audit` les détecte et les convertit automatiquement en Python/pytest avant de générer quoi que ce soit :
+Tu as déjà des tests ? `/e2e-audit` les détecte et les convertit automatiquement en Python/pytest avant de générer quoi que ce soit :
 
 | Format source | Converti en |
 |---|---|
-| Jest / Vitest (`.test.js/ts`) | `class TestX` + `assert` Python |
-| Cypress (`.cy.js/ts`) | `driver.get()` + `find_element()` Selenium |
-| Playwright (`.spec.ts`) | `driver.get()` + `find_element()` Selenium |
-| PHPUnit (`*Test.php`) | `def test_xxx()` pytest |
+| Jest / Vitest | `class TestX` + `assert` Python |
+| Cypress | `driver.get()` + `find_element()` Selenium |
+| Playwright | `driver.get()` + `find_element()` Selenium |
+| WebdriverIO | `driver.get()` + `find_element()` Selenium |
+| **Robot Framework** (`.robot`) | `def test_xxx()` pytest + Selenium |
+| **Cucumber / Gherkin** (`.feature`) | Chaque `Scenario` → classe pytest |
+| PHPUnit | `def test_xxx()` pytest |
+| JUnit / TestNG (Java) | `def test_xxx()` pytest |
+| NUnit / xUnit / MSTest (C#) | `def test_xxx()` pytest |
+| RSpec / Minitest (Ruby) | `def test_xxx()` pytest |
+| Go test (`*_test.go`) | `def test_xxx()` pytest |
+| Selenium IDE (`.side`) | `driver.get()` + `find_element()` Selenium |
 
 - Les sélecteurs CSS/XPath sont extraits dans `tests/pages/*.py` (jamais en dur dans le test)
 - L'intention du test est préservée exactement — seule la syntaxe change

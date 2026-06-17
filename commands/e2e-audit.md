@@ -13,31 +13,51 @@ This is the **superset** of `/e2e-init` — run this instead when the user wants
 ### Scan for existing tests first
 
 ```bash
-find . -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
-       -o -name "*.test.jsx" -o -name "*.spec.jsx" -o -name "*.test.tsx" -o -name "*.spec.tsx" \
-       -o -name "*Test.php" -o -name "*Spec.php" \
-       -o -name "cypress.config.*" -o -name "playwright.config.*" \
-       -o -name "jest.config.*" \
-       2>/dev/null | grep -v node_modules | grep -v vendor
+find . \( \
+  -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
+  -o -name "*.test.jsx" -o -name "*.spec.jsx" -o -name "*.test.tsx" -o -name "*.spec.tsx" \
+  -o -name "*.cy.js" -o -name "*.cy.ts" \
+  -o -name "*Test.php" -o -name "*Spec.php" \
+  -o -name "*.robot" -o -name "*.resource" \
+  -o -name "*.feature" \
+  -o -name "*_test.go" \
+  -o -name "*_spec.rb" -o -name "*_test.rb" \
+  -o -name "*Test.java" -o -name "*Tests.java" \
+  -o -name "*Test.cs" -o -name "*Tests.cs" \
+  -o -name "*.side" \
+  -o -name "cypress.config.*" -o -name "playwright.config.*" \
+  -o -name "jest.config.*" -o -name "vitest.config.*" \
+  -o -name "wdio.conf.*" \
+\) 2>/dev/null | grep -v node_modules | grep -v vendor | grep -v ".git"
 ```
 
 **If existing tests found — migrate them before generating anything new:**
 
-For each test file found, read it and convert its test logic to Python/pytest following these rules:
+For each test file found, read it and convert its test logic to Python/pytest:
 
-| Source format | Conversion rule |
-|---|---|
-| Jest / Vitest (`.test.js/ts`) | Each `describe` → class, each `it`/`test` → method, `expect(x).toBe(y)` → `assert x == y` |
-| Cypress (`.cy.js/ts`) | `cy.visit(url)` → `driver.get(url)`, `cy.get(sel)` → `driver.find_element(By.CSS_SELECTOR, sel)`, `cy.contains(txt)` → assert text in page source |
-| Playwright (`.spec.ts`) | `page.goto(url)` → `driver.get(url)`, `page.locator(sel)` → `driver.find_element(By.CSS_SELECTOR, sel)` |
-| PHPUnit (`*Test.php`) | Each `testXxx` method → pytest method, `$this->assertEquals(a, b)` → `assert a == b` |
+| Source format | File pattern | Conversion rule |
+|---|---|---|
+| Jest / Vitest | `*.test.js/ts` | `describe` → class, `it`/`test` → method, `expect(x).toBe(y)` → `assert x == y` |
+| Cypress | `*.cy.js/ts` | `cy.visit(url)` → `driver.get(url)`, `cy.get(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
+| Playwright | `*.spec.ts` | `page.goto(url)` → `driver.get(url)`, `page.locator(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
+| WebdriverIO | `wdio.conf.*` + spec files | `browser.url(url)` → `driver.get(url)`, `$(sel)` → `find_element(By.CSS_SELECTOR, sel)` |
+| Robot Framework | `*.robot` / `*.resource` | Each `Test Case` → pytest method, `Open Browser` → `driver.get()`, `Click Element` → `find_element().click()` |
+| Cucumber / Gherkin | `*.feature` | Each `Scenario` → class, each `Given`/`When`/`Then` step → sequential lines in one test method |
+| PHPUnit | `*Test.php` | `testXxx()` → `def test_xxx()`, `$this->assertEquals(a,b)` → `assert a == b` |
+| JUnit / TestNG | `*Test.java` | `@Test void testXxx()` → `def test_xxx()`, `assertEquals(a,b)` → `assert a == b` |
+| NUnit / xUnit / MSTest | `*Test.cs` | `[Test] void TestXxx()` → `def test_xxx()`, `Assert.AreEqual(a,b)` → `assert a == b` |
+| RSpec | `*_spec.rb` | `describe`/`it` → class/method, `expect(x).to eq(y)` → `assert x == y` |
+| Minitest | `*_test.rb` | `def test_xxx` → `def test_xxx`, `assert_equal a, b` → `assert a == b` |
+| Go test | `*_test.go` | `func TestXxx(t *testing.T)` → `def test_xxx()`, `t.Errorf(...)` → `assert False, "..."` |
+| Selenium IDE | `*.side` | JSON → parse `commands` array, `open` → `driver.get()`, `click` → `find_element().click()` |
 
 Conversion rules:
 - Place converted file in `tests/<same_domain>/test_<original_name>.py`
-- Selectors: move all CSS/XPath selectors to `tests/pages/<page_name>.py` — never inline in the test
-- Preserve test intent exactly — don't change what's being asserted, only the syntax
-- Mark each converted test with a comment: `# converted from <original_file>`
-- Delete the original non-Python test file after conversion (or note it if in a separate unrelated test runner config)
+- All CSS/XPath/ID selectors → extracted to `tests/pages/<page_name>.py`, never inline
+- Preserve test intent exactly — only syntax changes, never the assertion logic
+- Mark each converted test: `# converted from <original_file>`
+- Delete the original file after successful conversion
+- If the original uses a config file (cypress.config.*, wdio.conf.*) that becomes unused → delete it too
 
 **If no existing tests found:** proceed directly to bootstrap.
 
