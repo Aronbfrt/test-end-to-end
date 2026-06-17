@@ -1,7 +1,7 @@
 {
   "name": "test-end-to-end",
-  "description": "La révolution des tests end-to-end. Générateur de tests E2E zéro effort manuel, pour n'importe quelle stack. /e2e-init pour setup guidé, /e2e-audit pour audit automatique complet (basique + SEO + sécurité + a11y + performance + responsive), découvert depuis le code par analyse statique. Idempotent au re-run.",
-  "version": "1.0.0",
+  "description": "Autonomous QA ecosystem & MCP server. Zero-prompt E2E test generation, crash triage with AI Vision, self-healing selectors, autonomous bug PRs. Supports Selenium, Playwright, Cypress, Robot Framework + V-Infinite TypeScript MCP engine.",
+  "version": "2.0.0",
   "author": {
     "name": "Aron Beaufort"
   },

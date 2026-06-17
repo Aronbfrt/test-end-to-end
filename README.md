@@ -1,168 +1,278 @@
-<p align="center"><img src="docs/assets/logo.png" alt="Test End-to-End" width="640"></p>
+<p align="center"><img src="docs/assets/report-screenshot.png" alt="test-end-to-end" width="720"></p>
 
-<p align="center"><b>C'est la révolution des tests end-to-end.</b></p>
+<h1 align="center">test-end-to-end — V-Infinite</h1>
 
-<p align="center">Générateur de tests E2E zéro effort manuel — Selenium · Playwright · Cypress · Robot Framework, n'importe quel langage backend, tout découvert depuis le code lui-même.</p>
+<p align="center"><b>Autonomous QA ecosystem &amp; MCP server for Claude Code.</b></p>
 
-<p align="center"><img src="docs/assets/demo.gif" alt="Démo terminal" width="560"></p>
+<p align="center">
+Zero human prompt required. Analyses your codebase, generates E2E tests,<br>
+triages crashes, heals broken selectors via AI vision, opens PRs with surgical fixes.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=flat-square&logo=typescript&logoColor=white">
+  <img src="https://img.shields.io/badge/MCP-native-5046e4?style=flat-square">
+  <img src="https://img.shields.io/badge/Ollama-Zero--Token%20Bypass-green?style=flat-square">
+  <img src="https://img.shields.io/badge/Claude-claude--sonnet--4--6%20Vision-orange?style=flat-square">
+</p>
 
 ---
 
-## Le problème que ça résout
+## Architecture
 
-Écrire une suite de tests end-to-end correcte prend des jours : trouver toutes les routes, écrire les sélecteurs, gérer l'auth, penser au SEO, à la sécurité, à l'accessibilité, au responsive — et la maintenir à jour à chaque changement de code. La plupart des projets n'en ont juste pas, ou une poignée de tests qui datent d'il y a six mois.
+```
+src/
+├── index.ts           CLI (--level, --chaos, --predictive) + MCP server (6 tools)
+├── orchestrator.ts    State machine · Ollama Zero-Token Bypass · agent dispatch
+├── utils/
+│   ├── cache.ts       SHA-256 fingerprint registry — crash-safe atomic writes
+│   ├── compressor.ts  Byte-State 3-pass DOM compressor (95% token reduction)
+│   └── logDigest.ts   Crash log → triptyque (assertion + DOM + console)
+├── agents/
+│   ├── scout.ts       AST mapping · doc alignment · Git forensics hotspots
+│   ├── artisan.ts     POM test generator · Shadow Personas · Chaos injection
+│   ├── coroner.ts     Triage (5xx vs selector drift) · Vision QA · SHIELD pixel-diff
+│   ├── ghostwriter.ts Bug patch · e2e-patch/* branch · autonomous PR
+│   └── evolver.ts     Meta-programming self-improvement · evolution-log.jsonl
+└── server/
+    └── app.ts         Express dashboard · WebSocket stream · CI/CD report.html
 
-`test-end-to-end` lit le code du projet et génère une suite qui s'adapte à ce qui existe réellement — pas un template générique imposé. Un projet Laravel reçoit des tests Laravel. Un projet Next.js reçoit des tests Next.js. Un projet sans admin ne reçoit pas de dossier `tests/admin/` vide.
+commands/              Claude Code slash commands (Python/Selenium legacy stack)
+templates/
+├── e2e/               Python · Selenium · Playwright · Cypress · Robot Framework
+├── playwright/        playwright.config.ts blueprint
+└── cypress/           cypress.config.ts blueprint
+```
 
-## Comment ça marche
+---
 
-1. **Lecture des conventions** — avant de générer quoi que ce soit, lit 3–5 fichiers sources pour détecter le style du projet (naming, patterns de test existants, structure des dossiers).
-2. **Découverte** — analyse statique (pas de crawl live) sur 14+ stacks : PHP vanilla · Laravel · Symfony · Spring Boot · Next.js · Nuxt · Vue · Svelte · Angular · Django · Flask · FastAPI · Rails · Go · Rust · Elixir. Extrait les vraies routes, les vrais champs de formulaire, les vraies entités.
-3. **Migration** — si des tests existent déjà (Jest, Cypress, Playwright, Robot, PHPUnit, RSpec, JUnit, Gherkin…), les convertit dans le format du framework choisi en préservant l'intention, le style, et les patterns (Page Objects, helpers, fixtures) de la personne.
-4. **Génération adaptative** — crée uniquement les dossiers qui correspondent aux features trouvées. Pas d'`auth/` sans login. Pas d'`admin/` sans back-office. Pas de `checkout/` sans paiement.
-5. **Exécution + auto-fix** — lance le runner du framework choisi en visible (`pytest --headed` / `npx playwright test --headed` / `npx cypress run --headed` / `robot`), analyse chaque échec, corrige et relance en boucle jusqu'à 3 rounds. Ce qui reste rouge après 3 rounds = vrai bug dans l'app.
-6. **Rapport** — dashboard custom : groupes par domaine, screenshot/replay GIF sur les échecs, badge sécu 🔒, colonnes visuel/stabilité/sélecteur.
-7. **Idempotent** — relancer `/e2e-audit` ajoute les nouvelles routes sans écraser les tests existants.
+## Slash commands (Python/Selenium legacy stack)
 
-## Pour qui
+| Command | Description |
+|---|---|
+| `/e2e-init` | Guided setup — framework choice, env vars, bootstrap |
+| `/e2e-audit` | Full audit: basic + SEO + security + a11y + perf + responsive |
+| `/e2e-coverage` | Route/form/API coverage map with % and gaps |
+| `/e2e-update` | Smart sync after code changes — protects manual tests |
 
-Quiconque utilise Claude Code sur un projet web (peu importe le langage backend) et veut une vraie couverture E2E sans y passer une semaine : développeur solo, petite équipe sans QA dédiée, ou juste pour avoir un garde-fou avant chaque déploiement.
+---
+
+## CLI / MCP (TypeScript V-Infinite stack)
+
+```bash
+npm install && npm run build
+
+node dist/index.js <command> [flags]
+```
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `init` | Stack detection · cache seed · POM scaffold |
+| `audit` | Full audit + triage + ghostwriter (level 2+) |
+| `shadow` | Zero-Prompt Reverse Testing + all 3 Shadow Personas |
+| `diff` | Scope to `git diff` only · optional `--predictive` hotspot overlay |
+| `repair` | Load coroner triage → ghostwriter → PR |
+
+### Flags
+
+| Flag | Effect |
+|---|---|
+| `--level=1` | Local AST only — no LLM |
+| `--level=2` | Hybrid: Vision QA on selector failure *(default)* |
+| `--level=3` | Meta-Agent Infinite: Personas + Ghostwriter + Evolver |
+| `--chaos` | Network faults + double-click + i18n permutations |
+| `--predictive` | 12-month Git forensics → Psychological Code Hotspots |
+| `--reset-cache` | Wipe `.e2e-cache.json`, force full rescan |
+| `--mcp` | Start as MCP stdio server for nested agent orchestration |
+
+### MCP tools (Claude agents / nested orchestration)
+
+```
+e2e_init · e2e_audit · e2e_shadow · e2e_diff · e2e_repair · e2e_diagnostics
+```
+
+```jsonc
+// .mcp.json
+{
+  "mcpServers": {
+    "e2e": {
+      "command": "node",
+      "args": ["dist/index.js", "--mcp"],
+      "cwd": "/absolute/path/to/test-end-to-end"
+    }
+  }
+}
+```
+
+---
+
+## Zero-Token Bypass
+
+Ollama detected on host → AST/string tasks route locally (0 Anthropic tokens).  
+File hash unchanged since last run → agent never invoked.
+
+```
+Run 1 (cold):  73 files → 73 stale  (0  bypassed)
+Run 2 (warm):  73 files → 0  stale  (73 bypassed)  ← 100% cache hit
+```
+
+---
+
+## Shadow Personas (`--chaos` / `--level=3`)
+
+| Persona | Behaviour |
+|---|---|
+| `frustrated_user` | Rage-click ×3, form abandonment, back-nav mid-flow |
+| `impulsive_buyer` | Skips required fields, forces checkout |
+| `malicious_attacker` | XSS (6 payloads) · SQLi (5) · path traversal · prompt injection if AI route detected |
+| `chaos_network` | Offline mid-form · 200ms/req throttle · double-submit idempotency check |
+
+---
+
+## SHIELD — Pixel-Diff Anti-False-Alert
+
+Failure screenshot vs baseline: pure-JS PNG decoder → per-pixel Euclidean distance in RGBA.
+
+| Parameter | Value | Purpose |
+|---|---|---|
+| Tolerance | 32 / 255 per channel | Absorbs ClearType, font hinting, OS anti-aliasing |
+| Threshold | 1% of pixels | Minimum difference before alert fires |
+| Below threshold | `SHIELD ABSORBED` | No alert — cosmetic noise |
+| Above threshold | Vision QA activated | Claude claude-sonnet-4-6 multimodal identifies new selector |
+
+---
+
+## Confidence Index
+
+Embedded in `report.html` and PR comments:
+
+```
+CI = passRate    × 60
+   + cacheBonus  × 10   (unchanged files / total)
+   + tokenBonus  × 10   (tokens saved / total)
+   + coverage    × 20   (passed / total)
+   − secFails    × 5    (failed attacker-persona tests)
+   → clamped 0–100
+```
+
+---
+
+## Git Forensics Hotspots (`--predictive`)
+
+12 months of `git log` analysed. Commit stress scored:
+
+| Pattern | Score |
+|---|---|
+| `fix`, `hotfix`, `urgent`, `critical` | +3 |
+| `wip`, `temp`, `hack`, `dirty` | +2 |
+| Expletives (`crap`, `wtf`, `ugh` …) | +3 |
+| `revert`, `rollback`, `broke` | +2 |
+| Late-night commit (23h–04h) | +2 |
+
+`riskScore = churn × 1.0 + stress × 1.5` — top 20 files get denser coverage.
+
+---
+
+## Autonomous repair pipeline
+
+```
+Test failure
+    │
+    ▼
+Coroner triage
+    ├─ HTTP 5xx       → BACKEND_BUG
+    │                     Ghostwriter: localise handler → Claude Patch[]
+    │                     git checkout -b e2e-patch/<ts>-<route>
+    │                     apply · verify · gh pr create
+    │
+    └─ HTTP 200
+        ├─ selector found  → ASSERTION_BUG (fix test logic)
+        └─ selector missing
+            ├─ SHIELD: no visual diff → SELECTOR_DRIFT
+            │          Vision QA → resilient CSS selector → POM updated
+            └─ visual diff > 5%      → LAYOUT_CHANGE → escalate
+```
+
+---
+
+## Self-evolution (Evolver)
+
+On repeated failure (guard: max 3× per agent per 24h):
+
+1. Reads failing agent TypeScript source
+2. Claude analyses root cause → `improvements[]` (exact `oldCode` match required)
+3. Applies surgical patch to `/src`
+4. Commits `refactor(evolver): self-patch <agent>`
+5. Appends to `.e2e-work/evolution-log.jsonl`
+
+After 3 failures in 24h → escalates to human, stops self-patching.
 
 ---
 
 ## Installation
 
-**Étape 1** — ajouter la marketplace (attendre la confirmation avant de continuer) :
-
-```
-/plugin marketplace add https://github.com/Aronbfrt/test-end-to-end
-```
-
-**Étape 2** — installer le plugin :
-
-```
-/plugin install test-end-to-end@test-end-to-end
-```
-
-> **Note :** la forme courte `Aronbfrt/test-end-to-end` utilise SSH et échoue sans clé GitHub configurée. L'URL HTTPS complète fonctionne sans configuration supplémentaire.
-
-## Commandes
-
-| Commande | Action |
-|---|---|
-| `/e2e-init` | Setup guidé — onboarding framework, bootstrap adaptatif, routes/forms remplis étape par étape |
-| `/e2e-audit` | Audit automatique complet — onboarding framework, découverte statique 14+ stacks, génère tests + API headless + sécurité + SEO + a11y + perf + responsive, lance, corrige en boucle, génère CI/CD. Idempotent. |
-| `/e2e-coverage` | Carte de couverture — quelles routes ont des tests, lesquelles n'en ont pas. % global + formulaires sans test sécurité. |
-| `/e2e-update` | Sync tests après changements code — ajoute tests pour nouvelles routes, flag xfail les routes supprimées, met à jour les sélecteurs. Jamais de suppression. |
-
-Déclencheurs langage naturel : "teste-moi le site", "audit le site", "test complet" → `/e2e-audit` · "couverture des tests" → `/e2e-coverage` · "mettre à jour les tests" → `/e2e-update`.
-
-## Lancer les tests
-
-Selon le framework choisi au premier setup (`TEST_FRAMEWORK` dans `.env.test`) :
+### Python/Selenium stack (legacy commands)
 
 ```bash
-# Selenium + pytest / Playwright Python
-pytest                         # headless
-pytest --headed                # Chrome visible
-pytest --headed -x             # stop au premier échec
-pytest -m smoke                # tests critiques seulement
-pytest tests/seo/              # un dossier
+cp -r templates/e2e/ tests/
+pip install pytest selenium pytest-html requests
+# Robot Framework only:
+pip install robotframework robotframework-seleniumlibrary robotframework-requests
+# Playwright Python:
+pip install playwright && playwright install chromium
+# Playwright TS / Cypress:
+npm install --save-dev @playwright/test   # or cypress
 
-# Playwright TypeScript
-npx playwright test            # headless
-npx playwright test --headed   # visible
-npx playwright test --ui       # interface graphique
-
-# Cypress
-npx cypress run                # headless
-npx cypress open               # interface graphique interactive
-
-# Robot Framework
-robot tests/                   # headless
-robot --variable BROWSER:chrome tests/   # Chrome visible
+cp tests/.env.test.example tests/.env.test
+# Edit TEST_BASE_URL, TEST_USERNAME, TEST_PASSWORD, TEST_LOGIN_PATH …
 ```
 
-## Migration automatique des tests existants
+### TypeScript V-Infinite stack
 
-Tu as déjà des tests ? `/e2e-audit` les détecte et les convertit automatiquement dans le format du framework choisi (Selenium, Playwright, Cypress, ou Robot) :
+```bash
+npm install
+npm run build
 
-| Format source | Converti dans le format du framework choisi |
-|---|---|
-| Jest / Vitest | describe/test → format cible |
-| Cypress existant | conservé si framework = Cypress, sinon converti |
-| Playwright existant | conservé si framework = Playwright, sinon converti |
-| WebdriverIO | converti vers le format cible |
-| **Robot Framework** (`.robot`) | conservé si framework = Robot, sinon converti |
-| **Cucumber / Gherkin** (`.feature`) | chaque `Scenario` → test unitaire dans le format cible |
-| PHPUnit | converti vers le format cible |
-| JUnit / TestNG (Java) | converti vers le format cible |
-| NUnit / xUnit / MSTest (C#) | converti vers le format cible |
-| RSpec / Minitest (Ruby) | converti vers le format cible |
-| Go test (`*_test.go`) | converti vers le format cible |
-| Selenium IDE (`.side`) | converti vers le format cible |
+# CLI
+node dist/index.js audit --level=2 --predictive
 
-- Sélecteurs extraits dans le Page Object du framework (jamais inline dans les tests)
-- L'intention du test est préservée exactement — seule la syntaxe change
-- Chaque test converti est marqué `# migrated from` / `// migrated from` / `[Documentation]    migrated from` (Robot)
-- Le fichier original est supprimé après conversion réussie
-
-## Auto-fix en direct
-
-`/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle, **Chrome ouvert en visible** pour voir chaque test s'exécuter en direct :
-
-1. Lance le runner du framework choisi en mode visible sur la suite complète
-2. Pour chaque test qui échoue, analyse le rapport et corrige immédiatement :
-   - Mauvais sélecteur → met à jour le Page Object (`.py` / `.ts` / `.js` / `.resource`)
-   - Mauvaise URL dans le test → corrige le path
-   - Mauvaise config (`.env.test`, `BASE_URL`) → corrige et relance
-3. Relance le test corrigé seul pour valider le fix
-4. Recommence jusqu'à 3 fois au maximum
-5. Ce qui reste rouge après 3 rounds = **vrai bug dans l'app** → reporté comme finding, jamais supprimé
-
-Les tests sécu ne sont **jamais modifiés** — un échec sécu = vulnérabilité réelle, toujours signalé.
+# Dashboard (http://127.0.0.1:4321)
+node --input-type=module <<'EOF'
+import { startServer } from './dist/server/app.js';
+startServer(process.cwd());
+EOF
+```
 
 ---
 
-## Le pipeline
+## Environment variables
 
-<p align="center"><img src="docs/assets/devops-pipeline.png" alt="Pipeline DevOps" width="900"></p>
-
----
-
-## 4 choses que personne d'autre ne fait
-
-- **🎬 Replay animé des échecs** — pas un screenshot du moment où ça plante, un GIF des dernières actions (clics + navigations) qui ont mené au crash. Capturé en silence, assemblé seulement si ça apporte une vraie info (pas de "replay" figé si la page n'a pas bougé).
-- **👁 Régression visuelle** — chaque test compare son screenshot à une baseline, pass ou fail. Un test peut être 100% fonctionnellement vert et avoir quand même un bouton qui a bougé ou un header devenu invisible — aucun `assert` ne voit ça, ce mécanisme oui.
-- **🎲 Détection de tests instables** — historique léger sur les derniers runs, flag les tests qui se contredisent d'une fois à l'autre. Le signal que `pytest-rerunfailures` masque en se contentant de réessayer.
-- **🩹 Sélecteurs auto-réparants** — narrow et jamais silencieux : un seul repli (id↔name↔data-testid), jamais d'heuristique floue qui risquerait d'interagir avec le mauvais élément. Si ça répare, ça le crie dans le rapport.
-
-## Ce que tu obtiens
-
-- **Page Object Model** — sélecteurs dans `tests/pages/`, jamais en dur dans un test
-- **Dossiers plats par domaine** — `tests/auth/`, `tests/admin/`, `tests/checkout/`... une feature = un endroit
-- **Navigateurs session-scoped** — un navigateur par rôle pour toute la run, scale à 1000+ tests
-- **SEO complet** — title/meta/canonical (+ https)/h1/hiérarchie de titres/alt/lang/viewport/Open Graph/noindex/structured data/robots.txt/sitemap.xml, chaque échec explique pourquoi ça compte
-- **Sécurité complète, non-destructive** — fuite erreur SQL, échappement input réfléchi, headers sécu (CSP/HSTS/X-Frame-Options...), cookies (Secure/HttpOnly/SameSite), fuite de version serveur, open redirect, listing de répertoire, CORS permissif, chemins sensibles exposés, bannières debug, bypass auth admin, prix manipulable côté client. Jamais destructif, jamais contre la prod.
-- **Accessibilité au-delà du scan générique** — lien d'évitement, labels de formulaire, landmarks ARIA, pièges aria-hidden, boutons sans nom accessible
-- **Responsive complet** — débordement horizontal multi-breakpoints, cibles tactiles, images qui scalent, taille de police lisible sur mobile
-- **Performance au-delà du chargement** — scripts bloquants, poids total de la page, taille du DOM, First Contentful Paint, compression gzip/brotli
-- **Rapport HTML enrichi** — échecs avec screenshot/replay + erreurs console embarqués direct dans la ligne, thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur (sécu = badge rouge 🔒)
-- **Zéro install** — pour Selenium/Playwright Python : `tests/run.sh` installe automatiquement les paquets pip manquants. Pour Playwright TS/Cypress : `npm install` suffit. Pour Robot Framework : `pip install robotframework robotframework-seleniumlibrary robotframework-requests`.
-- **N'importe quelle stack** — PHP, Java/Spring, Next.js, Django, Flask, Rails, Go, Rust, Elixir — la découverte de routes s'adapte selon le fichier marqueur (`composer.json`, `pom.xml`, `manage.py`...)
-
-Voir `templates/e2e/README.md` pour la référence complète de structure une fois installé dans un projet.
+```env
+TEST_BASE_URL=http://localhost:3000
+TEST_USERNAME=test@example.com
+TEST_PASSWORD=testpassword
+TEST_LOGIN_PATH=/login              # Adjust for /connexion, /signin …
+TEST_ADMIN_DASHBOARD_PATH=/admin
+TEST_AUTH_URL_HINTS=login,signin,auth
+E2E_PORT=4321
+OLLAMA_HOST=http://127.0.0.1:11434
+```
 
 ---
 
-## Le rapport
+## Supported frameworks
 
-<p align="center"><img src="docs/report-screenshot.png" alt="Rapport E2E — thème sombre, colonnes Catégorie/Visuel/Stabilité/Sélecteur" width="700"></p>
+| Framework | Init | Audit | Coverage | Update | V-Infinite |
+|---|---|---|---|---|---|
+| Selenium + pytest | ✅ | ✅ | ✅ | ✅ | — |
+| Playwright Python | ✅ | ✅ | ✅ | ✅ | — |
+| Playwright TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cypress | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Robot Framework | ✅ | ✅ | ✅ | ✅ | — |
+| MCP native (TS) | ✅ | ✅ | — | — | ✅ |
 
 ---
 
-## Contributeurs
-
-- [Aron Beaufort](https://github.com/Aronbfrt) — créateur & mainteneur
-
-PR bienvenues — voir `templates/e2e/README.md` pour les conventions à suivre (Page Object Model, dossiers plats par domaine, messages d'assertion qui expliquent le pourquoi, pas juste le quoi).
+**Author:** Aron Beaufort · [GitHub](https://github.com/Aronbfrt/test-end-to-end)

@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "test-end-to-end",
   "metadata": {
-    "description": "La révolution des tests end-to-end — générateur zéro effort manuel, pytest + Selenium, découvert depuis le code par analyse statique, pour n'importe quelle stack."
+    "description": "Autonomous QA ecosystem & MCP server for Claude Code — zero-prompt E2E generation, AI Vision crash triage, self-healing selectors, autonomous bug PRs. Selenium · Playwright · Cypress · Robot Framework + V-Infinite TypeScript MCP engine."
   },
   "owner": {
     "name": "Aron Beaufort"
@@ -10,15 +10,19 @@
   "plugins": [
     {
       "name": "test-end-to-end",
-      "description": "/e2e-init (setup guidé) + /e2e-audit (audit automatique complet : basique, SEO, sécurité, a11y, performance, responsive). Navigateurs session-scoped, Page Object Model, bootstrap auto-install, rapport HTML enrichi.",
-      "version": "1.0.0",
+      "description": "/e2e-init · /e2e-audit · /e2e-coverage · /e2e-update (Python/Selenium/Playwright/Cypress/Robot). V-Infinite MCP: zero-prompt AST-driven test generation, Shadow Personas, SHIELD pixel-diff, Ghostwriter auto-PR, Evolver self-improvement.",
+      "version": "2.0.0",
       "author": {
         "name": "Aron Beaufort"
       },
       "source": "./",
       "category": "testing",
       "homepage": "https://github.com/Aronbfrt/test-end-to-end",
-      "tags": ["testing", "e2e", "selenium", "pytest", "security", "seo", "accessibility"]
+      "tags": [
+        "testing", "e2e", "mcp", "autonomous", "ai",
+        "selenium", "playwright", "cypress", "robot-framework",
+        "security", "seo", "accessibility", "self-healing"
+      ]
     }
   ]
 }

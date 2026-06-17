@@ -12,8 +12,8 @@
  */
 
 import { execSync, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import {
   loadCache,
   isFresh,
@@ -238,11 +238,11 @@ export async function run(config: RunConfig): Promise<void> {
       absolute: true,
     });
 
-    // ── Phase 2: cache gate ─────────────────────────────────────────────────
+    // ── Phase 2: cache gate (bypassed for shadow — always full scan) ────────
     setState('CACHE_CHECK');
     const staleFiles = filterStale(allFiles);
 
-    if (staleFiles.length === 0 && config.command !== 'repair') {
+    if (staleFiles.length === 0 && !['repair', 'shadow'].includes(config.command)) {
       log('All files fresh — Zero-Token Bypass: nothing to do');
       setState('DONE');
       return;
@@ -251,26 +251,48 @@ export async function run(config: RunConfig): Promise<void> {
     // ── Phase 3: dispatch ───────────────────────────────────────────────────
     setState('DISPATCHING');
 
+    // diff: scope to git-changed files only
+    let scanFiles = config.level === 1 ? staleFiles : allFiles;
+    if (config.command === 'diff') {
+      const diffFiles = getDiffFiles(config.targetPath);
+      scanFiles = diffFiles.length > 0 ? diffFiles : staleFiles;
+      log(`diff mode: scoping to ${scanFiles.length} changed files`);
+
+      // predictive: overlay hotspot-ranked files from full history
+      if (config.predictive) {
+        const hotspotFiles = getHotspotFiles(config.targetPath, allFiles);
+        const merged = [...new Set([...scanFiles, ...hotspotFiles])];
+        log(`predictive: +${merged.length - scanFiles.length} hotspot files added`);
+        scanFiles = merged;
+      }
+    }
+
     const scanResult = await dispatch<RouteMap>({
       type: 'SCAN_AST',
-      files: config.level === 1 ? staleFiles : allFiles,
+      files: scanFiles,
     });
 
     setState('AWAITING_AGENTS');
 
+    // shadow: always activate all 3 personas regardless of level
+    const shadowPersonas: string[] | undefined =
+      config.command === 'shadow' || config.level === 3
+        ? ['frustrated_user', 'impulsive_buyer', 'malicious_attacker']
+        : undefined;
+
     await dispatch<void>({
       type: 'GEN_TESTS',
       routes: scanResult,
-      personas: config.level === 3
-        ? ['frustrated_user', 'impulsive_buyer', 'malicious_attacker']
-        : undefined,
+      personas: shadowPersonas,
     });
 
-    // ── Phase 4: triage (level 2+) ──────────────────────────────────────────
+    // ── Phase 4: triage (level 2+ on audit/diff/shadow) ─────────────────────
     let triageResult: import('./agents/coroner.js').TriageResult | null = null;
-    if (config.level >= 2 && config.command === 'audit') {
+    if (config.level >= 2 && ['audit', 'diff', 'shadow'].includes(config.command)) {
       setState('TRIAGING');
       const traceId = `run-${Date.now()}`;
+      const workDir = join(config.targetPath, '.e2e-work');
+      if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
       triageResult = await dispatch<import('./agents/coroner.js').TriageResult>({
         type: 'TRIAGE_CRASH',
         traceId,
@@ -278,7 +300,7 @@ export async function run(config: RunConfig): Promise<void> {
       log(`triage verdict: ${triageResult.verdict} (confidence: ${(triageResult.confidence * 100).toFixed(0)}%)`);
     }
 
-    // ── Phase 5: auto-patch (level 3 / repair command) ──────────────────────
+    // ── Phase 5: auto-patch (level 3 / repair / shadow level 3) ─────────────
     if (config.command === 'repair' || config.level === 3) {
       setState('PATCHING');
       const bugReport = triageResult?.bugReport;
@@ -290,14 +312,65 @@ export async function run(config: RunConfig): Promise<void> {
     }
 
     setState('DONE');
-    log(`Run complete [level=${config.level}] [bypass=${allFiles.length - staleFiles.length} files]`);
+    log(`Run complete [cmd=${config.command}] [level=${config.level}] [bypass=${allFiles.length - staleFiles.length} files]`);
 
   } catch (err) {
     setState('ERROR');
     console.error('[orchestrator] fatal:', err);
+
+    // Self-evolve on unrecoverable errors (level 3 only — avoid infinite loops)
+    if (_config?.level === 3 && _config.command !== 'repair') {
+      try {
+        log('Activating evolver for self-improvement …');
+        await dispatch<void>({
+          type: 'SELF_EVOLVE',
+          failedTask: { type: 'SCAN_AST', files: [] },
+          reason: (err as Error).message,
+        });
+      } catch { /* evolver failure is non-fatal */ }
+    }
     throw err;
   } finally {
     persistCache();
+  }
+}
+
+// ── Diff helpers ───────────────────────────────────────────────────────────────
+
+function getDiffFiles(root: string): string[] {
+  try {
+    const out = execSync('git diff --name-only HEAD', {
+      cwd: root, timeout: 5000, encoding: 'utf-8',
+    });
+    const staged = execSync('git diff --cached --name-only', {
+      cwd: root, timeout: 5000, encoding: 'utf-8',
+    });
+    return [...new Set([...out.split('\n'), ...staged.split('\n')])]
+      .filter((f) => f && /\.(ts|js|py|php|rb|go)$/.test(f))
+      .map((f) => resolve(root, f))
+      .filter(existsSync);
+  } catch {
+    return [];
+  }
+}
+
+function getHotspotFiles(root: string, allFiles: string[]): string[] {
+  try {
+    const out = execSync(
+      `git -C "${root}" log --since="12 months ago" --name-only --pretty=format:"" --no-merges`,
+      { timeout: 8000, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 },
+    );
+    const churn = new Map<string, number>();
+    for (const line of out.split('\n').filter(Boolean)) {
+      const abs = resolve(root, line);
+      if (allFiles.includes(abs)) churn.set(abs, (churn.get(abs) ?? 0) + 1);
+    }
+    return [...churn.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([f]) => f);
+  } catch {
+    return [];
   }
 }
 
