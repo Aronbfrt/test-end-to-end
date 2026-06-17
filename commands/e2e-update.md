@@ -19,7 +19,7 @@ Re-lancer la découverte statique (même logique que /e2e-audit Step 2) → éta
 
 Construire une map de ce qui est testé :
 - Quelles routes sont couvertes (grep `driver.get`, `cy.visit`, `page.goto`, `Open Browser`)
-- Quels sélecteurs sont utilisés (lire `tests/pages/*.py` ou `cypress/support/pages/`)
+- Quels sélecteurs sont utilisés (lire `tests/pages/*.py` · `tests/pages/*.ts` · `cypress/support/pages/` · `tests/resources/*.resource`)
 - Quels tests portent un marqueur "généré automatiquement" vs écrits à la main :
   - Python : `# migrated from` / `# converted from`
   - TypeScript/JavaScript : `// migrated from` / `// converted from`

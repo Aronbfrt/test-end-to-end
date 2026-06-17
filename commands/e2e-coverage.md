@@ -17,7 +17,7 @@ Lire `TEST_FRAMEWORK` dans `.env.test` pour savoir où et quoi chercher :
 
 ```bash
 # selenium / playwright-python → tests/**/*.py
-grep -rE "driver\.get|url\(|\.get\(url|BASE_URL" tests/ 2>/dev/null
+grep -rE "driver\.get|page\.goto|url\(|\.get\(url|BASE_URL" tests/ 2>/dev/null
 
 # playwright-ts → tests/**/*.spec.ts
 grep -rE "page\.goto|baseURL|navigate" tests/ 2>/dev/null
