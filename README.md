@@ -85,35 +85,35 @@ robot --variable BROWSER:chrome tests/   # Chrome visible
 
 ## Migration automatique des tests existants
 
-Tu as déjà des tests ? `/e2e-audit` les détecte et les convertit automatiquement en Python/pytest avant de générer quoi que ce soit :
+Tu as déjà des tests ? `/e2e-audit` les détecte et les convertit automatiquement dans le format du framework choisi (Selenium, Playwright, Cypress, ou Robot) :
 
-| Format source | Converti en |
+| Format source | Converti dans le format du framework choisi |
 |---|---|
-| Jest / Vitest | `class TestX` + `assert` Python |
-| Cypress | `driver.get()` + `find_element()` Selenium |
-| Playwright | `driver.get()` + `find_element()` Selenium |
-| WebdriverIO | `driver.get()` + `find_element()` Selenium |
-| **Robot Framework** (`.robot`) | `def test_xxx()` pytest + Selenium |
-| **Cucumber / Gherkin** (`.feature`) | Chaque `Scenario` → classe pytest |
-| PHPUnit | `def test_xxx()` pytest |
-| JUnit / TestNG (Java) | `def test_xxx()` pytest |
-| NUnit / xUnit / MSTest (C#) | `def test_xxx()` pytest |
-| RSpec / Minitest (Ruby) | `def test_xxx()` pytest |
-| Go test (`*_test.go`) | `def test_xxx()` pytest |
-| Selenium IDE (`.side`) | `driver.get()` + `find_element()` Selenium |
+| Jest / Vitest | describe/test → format cible |
+| Cypress existant | conservé si framework = Cypress, sinon converti |
+| Playwright existant | conservé si framework = Playwright, sinon converti |
+| WebdriverIO | converti vers le format cible |
+| **Robot Framework** (`.robot`) | conservé si framework = Robot, sinon converti |
+| **Cucumber / Gherkin** (`.feature`) | chaque `Scenario` → test unitaire dans le format cible |
+| PHPUnit | converti vers le format cible |
+| JUnit / TestNG (Java) | converti vers le format cible |
+| NUnit / xUnit / MSTest (C#) | converti vers le format cible |
+| RSpec / Minitest (Ruby) | converti vers le format cible |
+| Go test (`*_test.go`) | converti vers le format cible |
+| Selenium IDE (`.side`) | converti vers le format cible |
 
-- Les sélecteurs CSS/XPath sont extraits dans `tests/pages/*.py` (jamais en dur dans le test)
+- Sélecteurs extraits dans le Page Object du framework (jamais inline dans les tests)
 - L'intention du test est préservée exactement — seule la syntaxe change
-- Chaque test converti est marqué `# converted from <fichier_original>`
-- Le fichier original est supprimé après conversion
+- Chaque test converti est marqué `# converted from` / `// converted from` / `[Documentation] converted from`
+- Le fichier original est supprimé après conversion réussie
 
 ## Auto-fix en direct
 
 `/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle, **Chrome ouvert en visible** pour voir chaque test s'exécuter en direct :
 
-1. Lance `pytest --headed` sur la suite complète
-2. Pour chaque test qui échoue, analyse le `--tb=short` et corrige immédiatement :
-   - Mauvais sélecteur → met à jour `tests/pages/*.py`
+1. Lance le runner du framework choisi en mode visible sur la suite complète
+2. Pour chaque test qui échoue, analyse le rapport et corrige immédiatement :
+   - Mauvais sélecteur → met à jour le Page Object (`.py` / `.ts` / `.js` / `.resource`)
    - Mauvaise URL dans le test → corrige le path
    - Mauvaise config (`.env.test`, `BASE_URL`) → corrige et relance
 3. Relance le test corrigé seul pour valider le fix
@@ -130,7 +130,7 @@ Les tests sécu ne sont **jamais modifiés** — un échec sécu = vulnérabilit
 
 ---
 
-## 4 choses que personne d'autre ne fait dans un setup pytest+Selenium offline
+## 4 choses que personne d'autre ne fait
 
 - **🎬 Replay animé des échecs** — pas un screenshot du moment où ça plante, un GIF des dernières actions (clics + navigations) qui ont mené au crash. Capturé en silence, assemblé seulement si ça apporte une vraie info (pas de "replay" figé si la page n'a pas bougé).
 - **👁 Régression visuelle** — chaque test compare son screenshot à une baseline, pass ou fail. Un test peut être 100% fonctionnellement vert et avoir quand même un bouton qui a bougé ou un header devenu invisible — aucun `assert` ne voit ça, ce mécanisme oui.

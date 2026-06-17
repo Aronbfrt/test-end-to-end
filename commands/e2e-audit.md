@@ -536,7 +536,11 @@ After the fix loop, summarize in order:
 3. **Functional failures** — what broke and where (auth, admin, checkout, contact).
 4. **Skipped tests** — relay `reason=` verbatim (a skip is correct if the feature genuinely doesn't exist).
 5. **Auto-fixes applied** — every test file changed and why.
-6. **Pass count / total**, link to `tests/report.html`.
+6. **Pass count / total**, lien vers le rapport HTML :
+   - selenium/playwright-python → `tests/report.html`
+   - playwright-ts → `playwright-report/index.html`
+   - cypress → `cypress/results/` (ou Mochawesome si configuré)
+   - robot → `results/report.html`
 
 Never say "tests passed" without checking the actual exit code — pytest exits 0 even with skips, and a wall of skips hiding coverage gaps is itself a finding.
 
