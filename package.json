@@ -11,7 +11,10 @@
     "e2e:audit": "node dist/index.js audit",
     "e2e:shadow": "node dist/index.js shadow",
     "e2e:diff": "node dist/index.js diff",
-    "e2e:repair": "node dist/index.js repair"
+    "e2e:repair": "node dist/index.js repair",
+    "e2e:coverage": "node dist/index.js coverage",
+    "e2e:update": "node dist/index.js update",
+    "e2e:update:dry": "node dist/index.js update --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",

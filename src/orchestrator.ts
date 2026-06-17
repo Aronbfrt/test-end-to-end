@@ -27,11 +27,15 @@ import {
 export type Level = 1 | 2 | 3;
 
 export interface RunConfig {
-  command: 'init' | 'audit' | 'shadow' | 'diff' | 'repair';
+  command: 'init' | 'audit' | 'shadow' | 'diff' | 'repair' | 'coverage' | 'update';
   level: Level;
   chaos: boolean;
   predictive: boolean;
   targetPath: string;
+  /** repair --trace=<id>: load triage from .e2e-work/<traceId>.triage.json */
+  traceId?: string;
+  /** update --dry-run: show diff without writing files */
+  dryRun?: boolean;
 }
 
 export type AgentTask =
@@ -77,6 +81,7 @@ interface OllamaCapability {
 let _state: OrchestratorState = 'IDLE';
 let _config: RunConfig | null = null;
 let _ollama: OllamaCapability | null = null;
+let _lastHotspots: Array<{ file: string; risk: number; churn: number; stress: number }> = [];
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
 
@@ -207,12 +212,18 @@ export async function dispatch<T>(task: AgentTask): Promise<T> {
 
 function agentForTask(task: AgentTask): string {
   switch (task.type) {
-    case 'SCAN_AST':     return 'scout';
+    case 'SCAN_AST':     return _config?.command === 'coverage' ? 'coverage'
+                              : _config?.command === 'update'   ? 'updater'
+                              : 'scout';
     case 'GEN_TESTS':    return 'artisan';
     case 'TRIAGE_CRASH': return 'coroner';
     case 'WRITE_PATCH':  return 'ghostwriter';
     case 'SELF_EVOLVE':  return 'evolver';
   }
+}
+
+export function getLastHotspots(): typeof _lastHotspots {
+  return _lastHotspots;
 }
 
 // ── State Machine ──────────────────────────────────────────────────────────────
@@ -242,7 +253,7 @@ export async function run(config: RunConfig): Promise<void> {
     setState('CACHE_CHECK');
     const staleFiles = filterStale(allFiles);
 
-    if (staleFiles.length === 0 && !['repair', 'shadow'].includes(config.command)) {
+    if (staleFiles.length === 0 && !['repair', 'shadow', 'coverage', 'update'].includes(config.command)) {
       log('All files fresh — Zero-Token Bypass: nothing to do');
       setState('DONE');
       return;
@@ -267,10 +278,19 @@ export async function run(config: RunConfig): Promise<void> {
       }
     }
 
-    const scanResult = await dispatch<RouteMap>({
+    // coverage / update: dispatch to their own agents and skip the GEN_TESTS pipeline
+    if (config.command === 'coverage' || config.command === 'update') {
+      await dispatch<unknown>({ type: 'SCAN_AST', files: scanFiles });
+      setState('DONE');
+      return;
+    }
+
+    const rawScan = await dispatch<RouteMap & { hotspots?: Array<{ file: string; risk: number; churn: number; stress: number }> }>({
       type: 'SCAN_AST',
       files: scanFiles,
     });
+    const scanResult: RouteMap = rawScan;
+    _lastHotspots = rawScan.hotspots ?? [];
 
     setState('AWAITING_AGENTS');
 
@@ -303,11 +323,48 @@ export async function run(config: RunConfig): Promise<void> {
     // ── Phase 5: auto-patch (level 3 / repair / shadow level 3) ─────────────
     if (config.command === 'repair' || config.level === 3) {
       setState('PATCHING');
-      const bugReport = triageResult?.bugReport;
+      let bugReport = triageResult?.bugReport;
+
+      // repair standalone: load triage from disk when no in-memory result
+      if (!bugReport && config.command === 'repair') {
+        const workDir = join(config.targetPath, '.e2e-work');
+        try {
+          if (config.traceId) {
+            // explicit --trace=<id>
+            const p = join(workDir, `${config.traceId}.triage.json`);
+            if (existsSync(p)) {
+              const saved = JSON.parse(readFileSync(p, 'utf-8')) as import('./agents/coroner.js').TriageResult;
+              bugReport = saved.bugReport;
+              log(`loaded triage from disk: ${config.traceId}`);
+            } else {
+              log(`triage file not found: ${p}`);
+            }
+          } else {
+            // find latest .triage.json
+            const { readdirSync } = await import('node:fs');
+            const files = readdirSync(workDir)
+              .filter((f) => f.endsWith('.triage.json'))
+              .map((f) => ({ f, t: f.replace('.triage.json', '') }))
+              .sort((a, b) => b.t.localeCompare(a.t));
+            if (files.length > 0) {
+              const latest = files[0];
+              if (latest) {
+                const p = join(workDir, latest.f);
+                const saved = JSON.parse(readFileSync(p, 'utf-8')) as import('./agents/coroner.js').TriageResult;
+                bugReport = saved.bugReport;
+                log(`loaded latest triage from disk: ${latest.f}`);
+              }
+            }
+          }
+        } catch (e) {
+          log(`could not load triage from disk: ${(e as Error).message}`);
+        }
+      }
+
       if (bugReport) {
         await dispatch<void>({ type: 'WRITE_PATCH', bugReport });
       } else {
-        log('Ghostwriter on standby — no BACKEND_BUG triage result to act on');
+        log('Ghostwriter on standby — no triage result available (run audit first, or use --trace=<id>)');
       }
     }
 

@@ -36,6 +36,10 @@ interface ParsedArgs {
   predictive: boolean;
   resetCache: boolean;
   mcp: boolean;
+  traceId?: string;
+  dryRun: boolean;
+  detail: boolean;
+  targetPath?: string;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -47,10 +51,16 @@ function parseArgs(argv: string[]): ParsedArgs {
     ? (rawLevel as Level)
     : 2;
 
+  const traceArg = args.find((a) => a.startsWith('--trace='));
+  const traceId = traceArg ? traceArg.split('=').slice(1).join('=') : undefined;
+
   const validCommands: Array<RunConfig['command']> = [
-    'init', 'audit', 'shadow', 'diff', 'repair',
+    'init', 'audit', 'shadow', 'diff', 'repair', 'coverage', 'update',
   ];
   const command = (args.find((a) => validCommands.includes(a as RunConfig['command'])) ?? null) as RunConfig['command'] | null;
+
+  // First non-flag, non-command positional arg = targetPath override
+  const targetPath = args.find((a) => !a.startsWith('-') && !validCommands.includes(a as RunConfig['command']));
 
   return {
     command,
@@ -59,12 +69,45 @@ function parseArgs(argv: string[]): ParsedArgs {
     predictive: args.includes('--predictive'),
     resetCache: args.includes('--reset-cache'),
     mcp:        args.includes('--mcp') || process.env.MCP_MODE === '1',
+    traceId,
+    dryRun:     args.includes('--dry-run'),
+    detail:     args.includes('--detail'),
+    targetPath,
   };
 }
 
 // ── MCP tool definitions ───────────────────────────────────────────────────────
 
 const TOOLS: Tool[] = [
+  {
+    name: 'e2e_coverage',
+    description:
+      'Map all routes and forms against existing test files. Returns coverage %, gaps list, ' +
+      'and generates .e2e-work/coverage.html. Use after audit or update to verify test health.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetPath: { type: 'string', description: 'Absolute path to the target repo root.' },
+        detail:     { type: 'boolean', description: 'Include per-route file matches in output.' },
+      },
+      required: ['targetPath'],
+    },
+  },
+  {
+    name: 'e2e_update',
+    description:
+      'Sync tests after code changes. Compares current route map against the last snapshot ' +
+      'and generates tests only for new/changed routes. Protects manual tests.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetPath: { type: 'string' },
+        dryRun:     { type: 'boolean', description: 'Show diff without writing any file.' },
+        level:      { type: 'number', enum: [1, 2, 3] },
+      },
+      required: ['targetPath'],
+    },
+  },
   {
     name: 'e2e_init',
     description:
@@ -129,11 +172,13 @@ const TOOLS: Tool[] = [
     name: 'e2e_repair',
     description:
       'Activate the Ghostwriter agent to write a surgical fix for a confirmed application bug, ' +
-      'push a documented Pull Request, and verify the fix with a targeted re-run.',
+      'push a documented Pull Request, and verify the fix with a targeted re-run. ' +
+      'Pass traceId to load a triage from disk, or bugReport directly.',
     inputSchema: {
       type: 'object',
       properties: {
-        targetPath:  { type: 'string' },
+        targetPath: { type: 'string' },
+        traceId:    { type: 'string', description: 'Load triage from .e2e-work/<traceId>.triage.json.' },
         bugReport: {
           type: 'object',
           description: 'BugReport JSON produced by the Coroner agent.',
@@ -147,7 +192,7 @@ const TOOLS: Tool[] = [
           required: ['route', 'statusCode', 'assertion', 'htmlSnippet', 'consoleOutput'],
         },
       },
-      required: ['targetPath', 'bugReport'],
+      required: ['targetPath'],
     },
   },
   {
@@ -183,17 +228,22 @@ async function handleToolCall(
   const predictive = Boolean(args.predictive);
 
   const commandMap: Record<string, RunConfig['command']> = {
-    e2e_init:   'init',
-    e2e_audit:  'audit',
-    e2e_shadow: 'shadow',
-    e2e_diff:   'diff',
-    e2e_repair: 'repair',
+    e2e_init:     'init',
+    e2e_audit:    'audit',
+    e2e_shadow:   'shadow',
+    e2e_diff:     'diff',
+    e2e_repair:   'repair',
+    e2e_coverage: 'coverage',
+    e2e_update:   'update',
   };
   const command = commandMap[toolName];
   if (!command) return err(`Unknown tool: ${toolName}`);
 
+  const dryRun  = Boolean(args.dryRun);
+  const traceId = args.traceId as string | undefined;
+
   try {
-    await run({ command, level, chaos, predictive, targetPath });
+    await run({ command, level, chaos, predictive, targetPath, traceId, dryRun });
     return ok({ status: 'done', command, level, targetPath });
   } catch (e) {
     return err((e as Error).message);
@@ -206,7 +256,7 @@ async function startMcpServer(): Promise<void> {
   const server = new Server(
     {
       name:    'test-end-to-end',
-      version: '0.1.0',
+      version: '2.0.0',
     },
     {
       capabilities: { tools: {} },
@@ -231,9 +281,10 @@ async function startMcpServer(): Promise<void> {
 async function runCli(parsed: ParsedArgs): Promise<void> {
   if (!parsed.command) {
     console.error(
-      'Usage: e2e <command> [--level=1|2|3] [--chaos] [--predictive]\n' +
-      'Commands: init | audit | shadow | diff | repair\n' +
-      'Flags:    --mcp (start as MCP server) | --reset-cache',
+      'Usage: e2e <command> [targetPath] [flags]\n' +
+      'Commands: init | audit | shadow | diff | repair | coverage | update\n' +
+      'Flags:    --level=1|2|3  --chaos  --predictive  --dry-run  --detail\n' +
+      '          --trace=<id>  --reset-cache  --mcp',
     );
     process.exit(1);
   }
@@ -250,7 +301,9 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
     level:      parsed.level,
     chaos:      parsed.chaos,
     predictive: parsed.predictive,
-    targetPath: resolve(process.cwd()),
+    targetPath: parsed.targetPath ? resolve(parsed.targetPath) : resolve(process.cwd()),
+    traceId:    parsed.traceId,
+    dryRun:     parsed.dryRun,
   });
 }
 
