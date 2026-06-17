@@ -453,9 +453,27 @@ open http://127.0.0.1:4321
 ```
 
 <p align="center">
-  <img src="docs/assets/devops-pipeline.png" alt="Dashboard V-Infinite — vue du pipeline d'exécution" width="720">
+  <img src="docs/assets/dashboard-preview.png" alt="Dashboard V-Infinite — vue complète" width="760">
   <br>
-  <i>Vue du pipeline temps réel — chaque agent log ses actions au fur et à mesure via WebSocket.</i>
+  <i>Vue complète du dashboard — header avec statut Ollama, Indice de Confiance, Route Impact Map, log WebSocket en temps réel.</i>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-ci-score.png" alt="Indice de Confiance Applicative — score 72/100" width="760">
+  <br>
+  <i>Barre de métriques — Indice de Confiance (IC=72), routes OK/WARN/FAIL, cache hits (64/73), tokens économisés (94,6%).</i>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-routes.png" alt="Route Impact Map — statut par route" width="760">
+  <br>
+  <i>Route Impact Map — chaque route colorée en vert (PASS), orange (WARN) ou rouge (FAIL) avec barre de couverture et détail d'erreur.</i>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-triage.png" alt="Panneau triage Coroner — SELECTOR_DRIFT détecté" width="760">
+  <br>
+  <i>Panneau triage Coroner — verdict SELECTOR_DRIFT sur /api/checkout, analyse SHIELD (0,3% pixels · absorbé), bouton Auto-Patch.</i>
 </p>
 
 **Fonctionnalités du dashboard :**
