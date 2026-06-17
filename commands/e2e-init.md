@@ -45,7 +45,7 @@ Poser **4 à 5 questions** sous forme de liste numérotée avec propositions. Ad
 
 ---
 
-Écrire dans `.env.test` après les réponses :
+Ajouter dans `.env.test` les variables manquantes uniquement (ne jamais écraser les valeurs déjà présentes) :
 ```
 TEST_FRAMEWORK=<selenium|playwright-python|playwright-ts|cypress|robot>
 TEST_HEADLESS=<1 ou 0>
@@ -90,10 +90,10 @@ Lire `TEST_FRAMEWORK` dans `.env.test` (défini au Step 0) :
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
-cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
-cp -r $T/utils $T/features $T/report $T/pages tests/
-cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
-cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
+cp -n $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
+cp -r -n $T/utils $T/features $T/report $T/pages tests/ 2>/dev/null || true
+cp -r -n $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/ 2>/dev/null || true
+cp -n $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
 [ -f .env.test ] || cp $T/.env.test.example .env.test 2>/dev/null || true
 cat $T/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
 chmod +x tests/bootstrap.py tests/run.sh 2>/dev/null || true

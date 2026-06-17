@@ -45,7 +45,7 @@ Poser **4 à 5 questions** sous forme de liste numérotée avec des propositions
 
 ---
 
-Une fois les réponses obtenues, écrire dans `.env.test` :
+Une fois les réponses obtenues, ajouter dans `.env.test` les variables manquantes uniquement (ne jamais écraser les valeurs déjà présentes — l'utilisateur peut avoir TEST_ADMIN_EMAIL, TEST_ADMIN_PASS, etc.) :
 ```
 TEST_FRAMEWORK=<choix: selenium|playwright-python|playwright-ts|cypress|robot>
 TEST_HEADLESS=<1 ou 0>
@@ -158,9 +158,9 @@ Bootstrap selon le framework choisi en Step 0 (`TEST_FRAMEWORK` dans `.env.test`
 ```bash
 T=~/.claude/templates/e2e
 mkdir -p tests
-cp $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
-cp -r $T/utils $T/features $T/report $T/pages tests/
-cp -r $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/
+cp -n $T/__init__.py $T/conftest.py $T/bootstrap.py $T/live_server.py $T/run.sh $T/requirements.txt tests/
+cp -r -n $T/utils $T/features $T/report $T/pages tests/ 2>/dev/null || true
+cp -r -n $T/public $T/seo $T/security $T/accessibility $T/responsive $T/performance tests/ 2>/dev/null || true
 cp $T/pytest.ini.project-root ./pytest.ini 2>/dev/null || true
 [ -f .env.test ] || cp $T/.env.test.example .env.test 2>/dev/null || true
 cat $T/gitignore-snippet.txt >> .gitignore 2>/dev/null || true
