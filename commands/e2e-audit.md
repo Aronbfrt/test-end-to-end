@@ -472,6 +472,50 @@ describe('Security — <form_name>', () => {
 });
 ```
 
+Playwright TS :
+```typescript
+// tests/security/security_<form_name>.spec.ts
+import { test, expect } from '@playwright/test';
+test.describe('Security — <form_name>', () => {
+  test('no SQL error leaked', async ({ page }) => {
+    await page.goto('<path>');
+    await page.fill('<input_selector>', "' OR 1=1 --");
+    await page.click('<submit_selector>');
+    await expect(page.locator('body')).not.toContainText('SQL');
+  });
+  test('XSS input reflected escaped', async ({ page }) => {
+    await page.goto('<path>');
+    await page.fill('<input_selector>', '<script>alert(1)</script>');
+    await page.click('<submit_selector>');
+    expect(await page.content()).not.toContain('<script>alert(1)</script>');
+  });
+});
+```
+
+Robot Framework :
+```robot
+*** Settings ***
+Library    SeleniumLibrary
+
+*** Test Cases ***
+No SQL Error Leaked — <form_name>
+    [Tags]    security
+    Open Browser    ${BASE_URL}<path>    ${BROWSER}
+    Input Text    <input_selector>    ' OR 1=1 --
+    Click Element    <submit_selector>
+    Page Should Not Contain    SQL
+    Close Browser
+
+XSS Input Reflected Escaped — <form_name>
+    [Tags]    security
+    Open Browser    ${BASE_URL}<path>    ${BROWSER}
+    Input Text    <input_selector>    <script>alert(1)</script>
+    Click Element    <submit_selector>
+    ${html}=    Get Source
+    Should Not Contain    ${html}    <script>alert(1)</script>
+    Close Browser
+```
+
 Skip si aucun champ texte libre — noter pourquoi en commentaire.
 
 ## Step 4 — Run + auto-fix loop
