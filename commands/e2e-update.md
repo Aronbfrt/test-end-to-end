@@ -8,6 +8,9 @@ Après des changements dans le code (nouvelles routes, formulaires renommés, en
 
 ## Step 1 — Redécouverte complète
 
+Vérifier que `.env.test` existe et contient `TEST_FRAMEWORK`. Si absent → arrêter et afficher :
+> "Aucun setup détecté. Lance `/e2e-init` ou `/e2e-audit` d'abord pour initialiser la suite de tests."
+
 Lire `TEST_FRAMEWORK` dans `.env.test` — détermine la syntaxe de skip, le dossier des Page Objects, et le runner final.
 
 Re-lancer la découverte statique (même logique que /e2e-audit Step 2) → état actuel de l'app.

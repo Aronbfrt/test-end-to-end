@@ -74,10 +74,10 @@ Detect stack using the same table as `/e2e-audit` Step 2a. Don't ask the user wh
 
 Ask only what can't be read from the code. Each answer unlocks the next step. Stop asking once you have enough to generate.
 
-**Questions (only ask if not determinable from code):**
+**Questions (only ask if not already answered in Step 0 or determinable from code):**
 
-1. "Quelle est l'URL de ton environnement de dev ?" → sets `TEST_BASE_URL` in `.env.test`
-2. "Y a-t-il une zone admin / back-office ?" → if yes, ask for the dashboard path and credentials
+1. "Quelle est l'URL de ton environnement de dev ?" → skip si répondu en Step 0 Q3 ou trouvable dans `.env`/`package.json`
+2. "Y a-t-il une zone admin / back-office ?" → skip si répondu en Step 0 Q5. Si oui, demander le chemin du dashboard et les credentials.
 3. "Y a-t-il un système de paiement (Stripe, PayPal, autre) ?" → if yes, detect checkout routes from code
 
 Do not ask about routes, forms, or field names — read them from the code.

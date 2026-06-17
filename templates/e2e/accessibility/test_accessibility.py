@@ -1,9 +1,9 @@
 """Accessibility — axe-core sweep + targeted checks for what keyboard/screen-reader users
 actually hit (skip link, form labels, landmarks, aria-hidden traps, unnamed icon buttons).
 Add new routes to EXTRA_PAGES as the project grows."""
+import os
 import pytest
 from tests.pages.public_pages import HomePage
-from tests.pages.admin_pages import DashboardPage
 from tests.utils.helpers import url
 from tests.utils.checks import (
     check_accessibility, check_skip_link, check_form_labels,
@@ -52,5 +52,5 @@ class TestHomepageAccessibility:
 @pytest.mark.a11y
 class TestAdminAccessibility:
     def test_01_form_fields_have_labels(self, admin_driver):
-        admin_driver.get(url(DashboardPage.PATH))
+        # admin_driver is already on ADMIN_DASHBOARD_PATH (set in conftest) — no re-navigation needed
         check_form_labels(admin_driver)
