@@ -8,4 +8,17 @@ tests/.test-history.jsonl
 tests/.pytest_cache/
 tests/__pycache__/
 **/__pycache__/
+# playwright
+playwright-report/
+test-results/
+# cypress
+cypress/results/
+cypress/screenshots/
+cypress/videos/
+.cypress-cache/
+# robot framework
+output.xml
+log.html
+results/
+# env
 .env.test
