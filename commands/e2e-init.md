@@ -179,14 +179,14 @@ Lancer les tests publics + SEO selon `TEST_FRAMEWORK` :
 # selenium / playwright-python
 pytest tests/public tests/seo -v --headed
 
-# playwright-ts
-npx playwright test tests/public/ tests/seo/ --headed
+# playwright-ts (seo_checks = Python uniquement, pas de tests/seo/ pour ce framework)
+npx playwright test tests/public/ --headed
 
-# cypress
-npx cypress run --spec "cypress/e2e/public/**,cypress/e2e/seo/**" --headed
+# cypress (idem — pas de cypress/e2e/seo/ pour Cypress)
+npx cypress run --spec "cypress/e2e/public/**" --headed
 
-# robot
-robot tests/public/ tests/seo/
+# robot (idem)
+robot tests/public/
 ```
 
 Corriger ce qui échoue (mauvaise URL, sélecteur absent) avant de passer à la suite.

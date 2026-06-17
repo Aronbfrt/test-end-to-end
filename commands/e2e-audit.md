@@ -578,7 +578,7 @@ jobs:
           # Démarrer l'app (adapter à ce projet)
           <start_command_detected_from_code> &
           sleep 5
-      - run: python3 tests/run.sh --tb=short -q
+      - run: bash tests/run.sh --tb=short -q
         env:
           TEST_BASE_URL: http://localhost:<port>
           TEST_HEADLESS: "1"
