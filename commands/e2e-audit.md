@@ -102,7 +102,13 @@ find . \( \
 
 **Si des tests existants sont trouvés — les migrer avant de générer quoi que ce soit :**
 
-Lire chaque fichier en entier, comprendre l'intention de chaque test, puis le réécrire en Python/pytest en respectant les règles de conversion ET les conventions lues en 1a.
+Lire chaque fichier en entier, comprendre l'intention de chaque test, puis le réécrire dans le format du `TEST_FRAMEWORK` choisi au Step 0 :
+- `selenium` / `playwright-python` → Python/pytest (tableau ci-dessous)
+- `playwright-ts` → `.spec.ts` avec `@playwright/test`
+- `cypress` → `.cy.js` avec `cy.visit()` / `cy.get()`
+- `robot` → `.robot` avec SeleniumLibrary keywords
+
+Respecter les conventions lues en 1a.
 
 | Format source | Pattern fichier | Règle de conversion |
 |---|---|---|
@@ -278,20 +284,31 @@ Name each folder after what it actually tests in this project — not after a ge
 
 ### Files to always generate (every project has these)
 
-- `tests/pages/<page_name>.py` — one file per discovered page/form, contains only selectors (CSS/XPath/ID). Never inline selectors in test files.
-- `tests/public/test_public.py` → `PUBLIC_PAGES` = every discovered public route (always exists, every project has at least one page)
-- `tests/seo/test_seo.py` → `SEO_PAGES` = every public + listing/detail page (one representative sample per template type, not all records)
+Adapter le chemin et l'extension selon `TEST_FRAMEWORK` :
+
+| Framework | Page Objects | Test public | Test SEO |
+|---|---|---|---|
+| selenium / playwright-python | `tests/pages/<page>.py` | `tests/public/test_public.py` | `tests/seo/test_seo.py` |
+| playwright-ts | `tests/pages/<page>.ts` | `tests/public/public.spec.ts` | `tests/seo/seo.spec.ts` |
+| cypress | `cypress/support/pages/<page>.js` | `cypress/e2e/public/public.cy.js` | `cypress/e2e/seo/seo.cy.js` |
+| robot | `tests/resources/<page>.resource` | `tests/public/public.robot` | `tests/seo/seo.robot` |
+
+Chaque Page Object contient uniquement les sélecteurs (CSS/XPath/ID) — jamais inline dans les tests.
 
 ### Files to generate only if discovered
 
-Generate each file below **only** if the corresponding feature was found in Step 2:
+Générer **uniquement** si la feature est trouvée en Step 2. Adapter l'extension selon `TEST_FRAMEWORK` :
 
-- `tests/auth/test_auth.py` — only if login/register route found. Use the real field names from the form, not `email`/`password` defaults.
-- `tests/admin/test_admin.py` — only if an admin area was found. Set `ADMIN_DASHBOARD_PATH` in `tests/conftest.py` to the real path.
-- `tests/admin_<entity>/test_<entity>.py` — one per discovered CRUD entity (products, users, orders…). Skip entirely if no entities found.
-- `tests/contact/test_contact.py` — only if a contact form was found.
-- `tests/checkout/test_checkout.py` — only if Stripe/payment route found.
-- `tests/<custom_feature>/test_<custom_feature>.py` — any feature specific to this project (a booking system, a quiz, a map, a live chat, etc.) gets its own folder named after itself.
+| Feature | Python (selenium/pw-py) | Playwright TS | Cypress | Robot |
+|---|---|---|---|---|
+| Login/register | `tests/auth/test_auth.py` | `tests/auth/auth.spec.ts` | `cypress/e2e/auth/auth.cy.js` | `tests/auth/auth.robot` |
+| Admin area | `tests/admin/test_admin.py` | `tests/admin/admin.spec.ts` | `cypress/e2e/admin/admin.cy.js` | `tests/admin/admin.robot` |
+| CRUD entity | `tests/admin_<e>/test_<e>.py` | `tests/admin_<e>/<e>.spec.ts` | `cypress/e2e/admin_<e>/<e>.cy.js` | `tests/admin_<e>/<e>.robot` |
+| Contact form | `tests/contact/test_contact.py` | `tests/contact/contact.spec.ts` | `cypress/e2e/contact/contact.cy.js` | `tests/contact/contact.robot` |
+| Checkout | `tests/checkout/test_checkout.py` | `tests/checkout/checkout.spec.ts` | `cypress/e2e/checkout/checkout.cy.js` | `tests/checkout/checkout.robot` |
+| Feature custom | `tests/<feat>/test_<feat>.py` | `tests/<feat>/<feat>.spec.ts` | `cypress/e2e/<feat>/<feat>.cy.js` | `tests/<feat>/<feat>.robot` |
+
+Pour Python : si admin trouvé, mettre `ADMIN_DASHBOARD_PATH` dans `tests/conftest.py`. Pour les autres frameworks : stocker le path admin dans `cypress.config.js` → `env.adminPath` (Cypress), `playwright.config.ts` → `use.adminPath` (Playwright TS), `tests/variables/variables.robot` → `${ADMIN_PATH}` (Robot).
 
 ### Tests API headless (sans navigateur)
 
@@ -406,7 +423,7 @@ Resource   ../resources/<page>.resource
 ```
 
 Resources (Page Objects) → `tests/resources/<page>.resource`.
-Variables → `tests/variables.robot` avec `${BASE_URL}`, `${BROWSER}`.
+Variables → `tests/variables/variables.robot` avec `${BASE_URL}`, `${BROWSER}`.
 
 ### Règles communes à tous les frameworks
 
@@ -421,6 +438,8 @@ Générer dans le format du framework choisi. Exemple Python (selenium/playwrigh
 ```python
 # tests/security/test_security_<form_name>.py
 import pytest
+from tests.utils.security_checks import check_no_sql_error_leak, check_reflected_input_escaped
+from tests.utils.helpers import url
 PATH   = '<discovered_path>'
 INPUT  = ('<by_strategy>', '<discovered_field>')
 SUBMIT = ('css selector', '<actual_submit_selector>')
@@ -482,7 +501,11 @@ robot tests/<feature>/<test>.robot
 
 **Fixture/config issue** (wrong `BASE_URL`, missing `.env.test` value, wrong admin path) → fix `.env.test` or `conftest.py`, re-run.
 
-**Selector drifted** → update `tests/pages/*.py` with the real current selector. Never hardcode selectors in test files.
+**Selector drifted** → update the Page Object file with the real current selector — never hardcode selectors in test files :
+- selenium/playwright-python → `tests/pages/*.py`
+- playwright-ts → `tests/pages/*.ts`
+- cypress → `cypress/support/pages/*.js`
+- robot → `tests/resources/*.resource`
 
 ### Fix iteration rules:
 
@@ -496,7 +519,7 @@ robot tests/<feature>/<test>.robot
 
 | Symptom | Auto-fix | Report as finding |
 |---|---|---|
-| Wrong selector in test | ✅ Fix `pages/*.py` | — |
+| Wrong selector in test | ✅ Fix Page Object (`.py`/`.ts`/`.js`/`.resource`) | — |
 | URL mismatch in test | ✅ Fix test path | — |
 | Test asserts HTTPS but runs HTTP locally | ✅ Update assertion | note it |
 | Missing HTTP security header | — | 🔒 Real finding |
@@ -517,7 +540,7 @@ After the fix loop, summarize in order:
 
 Never say "tests passed" without checking the actual exit code — pytest exits 0 even with skips, and a wall of skips hiding coverage gaps is itself a finding.
 
-## Step 5 (auto) — Génération CI/CD
+## Step 6 (auto) — Génération CI/CD
 
 Après le rapport final, proposer automatiquement de générer le workflow CI adapté au framework et à la plateforme du projet :
 
