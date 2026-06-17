@@ -23,3 +23,5 @@ prompt massif.txt
 .e2e-cache.json
 dist/
 node_modules/
+package-lock.json
+playwright.config.ts
