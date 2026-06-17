@@ -145,6 +145,8 @@ def admin_driver():
     d.get(url(ADMIN_DASHBOARD_PATH))
     if any(hint in d.current_url.lower() for hint in AUTH_URL_HINTS):
         login(d, ADMIN_EMAIL, ADMIN_PASS)
+        # Post-login redirect may land elsewhere — navigate back to admin area.
+        d.get(url(ADMIN_DASHBOARD_PATH))
     yield d
     d.quit()
 
