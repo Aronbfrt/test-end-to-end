@@ -306,6 +306,42 @@ Adapter le chemin et l'extension selon `TEST_FRAMEWORK` :
 
 Chaque Page Object contient uniquement les sélecteurs (CSS/XPath/ID) — jamais inline dans les tests.
 
+**SEO pour playwright-ts/cypress/robot** — `seo_checks.py` est Python-only. Implémenter nativement :
+
+```typescript
+// tests/seo/seo.spec.ts (playwright-ts)
+import { test, expect } from '@playwright/test';
+test.describe('SEO', () => {
+  test('title non vide', async ({ page }) => { await page.goto('/'); expect(await page.title()).not.toBe(''); });
+  test('meta description présente', async ({ page }) => { await page.goto('/'); const d = await page.locator('meta[name="description"]').getAttribute('content'); expect(d).toBeTruthy(); });
+  test('h1 présent', async ({ page }) => { await page.goto('/'); await expect(page.locator('h1')).toHaveCount(1); });
+});
+```
+```javascript
+// cypress/e2e/seo/seo.cy.js
+describe('SEO', () => {
+  it('title non vide', () => { cy.title().should('not.be.empty'); });
+  it('meta description présente', () => { cy.get('meta[name="description"]').should('have.attr', 'content').and('not.be.empty'); });
+  it('h1 présent', () => { cy.get('h1').should('have.length', 1); });
+});
+```
+```robot
+*** Settings ***
+Library    SeleniumLibrary
+*** Test Cases ***
+Title Non Vide
+    [Tags]    seo
+    Open Browser    ${BASE_URL}    ${BROWSER}
+    ${t}=    Get Title    
+    Should Not Be Empty    ${t}
+    Close Browser
+H1 Present
+    [Tags]    seo
+    Open Browser    ${BASE_URL}    ${BROWSER}
+    Page Should Contain Element    css:h1
+    Close Browser
+```
+
 ### Files to generate only if discovered
 
 Générer **uniquement** si la feature est trouvée en Step 2. Adapter l'extension selon `TEST_FRAMEWORK` :

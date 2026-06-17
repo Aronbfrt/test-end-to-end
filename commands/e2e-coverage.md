@@ -23,7 +23,7 @@ grep -rE "driver\.get|page\.goto|url\(|\.get\(url|BASE_URL" tests/ 2>/dev/null
 grep -rE "page\.goto|baseURL|navigate" tests/ 2>/dev/null
 
 # cypress → cypress/e2e/**/*.cy.js
-grep -rE "cy\.visit|baseUrl" cypress/e2e/ 2>/dev/null
+grep -rE "cy\.visit" cypress/e2e/ 2>/dev/null
 
 # robot → tests/**/*.robot
 grep -rE "Open Browser|Go To|Navigate To" tests/ 2>/dev/null

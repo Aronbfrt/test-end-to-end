@@ -54,7 +54,6 @@ ADMIN_EMAIL          = os.getenv('TEST_ADMIN_EMAIL', 'admin@example.com')
 ADMIN_PASS           = os.getenv('TEST_ADMIN_PASS',  'password')
 USER_EMAIL           = os.getenv('TEST_USER_EMAIL',  'user@example.com')
 USER_PASS            = os.getenv('TEST_USER_PASS',   'password')
-API_URL              = os.getenv('TEST_API_URL', helpers_module.BASE_URL)
 SCREENSHOTS          = os.getenv('TEST_SCREENSHOTS', 'tests/screenshots')
 # Empty string = no admin area in this project → admin_driver fixture is skipped
 ADMIN_DASHBOARD_PATH = os.getenv('TEST_ADMIN_DASHBOARD_PATH', '')
