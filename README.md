@@ -63,6 +63,22 @@ pytest -m smoke         # seulement les tests critiques
 pytest tests/seo/       # un dossier
 ```
 
+## Migration automatique des tests existants
+
+Tu as déjà des tests en Jest, Cypress, Playwright ou PHPUnit ? `/e2e-audit` les détecte et les convertit automatiquement en Python/pytest avant de générer quoi que ce soit :
+
+| Format source | Converti en |
+|---|---|
+| Jest / Vitest (`.test.js/ts`) | `class TestX` + `assert` Python |
+| Cypress (`.cy.js/ts`) | `driver.get()` + `find_element()` Selenium |
+| Playwright (`.spec.ts`) | `driver.get()` + `find_element()` Selenium |
+| PHPUnit (`*Test.php`) | `def test_xxx()` pytest |
+
+- Les sélecteurs CSS/XPath sont extraits dans `tests/pages/*.py` (jamais en dur dans le test)
+- L'intention du test est préservée exactement — seule la syntaxe change
+- Chaque test converti est marqué `# converted from <fichier_original>`
+- Le fichier original est supprimé après conversion
+
 ## Auto-fix en direct
 
 `/e2e-audit` ne s'arrête pas après la première run — il corrige les échecs et relance en boucle, **Chrome ouvert en visible** pour voir chaque test s'exécuter en direct :

@@ -8,7 +8,40 @@ End-to-end, zero-manual-work site audit. Discovers everything from the code (nev
 
 This is the **superset** of `/e2e-init` — run this instead when the user wants "everything" rather than a guided manual setup.
 
-## Step 1 — Bootstrap test infra if absent
+## Step 1 — Detect and migrate existing tests, then bootstrap infra
+
+### Scan for existing tests first
+
+```bash
+find . -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
+       -o -name "*.test.jsx" -o -name "*.spec.jsx" -o -name "*.test.tsx" -o -name "*.spec.tsx" \
+       -o -name "*Test.php" -o -name "*Spec.php" \
+       -o -name "cypress.config.*" -o -name "playwright.config.*" \
+       -o -name "jest.config.*" \
+       2>/dev/null | grep -v node_modules | grep -v vendor
+```
+
+**If existing tests found — migrate them before generating anything new:**
+
+For each test file found, read it and convert its test logic to Python/pytest following these rules:
+
+| Source format | Conversion rule |
+|---|---|
+| Jest / Vitest (`.test.js/ts`) | Each `describe` → class, each `it`/`test` → method, `expect(x).toBe(y)` → `assert x == y` |
+| Cypress (`.cy.js/ts`) | `cy.visit(url)` → `driver.get(url)`, `cy.get(sel)` → `driver.find_element(By.CSS_SELECTOR, sel)`, `cy.contains(txt)` → assert text in page source |
+| Playwright (`.spec.ts`) | `page.goto(url)` → `driver.get(url)`, `page.locator(sel)` → `driver.find_element(By.CSS_SELECTOR, sel)` |
+| PHPUnit (`*Test.php`) | Each `testXxx` method → pytest method, `$this->assertEquals(a, b)` → `assert a == b` |
+
+Conversion rules:
+- Place converted file in `tests/<same_domain>/test_<original_name>.py`
+- Selectors: move all CSS/XPath selectors to `tests/pages/<page_name>.py` — never inline in the test
+- Preserve test intent exactly — don't change what's being asserted, only the syntax
+- Mark each converted test with a comment: `# converted from <original_file>`
+- Delete the original non-Python test file after conversion (or note it if in a separate unrelated test runner config)
+
+**If no existing tests found:** proceed directly to bootstrap.
+
+### Bootstrap infra
 
 ```bash
 test -f tests/conftest.py
