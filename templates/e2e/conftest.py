@@ -95,6 +95,8 @@ def pytest_sessionfinish(session, exitstatus):
 def pytest_addoption(parser):
     parser.addoption('--env', action='store', default=None,
                      help='Override TEST_BASE_URL key (dev/staging/prod)')
+    parser.addoption('--headed', action='store_true', default=False,
+                     help='Run browser in visible mode (default: headless)')
 
 
 def pytest_configure(config):
@@ -104,6 +106,11 @@ def pytest_configure(config):
         if override:
             helpers_module.BASE_URL = override
             log.info(f'BASE_URL overridden via --env={env}: {override}')
+
+    if config.getoption('--headed'):
+        from tests.utils import browser as browser_mod
+        browser_mod.HEADLESS = False
+        log.info('Browser: visible (--headed)')
 
 
 # ── Test lifecycle hooks ───────────────────────────────────────────────────────
