@@ -30,8 +30,15 @@ Quiconque utilise Claude Code sur un projet web (peu importe le langage backend)
 
 ## Installation
 
+**Étape 1** — ajouter la marketplace (attendre la confirmation avant de continuer) :
+
 ```
 /plugin marketplace add https://github.com/Aronbfrt/test-end-to-end
+```
+
+**Étape 2** — installer le plugin :
+
+```
 /plugin install test-end-to-end@test-end-to-end
 ```
 
