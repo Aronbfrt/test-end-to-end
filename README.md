@@ -41,19 +41,23 @@ Avant d'installer le plugin, vérifie que tu as ces outils sur ta machine. Sans 
 | **Node.js** | 18.0+ | Fait tourner le moteur TypeScript du plugin | [nodejs.org](https://nodejs.org) |
 | **npm** | 9.0+ | Installé automatiquement avec Node.js | — |
 | **Git** | 2.x | Requis pour l'analyse Git forensique et la création de branches automatiques | [git-scm.com](https://git-scm.com) |
-| **Claude Code** | latest | L'environnement depuis lequel tu lances les commandes slash | `npm install -g @anthropic/claude-code` |
+| **Claude Code** | latest | L'environnement depuis lequel tu lances les commandes slash | `npm install -g @anthropic-ai/claude-code` |
 
 ### Fortement recommandé — Ollama (économie de tokens IA)
 
 **Ollama** est un logiciel gratuit qui fait tourner des modèles IA directement sur ta machine. Sans lui, toutes les analyses passent par l'API Anthropic (tokens payants). Avec lui, environ **94% des traitements se font en local**, gratuitement.
 
 ```bash
-# macOS / Linux — une seule commande
-curl -fsSL https://ollama.ai/install.sh | sh
+# macOS — installeur graphique recommandé
+# → https://ollama.com/download/mac
 
-# Windows — télécharger l'installeur sur https://ollama.ai/download
+# Linux — une seule commande
+curl -fsSL https://ollama.com/install.sh | sh
 
-# Après installation, télécharger le modèle recommandé
+# Windows — installeur graphique
+# → https://ollama.com/download/windows
+
+# Après installation (macOS / Linux / Windows) — télécharger le modèle
 ollama pull llama3.2
 
 # Vérifier qu'Ollama tourne bien
@@ -68,16 +72,20 @@ ollama list
 Si tu veux que le plugin ouvre des Pull Requests automatiquement quand il trouve un bug, il faut `gh` installé et connecté à GitHub.
 
 ```bash
-# macOS
+# macOS (Homebrew)
 brew install gh
 
 # Ubuntu / Debian
 sudo apt install gh
 
+# Linux — autres distributions (Fedora, Arch, etc.)
+# → https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
 # Windows
 winget install --id GitHub.cli
+# ou télécharger l'installeur sur https://cli.github.com
 
-# Connexion à GitHub
+# Connexion à GitHub (macOS / Linux / Windows — même commande)
 gh auth login
 ```
 
@@ -86,9 +94,19 @@ gh auth login
 Le plugin *génère* les tests Playwright. Pour les *exécuter* localement :
 
 ```bash
+# macOS / Linux
 npm install -g @playwright/test
-npx playwright install chromium
+playwright install chromium
+
+# Windows (PowerShell en tant qu'administrateur — requis pour installer les binaires browser)
+npm install -g @playwright/test
+playwright install chromium
+
+# Vérifier l'installation
+playwright --version
 ```
+
+> **Windows :** l'installation des navigateurs nécessite d'ouvrir PowerShell en tant qu'administrateur (clic droit → "Exécuter en tant qu'administrateur").
 
 ---
 
