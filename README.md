@@ -118,7 +118,7 @@ playwright --version
 ### Étape 1 — Installer le plugin dans Claude Code
 
 ```bash
-claude plugin install https://github.com/Aronbfrt/test-end-to-end
+claude plugin install https://github.com/Aronbfrt/test-end-to-end.git
 ```
 
 Cette commande télécharge le plugin et le rend disponible dans Claude Code sous forme de commandes slash (`/e2e-init`, `/e2e-audit`, etc.).
@@ -257,7 +257,10 @@ Après la première exécution, deux dossiers apparaissent à la racine de ton p
 
 **`tests/`** — tests générés par le moteur
 - `tests/<route>/base.spec.ts` — tests fonctionnels par route
-- `tests/<route>/persona_*.spec.ts` — tests par Shadow Persona
+- `tests/<route>/persona_frustrated.spec.ts` — Shadow Persona utilisateur frustré
+- `tests/<route>/persona_attacker.spec.ts` — Shadow Persona attaquant malveillant
+- `tests/<route>/persona_impulsive.spec.ts` — Shadow Persona acheteur impulsif
+- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (généré avec `--chaos` ou `--level=3`)
 - `tests/report.html` — rapport de confiance (score IC, verdicts, hotspots)
 
 **`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
