@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { RunConfig } from '../orchestrator.js';
 import type { RunSummary, TestRun } from '../utils/report.js';
+import { sanitizeObject } from './rgpdGuard.js';
 
 // ── Playwright JSON report types ───────────────────────────────────────────────
 
@@ -127,17 +128,19 @@ export async function runTests(config: RunConfig, cachedFiles: number): Promise<
 
     if (verdict === 'FAIL' && traceId) {
       const errorMsg = result.error?.message ?? result.error?.value ?? 'Test failure';
-      const crashPath = join(workDir, `${traceId}.json`);
-      writeFileSync(crashPath, JSON.stringify({
+      const raw = {
         traceId,
-        testName:     spec.title,
+        testName:       spec.title,
         route,
-        statusCode:   /404/i.test(errorMsg) ? 404 : /500/i.test(errorMsg) ? 500 : 0,
-        errorMessage: errorMsg.slice(0, 2000),
-        pageHtml:     '',
-        consoleLogs:  [],
+        statusCode:     /404/i.test(errorMsg) ? 404 : /500/i.test(errorMsg) ? 500 : 0,
+        errorMessage:   errorMsg.slice(0, 2000),
+        pageHtml:       '',
+        consoleLogs:    [] as string[],
         brokenSelector: extractSelector(errorMsg),
-      }, null, 2), 'utf-8');
+      };
+      const { sanitized } = sanitizeObject(raw);
+      const crashPath = join(workDir, `${traceId}.json`);
+      writeFileSync(crashPath, JSON.stringify(sanitized, null, 2), 'utf-8');
     }
   }
 

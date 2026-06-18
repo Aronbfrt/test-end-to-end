@@ -22,6 +22,8 @@ import {
   persistCache,
   snapshot,
 } from './utils/cache.js';
+import { notifyCrash, notifyPatch } from './integrations/notifier.js';
+import { recordRun, recordTriage, recordPatch } from './utils/metricsTracker.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ export type OrchestratorState =
   | 'DONE'
   | 'ERROR';
 
-interface OllamaCapability {
+export interface OllamaCapability {
   available: boolean;
   model: string | null;
   endpoint: string;
@@ -363,6 +365,26 @@ export async function run(config: RunConfig): Promise<void> {
         traceId,
       });
       log(`triage verdict: ${triageResult.verdict} (confidence: ${(triageResult.confidence * 100).toFixed(0)}%)`);
+
+      // Persist triage metrics + ChatOps alert
+      const firstFailRun = testSummary.runs.find((r) => r.verdict === 'FAIL');
+      await recordTriage({
+        traceId:    traceId,
+        verdict:    triageResult.verdict,
+        confidence: triageResult.confidence,
+        route:      firstFailRun?.route ?? '/',
+        target:     config.targetPath,
+      });
+      if (triageResult.verdict !== 'UNKNOWN') {
+        notifyCrash({
+          traceId,
+          route:      firstFailRun?.route ?? '/',
+          verdict:    triageResult.verdict,
+          confidence: triageResult.confidence,
+          reasoning:  triageResult.reasoning,
+          targetPath: config.targetPath,
+        }).catch(() => { /* non-fatal */ });
+      }
     }
 
     // ── Phase 5: auto-patch (level 3 / repair / shadow level 3) ─────────────
@@ -408,6 +430,39 @@ export async function run(config: RunConfig): Promise<void> {
 
       if (bugReport) {
         await dispatch<void>({ type: 'WRITE_PATCH', bugReport });
+
+        // ChatOps patch notification + régression test via QA Engineer
+        const patchTraceId  = config.traceId ?? `patch-${Date.now()}`;
+        const patchRoute    = triageResult?.bugReport?.route ?? bugReport.route;
+        notifyPatch({
+          traceId:      patchTraceId,
+          route:        patchRoute,
+          filesPatched: [],
+          targetPath:   config.targetPath,
+        }).catch(() => { /* non-fatal */ });
+
+        await recordPatch({
+          traceId:      patchTraceId,
+          route:        patchRoute,
+          filesPatched: 0,
+          target:       config.targetPath,
+        });
+
+        // Génération test de régression
+        if (triageResult) {
+          const { generateRegressionTest } = await import('./agents/qaEngineer.js');
+          await generateRegressionTest(
+            {
+              traceId:      patchTraceId,
+              route:        patchRoute,
+              triage:       triageResult,
+              patchedFiles: [],
+              targetPath:   config.targetPath,
+            },
+            config,
+            _ollama,
+          ).catch((e) => console.warn(`[qaEngineer] ${(e as Error).message}`));
+        }
       } else {
         log('Ghostwriter on standby — no triage result available (run audit first, or use --trace=<id>)');
       }
@@ -415,6 +470,21 @@ export async function run(config: RunConfig): Promise<void> {
 
     setState('DONE');
     log(`Run complete [cmd=${config.command}] [level=${config.level}] [bypass=${allFiles.length - staleFiles.length} files]`);
+
+    // Persist run metrics
+    const passed = testSummary.runs.filter((r) => r.verdict === 'PASS').length;
+    const failed = testSummary.runs.filter((r) => r.verdict === 'FAIL').length;
+    recordRun({
+      command:     config.command,
+      level:       config.level,
+      target:      config.targetPath,
+      passed,
+      failed,
+      cached:      testSummary.cachedFiles,
+      ciScore:     0,
+      durationMs:  0,
+      tokensSaved: testSummary.tokensSaved,
+    }).catch(() => { /* non-fatal */ });
 
   } catch (err) {
     setState('ERROR');
