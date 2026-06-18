@@ -128,13 +128,20 @@ playwright --version
 
 ## 📦 Installation du plugin
 
-### Étape 1 — Installer le plugin dans Claude Code
+### Étape 1 — Cloner le plugin dans Claude Code
 
 ```bash
-claude plugin install https://github.com/Aronbfrt/test-end-to-end.git
+# macOS / Linux
+git clone https://github.com/Aronbfrt/test-end-to-end.git ~/.claude/plugins/marketplaces/test-end-to-end
+
+# Windows (PowerShell)
+git clone https://github.com/Aronbfrt/test-end-to-end.git "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end"
+
+# Windows (Invite de commandes / CMD)
+git clone https://github.com/Aronbfrt/test-end-to-end.git %USERPROFILE%\.claude\plugins\marketplaces\test-end-to-end
 ```
 
-Cette commande télécharge le plugin et le rend disponible dans Claude Code sous forme de commandes slash (`/e2e-init`, `/e2e-audit`, etc.).
+Cette commande télécharge le plugin dans le dossier des plugins Claude Code, où il est automatiquement détecté et rendu disponible sous forme de commandes slash (`/e2e-init`, `/e2e-audit`, etc.).
 
 ### Étape 2 — Installer les dépendances du moteur TypeScript
 
