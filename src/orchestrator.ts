@@ -262,7 +262,7 @@ export async function run(config: RunConfig): Promise<void> {
         _origLog(...args);
       };
     }
-  } catch { /* non-fatal — cannot write to workDir */ }
+  } catch (e) { console.warn(`[orchestrator] workDir init failed: ${(e as Error).message}`); }
 
   try {
     // ── Phase 0: bootstrap ──────────────────────────────────────────────────
@@ -471,7 +471,8 @@ function getHotspotFiles(root: string, allFiles: string[]): string[] {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20)
       .map(([f]) => f);
-  } catch {
+  } catch (e) {
+    console.warn(`[orchestrator] predictive git scan failed: ${(e as Error).message}`);
     return [];
   }
 }

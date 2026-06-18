@@ -24,7 +24,6 @@ import { fileURLToPath } from 'node:url';
 const _pluginRoot = join(dirname(fileURLToPath(import.meta.url)), '../../');
 
 import type { AgentTask, RouteMap, RunConfig } from '../orchestrator.js';
-import type { ScanResult } from './scout.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -505,7 +504,7 @@ export async function run(
     throw new Error(`artisan received unexpected task type: ${task.type}`);
   }
 
-  const { routes, forms, stack } = task.routes as ScanResult;
+  const { routes, forms, stack } = task.routes;
   const personas = task.personas as PersonaId[] | undefined;
   const baseUrl = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
   const outputRoot = join(config.targetPath, 'tests');

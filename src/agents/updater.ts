@@ -68,7 +68,7 @@ export async function run(
   if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
 
   const snapshotPath = join(workDir, 'last-routes.json');
-  const dryRun = (config as RunConfig & { dryRun?: boolean }).dryRun ?? false;
+  const dryRun = config.dryRun ?? false;
 
   // ── Get current route map via scout ────────────────────────────────────────
   const { run: scoutRun } = await import('./scout.js') as {

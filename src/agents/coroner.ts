@@ -178,13 +178,8 @@ export function pixelDiff(
 
   let decA: DecodedImage;
   let decB: DecodedImage;
-  try {
-    decA = decodePng(imgA);
-    decB = decodePng(imgB);
-  } catch {
-    // Cannot decode — treat as fully different
-    return { diffRatio: 1, diffCount: -1, totalPixels: 0, isWithinShield: false };
-  }
+  decA = decodePng(imgA);
+  decB = decodePng(imgB);
 
   if (decA.width !== decB.width || decA.height !== decB.height) {
     // Different dimensions = layout change — never shield
@@ -385,13 +380,17 @@ export async function run(
 
   if (ctx.screenshotPath && ctx.baselinePath &&
       existsSync(ctx.screenshotPath) && existsSync(ctx.baselinePath)) {
-    const imgA = readFileSync(ctx.baselinePath);
-    const imgB = readFileSync(ctx.screenshotPath);
-    pixelResult = pixelDiff(imgA, imgB, { toleranceRgb: 32, thresholdFraction: 0.01 });
-    console.log(
-      `[coroner] SHIELD: diff=${(pixelResult.diffRatio * 100).toFixed(2)}% ` +
-      `[${pixelResult.isWithinShield ? 'ABSORBED — cosmetic noise' : 'REAL DIFF'}]`,
-    );
+    try {
+      const imgA = readFileSync(ctx.baselinePath);
+      const imgB = readFileSync(ctx.screenshotPath);
+      pixelResult = pixelDiff(imgA, imgB, { toleranceRgb: 32, thresholdFraction: 0.01 });
+      console.log(
+        `[coroner] SHIELD: diff=${(pixelResult.diffRatio * 100).toFixed(2)}% ` +
+        `[${pixelResult.isWithinShield ? 'ABSORBED — cosmetic noise' : 'REAL DIFF'}]`,
+      );
+    } catch (e) {
+      console.warn(`[coroner] SHIELD skipped — PNG decode failed: ${(e as Error).message}`);
+    }
   }
 
   // ── Step 3: Classify ──────────────────────────────────────────────────────

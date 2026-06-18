@@ -102,7 +102,7 @@ function detectStack(root: string): string {
       if (deps['fastify'])    return 'fastify';
       if (deps['react'])      return 'react';
       if (deps['vue'])        return 'vue';
-    } catch { /* ignore */ }
+    } catch (e) { console.warn(`[scout] package.json parse failed: ${(e as Error).message}`); }
   }
   if (existsSync(join(root, 'artisan')))         return 'laravel';
   if (existsSync(join(root, 'manage.py')))       return 'django';
@@ -377,7 +377,8 @@ function fetchGitLog(root: string): CommitEntry[] {
       `git -C "${root}" log --since="${sinceStr}" --name-only --pretty=format:"COMMIT|%H|%at|%H" --no-merges`,
       { timeout: 15_000, maxBuffer: 10 * 1024 * 1024 },
     ).toString();
-  } catch {
+  } catch (e) {
+    console.warn(`[scout] git log (pre-check) failed: ${(e as Error).message}`);
     return [];
   }
 
@@ -393,7 +394,8 @@ function fetchGitLog(root: string): CommitEntry[] {
       `git -C "${root}" log --since="${sinceStr}" --name-only --pretty=format:"COMMIT:%H" --no-merges`,
       { timeout: 15_000, maxBuffer: 10 * 1024 * 1024 },
     ).toString();
-  } catch {
+  } catch (e) {
+    console.warn(`[scout] git log failed: ${(e as Error).message}`);
     return [];
   }
 
