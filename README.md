@@ -323,7 +323,13 @@ node dist/index.js init /chemin/vers/ton/projet
 
 ### `/e2e-audit` — Audit E2E complet automatique
 
-**Ce que ça fait :** C'est la commande principale du plugin. Elle effectue un audit complet de ton application en plusieurs passes : tests fonctionnels de base (chaque page s'ouvre-t-elle ?), tests de sécurité (injection SQL, XSS, traversée de répertoires), tests SEO (balises meta, robots.txt, sitemap), tests d'accessibilité (ARIA, contraste, navigation clavier), tests de performance (temps de chargement, Core Web Vitals), et tests responsive (mobile, tablette, desktop). À la fin, elle génère un rapport HTML avec un **score de confiance** de 0 à 100.
+**Ce que ça fait :** C'est la commande principale du plugin. Elle scanne ton code source (AST), détecte les routes et formulaires, puis génère automatiquement quatre types de tests :
+- **Fonctionnels** — chaque route répond en 200, aucune erreur console, les formulaires ne retournent pas de 5xx
+- **Sécurité** — payloads XSS, injection SQL, traversée de répertoires, injection de prompts (si feature IA détectée)
+- **Shadow Personas** — utilisateur frustré (clics rapides, abandon), attaquant malveillant, acheteur impulsif (`--level=3`)
+- **Chaos réseau** — double-submit, timeout, erreurs réseau injectées (`--chaos` ou `--level=3`)
+
+À la fin, elle génère un rapport HTML avec un **score de confiance** de 0 à 100.
 
 **Quand l'utiliser :** Avant chaque déploiement, après une grosse modification du code, ou quand tu veux avoir une vue d'ensemble de l'état de santé de ton application.
 
@@ -350,7 +356,7 @@ node dist/index.js audit --level=3 --chaos --predictive
 |---|---|---|---|
 | `--level=1` | Analyse AST locale + génération de tests. Aucun appel IA. | 0 token | < 30 sec |
 | `--level=2` *(défaut)* | Tout le niveau 1 + Vision IA pour réparer les sélecteurs cassés + triage intelligent des crashes | Quelques appels | 1–3 min |
-| `--level=3` | Tout le niveau 2 + les 3 personas cyber-attaquants (XSS, injection…) + création automatique de PR de correction + auto-évolution du plugin | Plus d'appels | 3–10 min |
+| `--level=3` | Tout le niveau 2 + les 3 Shadow Personas (frustrated_user, impulsive_buyer, malicious_attacker) + création automatique de PR de correction + auto-évolution du plugin sur erreur fatale | Plus d'appels | 3–10 min |
 
 ---
 
