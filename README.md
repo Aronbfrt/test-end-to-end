@@ -1,549 +1,883 @@
-# test-end-to-end
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="test-end-to-end V-Infinite" width="480">
+</p>
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.x-2EAD33?logo=playwright)](https://playwright.dev/)
-[![Ollama](https://img.shields.io/badge/Ollama-local--LLM-FFF?logo=ollama)](https://ollama.ai/)
-[![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite)](https://sqlite.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![RGPD](https://img.shields.io/badge/RGPD-conforme-009B77)](https://github.com/Aronbfrt/test-end-to-end)
-[![Cloud](https://img.shields.io/badge/Cloud-OVH%20%7C%20IONOS%20%7C%20Hostinger-5C068C)](https://github.com/Aronbfrt/test-end-to-end)
+<p align="center">
+  <a href="https://github.com/Aronbfrt/test-end-to-end/releases"><img src="https://img.shields.io/badge/version-2.0.0-6366f1?style=for-the-badge&logoColor=white" alt="Version"></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/MCP-natif-5046e4?style=for-the-badge&logo=anthropic&logoColor=white" alt="MCP">
+  <img src="https://img.shields.io/badge/build-passing-22c55e?style=for-the-badge" alt="Build">
+  <img src="https://img.shields.io/badge/licence-MIT-f59e0b?style=for-the-badge" alt="MIT">
+</p>
 
-> **Agent E2E autonome** — Détecte, diagnostique et corrige automatiquement les régressions de votre application web. Du crash au correctif en production, sans intervention humaine.
+<h3 align="center">L'usine de QA cognitive autonome pour Claude Code.</h3>
+
+<p align="center">
+  Tu pointes le plugin sur n'importe quel projet. Il lit ton code source, comprend tes routes et tes formulaires,<br>
+  génère une batterie de tests E2E complets, diagnostique chaque crash avec l'IA,<br>
+  diagnostique les sélecteurs cassés (Vision IA suggère un remplacement), et ouvre des Pull Requests avec des patchs chirurgicaux.<br>
+  <b>Zéro configuration manuelle. Zéro prompt humain à écrire.</b>
+</p>
+
+<p align="center">
+  <a href="#-prérequis"><b>Prérequis</b></a> ·
+  <a href="#-installation-du-plugin"><b>Installation</b></a> ·
+  <a href="#-démarrage-rapide"><b>Démarrage rapide</b></a> ·
+  <a href="#️-commandes-en-détail"><b>Commandes</b></a> ·
+  <a href="#-architecture"><b>Architecture</b></a> ·
+  <a href="#-dashboard"><b>Dashboard</b></a>
+</p>
 
 ---
 
-## Vue d'ensemble
+## ✅ Prérequis
 
-`test-end-to-end` est un écosystème de **13 agents spécialisés** qui collaborent autour d'un orchestrateur à état pour :
+Avant d'installer le plugin, vérifie que tu as ces outils sur ta machine. Sans eux, certaines fonctionnalités ne marcheront pas.
 
-1. **Scanner** votre code source (AST, routes, formulaires, stack auto-détecté)
-2. **Générer** des tests Playwright sur mesure (niveaux 1–3 + Shadow Personas)
-3. **Exécuter** les tests avec Zero-Token Bypass (cache par fingerprint SHA-256)
-4. **Diagnostiquer** chaque crash (SHIELD perceptuel, Ollama local, Anthropic)
-5. **Corriger** automatiquement le code et ouvrir une PR GitHub (Ghostwriter)
-6. **Notifier** votre équipe (Slack, Discord, Microsoft Teams)
-7. **Tracer** chaque bug dans votre outil de gestion (Jira, Trello)
-8. **Déployer** le correctif chez votre hébergeur (OVH, IONOS, Hostinger)
-9. **Mesurer** l'impact en CO₂ et en budget FinOps (SQLite persisté)
+### Obligatoires
+
+| Outil | Version minimum | Pourquoi c'est nécessaire | Installation |
+|---|---|---|---|
+| **Node.js** | 18.0+ | Fait tourner le moteur TypeScript du plugin | [nodejs.org](https://nodejs.org) |
+| **npm** | 9.0+ | Installé automatiquement avec Node.js | — |
+| **Git** | 2.x | Requis pour l'analyse Git forensique et la création de branches automatiques | [git-scm.com](https://git-scm.com) |
+| **Claude Code** | latest | L'environnement depuis lequel tu lances les commandes slash | `npm install -g @anthropic-ai/claude-code` |
+
+### Fortement recommandé — Ollama (économie de tokens IA)
+
+**Ollama** est un logiciel gratuit qui fait tourner des modèles IA directement sur ta machine.
+
+**Ce qui est toujours local (zéro token) :**
+- Génération de tests — `artisan` produit tous les fichiers `.spec.ts` par templates, sans aucun appel API
+- Analyse AST — `scout` lit et classe ton code entièrement en local
+- Carte de couverture (`coverage`) et synchronisation (`update`) — 100% locaux
+
+**Ce qu'Ollama améliore :**
+- Classification des messages de commit pour détecter le stress Git — sans Ollama, le plugin utilise une analyse par marqueurs regex (100% local, moins précise) ; avec Ollama, un LLM local affine le scoring
+
+**Ce qui utilise toujours l'API Claude (tokens payants) :**
+- `coroner` — analyse de crash + Vision IA sur sélecteurs cassés (`--level=2+`)
+- `ghostwriter` — génération de patches chirurgicaux (`--level=3` / `repair`)
+- `evolver` — auto-amélioration sur erreur fatale (`--level=3` uniquement)
+
+```bash
+# macOS — installeur graphique recommandé
+# → https://ollama.com/download/mac
+
+# Linux — une seule commande
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Windows — installeur graphique
+# → https://ollama.com/download/windows
+
+# Après installation — choisir le modèle selon ta RAM :
+
+# ✅ Recommandé — machines avec 8 Go de RAM ou moins (rapide, léger, 2 Go)
+ollama pull llama3.2:3b
+
+# 🚀 Performances supérieures — machines avec 16 Go de RAM ou plus (meilleure qualité, 4.7 Go)
+ollama pull llama3.1:8b
+
+# Vérifier que le modèle est bien installé
+ollama list
+# → tu dois voir "llama3.2:3b" ou "llama3.1:8b" dans la liste
+```
+
+> **Quel modèle choisir ?** Le plugin utilise Ollama pour classifier des messages de commit et détecter des anomalies de sélecteur CSS — des tâches simples. `llama3.2:3b` est parfaitement suffisant et démarre en 2 secondes. `llama3.1:8b` donne de meilleurs résultats sur les projets complexes (commits ambigus, frameworks rares) mais consomme ~5x plus de RAM. Si tu as les deux installés, le plugin choisit automatiquement le premier détecté par `ollama list`.
+
+> **Ollama n'est pas obligatoire.** Si tu ne l'installes pas, le plugin utilise l'API Claude normalement — ça marche pareil, mais consomme des tokens pour chaque analyse.
+
+### Optionnel — GitHub CLI (pour la création automatique de PRs)
+
+Si tu veux que le plugin ouvre des Pull Requests automatiquement quand il trouve un bug, il faut `gh` installé et connecté à GitHub.
+
+```bash
+# macOS (Homebrew)
+brew install gh
+
+# Ubuntu / Debian
+sudo apt install gh
+
+# Linux — autres distributions (Fedora, Arch, etc.)
+# → https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
+# Windows
+winget install --id GitHub.cli
+# ou télécharger l'installeur sur https://cli.github.com
+
+# Connexion à GitHub (macOS / Linux / Windows — même commande)
+gh auth login
+```
+
+### Optionnel — Playwright (pour exécuter les tests générés)
+
+Le plugin *génère* les tests Playwright. Pour les *exécuter* localement :
+
+```bash
+# macOS / Linux / Windows — mêmes commandes
+npm install -g @playwright/test
+playwright install chromium
+
+# Vérifier l'installation
+playwright --version
+```
+
+> **Windows :** lance PowerShell en tant qu'administrateur (clic droit → "Exécuter en tant qu'administrateur") avant de lancer `playwright install chromium` — requis pour installer les binaires browser.
 
 ---
 
-## Architecture
+## 📦 Installation du plugin
+
+### Étape 1 — Installer le plugin dans Claude Code
+
+```bash
+# macOS / Linux / Windows — mêmes commandes
+# Étape 1a : enregistrer le dépôt comme marketplace
+claude plugin marketplace add https://github.com/Aronbfrt/test-end-to-end.git
+
+# Étape 1b : installer le plugin depuis cette marketplace
+claude plugin install test-end-to-end@test-end-to-end
+```
+
+Ces deux commandes téléchargent le plugin et l'activent dans Claude Code comme commandes slash (`/e2e-init`, `/e2e-audit`, etc.). Redémarre Claude Code après pour que les nouvelles commandes apparaissent.
+
+### Étape 2 — Installer les dépendances du moteur TypeScript
+
+```bash
+# macOS / Linux
+cd ~/.claude/plugins/marketplaces/test-end-to-end
+
+# Windows (PowerShell)
+cd "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end"
+
+# Windows (Invite de commandes / CMD)
+cd %USERPROFILE%\.claude\plugins\marketplaces\test-end-to-end
+```
+
+```bash
+# Installer les dépendances Node.js (macOS / Linux / Windows — même commande)
+npm install
+
+# Compiler le moteur TypeScript en JavaScript
+npm run build
+```
+
+> **Pourquoi cette étape ?** Le moteur V-Infinite est écrit en TypeScript. GitHub stocke le code source, mais Node.js a besoin du JavaScript compilé pour l'exécuter. Cette étape est à faire **une seule fois** après l'installation, puis à refaire uniquement si tu mets à jour le plugin.
+
+### Étape 3 — Vérifier que tout fonctionne
+
+> **Important :** cette commande doit être lancée depuis le dossier du plugin (celui où tu es allé à l'étape 2). Si tu as ouvert un nouveau terminal, refais le `cd` de l'étape 2 avant.
+
+```bash
+node dist/index.js --help
+```
+
+Tu dois voir ceci :
+
+```
+test-end-to-end V-Infinite 2.0.0 — Autonomous QA Engine
+
+USAGE
+  node dist/index.js <command> [targetPath] [flags]
+
+COMMANDS
+  init        Initialise le projet cible : détecte le stack, amorce le cache,
+              génère la config Playwright.
+              Ex: node dist/index.js init
+                  node dist/index.js init /mon/projet
+
+  audit       Audit E2E complet : scan AST → génération tests → triage → rapport.
+              Ex: node dist/index.js audit
+                  node dist/index.js audit --level=2 --predictive
+
+  shadow      Zero-prompt Reverse Testing + Shadow Personas (Frustrated / Attacker /
+              Chaos / Impulsive). Fonctionne sans qu'on décrive une seule fonctionnalité.
+              Ex: node dist/index.js shadow --level=3 --chaos
+
+  diff        Cible le scan sur les fichiers modifiés (git diff HEAD + staged).
+              --predictive ajoute les hotspots Git des 12 derniers mois.
+              Ex: node dist/index.js diff
+                  node dist/index.js diff --predictive --level=2
+
+  repair      Active Ghostwriter pour patcher un bug confirmé par le Coroner.
+              Charge automatiquement le dernier triage (.e2e-work/*.triage.json).
+              Ex: node dist/index.js repair
+                  node dist/index.js repair --trace=run-1718542800000
+
+  coverage    Carte de couverture : routes + forms vs fichiers de test existants.
+              Génère .e2e-work/coverage.html et coverage.json.
+              Ex: node dist/index.js coverage
+                  node dist/index.js coverage --detail
+
+  update      Sync intelligent après changements de code.
+              Compare routes actuelles vs snapshot (.e2e-work/last-routes.json),
+              génère uniquement les tests manquants. Protège les tests manuels.
+              Ex: node dist/index.js update
+                  node dist/index.js update --dry-run
+
+FLAGS
+  --level=1         Déterministe local — AST pur, sans LLM
+  --level=2         Hybride cognitif — Vision IA sur sélecteur cassé (défaut)
+  --level=3         Meta-Agent Infinite — Shadow Personas + Ghostwriter + Evolver
+  --chaos           Inject scénarios de faute réseau / double-submit / i18n
+  --predictive      Git forensics 12 mois → hotspot ranking
+  --dry-run         Affiche ce qui serait fait sans écrire de fichier (update)
+  --detail          Sortie détaillée par route (coverage)
+  --trace=<id>      Charge un triage spécifique par son identifiant (repair)
+  --reset-cache     Vide le cache d'empreintes SHA-256
+  --mcp             Démarre en mode serveur MCP (stdin/stdout JSON-RPC)
+
+DASHBOARD
+  node dist/server/start.js     → http://127.0.0.1:4321
+
+MCP (.mcp.json)
+  { "mcpServers": { "e2e": { "command": "node",
+    "args": ["/chemin/dist/index.js", "--mcp"] } } }
+```
+
+Si tu vois une erreur :
+- `Cannot find module` → `npm run build` n'a pas été lancé (étape 2), ou tu n'es pas dans le bon dossier
+- `node: command not found` → Node.js n'est pas installé ou pas dans le PATH → [nodejs.org](https://nodejs.org)
+- Autre erreur → vérifie que Node.js 18+ est bien installé : `node --version`
+
+---
+
+## 🚀 Démarrage rapide
+
+Voici comment utiliser le plugin sur ton projet en 2 minutes.
+
+### Utilisation via les commandes slash (le plus simple)
+
+Ouvre Claude Code sur ton projet, puis tape directement dans le chat :
+
+```
+/e2e-init
+```
+
+Claude va t'accompagner pas à pas pour configurer les tests sur ton projet. Il détecte automatiquement ton framework (Next.js, Express, Laravel, Rails, Django…) et génère la configuration adaptée.
+
+### Utilisation via le CLI (contrôle total)
+
+```bash
+# macOS / Linux
+node ~/.claude/plugins/marketplaces/test-end-to-end/dist/index.js audit /chemin/vers/ton/projet --level=2
+
+# Exemple macOS / Linux (projet dans ~/dev/mon-app)
+node ~/.claude/plugins/marketplaces/test-end-to-end/dist/index.js audit ~/dev/mon-app --level=2 --predictive
+
+# Windows (PowerShell)
+node "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end\dist\index.js" audit C:\chemin\vers\ton\projet --level=2
+```
+
+### Résultat attendu
+
+Après la première exécution, deux dossiers apparaissent à la racine de ton projet :
+
+**`tests/`** — tests générés puis exécutés par le moteur
+- `tests/<route>/base.spec.ts` — tests fonctionnels par route (généré à tous les niveaux)
+- `tests/<route>/persona_frustrated.spec.ts` — Shadow Persona utilisateur frustré (`--level=3` ou `shadow`)
+- `tests/<route>/persona_attacker.spec.ts` — Shadow Persona attaquant malveillant (`--level=3` ou `shadow`)
+- `tests/<route>/persona_impulsive.spec.ts` — Shadow Persona acheteur impulsif (`--level=3` ou `shadow`)
+- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (`--chaos` ou `--level=3`, uniquement pour les routes avec formulaire)
+- `tests/report.html` — rapport de confiance (score IC 0–100, résultats par route, verdicts)
+
+**`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
+- `latest.log` — log complet de ce que l'IA a découvert (visible dans le dashboard → onglet Logs, téléchargeable via le bouton ⬇)
+- `*.triage.json` — résultats de triage Coroner (générés à `--level=2+`, utilisés par `repair`)
+- `coverage.html` / `coverage.json` — carte de couverture (générée par `coverage`)
+- `last-routes.json` — snapshot routes pour le mode `update`
+- `pr-*.md` — brouillon Pull Request (créé si `gh` n'est pas installé)
+
+---
+
+## 🖥️  Commandes en détail
+
+Le plugin offre deux types d'interface : les **commandes slash** (pour une utilisation guidée dans Claude Code) et le **CLI** (pour une utilisation directe dans le terminal avec plus de contrôle).
+
+> **Important :** Les flags comme `--level=2` ou `--predictive` ne s'utilisent **jamais seuls**. Ils se combinent toujours avec une commande. Exemples corrects et incorrects :
+> ```bash
+> # ❌ Ne fonctionne pas — manque la commande
+> node dist/index.js --level=2
+>
+> # ✅ Correct — commande + flags
+> node dist/index.js audit --level=2 --predictive
+> ```
+
+---
+
+### `/e2e-init` — Initialisation guidée du projet
+
+**Ce que ça fait :** C'est la première commande à lancer sur un nouveau projet. Elle analyse ton code source pour détecter automatiquement ta stack technique (Next.js, Express, Nuxt, Laravel, Django, Rails…), puis génère tous les fichiers de configuration nécessaires pour les tests E2E et crée des exemples de tests pour chaque route détectée.
+
+**Quand l'utiliser :** Une seule fois, au début, quand tu mets en place les tests sur un projet qui n'en a pas encore.
+
+```bash
+# Via Claude Code (recommandé — mode guidé interactif)
+/e2e-init
+
+# Via CLI — initialise le projet dans le dossier courant
+node dist/index.js init
+
+# Via CLI — initialise un projet spécifique
+node dist/index.js init /chemin/vers/ton/projet
+```
+
+**Résultat :** Un dossier `tests/` est créé avec une structure Page Object Model (POM), un fichier de configuration Playwright adapté à ton projet, et des tests de base prêts à être exécutés.
+
+---
+
+### `/e2e-audit` — Audit E2E complet automatique
+
+**Ce que ça fait :** C'est la commande principale du plugin. Elle scanne ton code source (AST), détecte les routes et formulaires, puis génère automatiquement quatre types de tests :
+- **Fonctionnels** — chaque route répond en 200, aucune erreur console, les formulaires ne retournent pas de 5xx
+- **Sécurité** — payloads XSS, injection SQL, traversée de répertoires, injection de prompts (si feature IA détectée)
+- **Shadow Personas** — utilisateur frustré (clics rapides, abandon), attaquant malveillant, acheteur impulsif (`--level=3`)
+- **Chaos réseau** — double-submit, timeout, erreurs réseau injectées (`--chaos` ou `--level=3`)
+
+À la fin, elle génère un rapport HTML avec un **score de confiance** de 0 à 100.
+
+**Quand l'utiliser :** Avant chaque déploiement, après une grosse modification du code, ou quand tu veux avoir une vue d'ensemble de l'état de santé de ton application.
+
+```bash
+# Via Claude Code
+/e2e-audit
+
+# Via CLI — niveau 1 : analyse locale uniquement, sans IA (le plus rapide, 0 token)
+node dist/index.js audit --level=1
+
+# Via CLI — niveau 2 : analyse + Vision IA sur les sélecteurs cassés (recommandé)
+node dist/index.js audit --level=2
+
+# Via CLI — niveau 2 + forensique Git (détecte les fichiers historiquement risqués)
+node dist/index.js audit --level=2 --predictive
+
+# Via CLI — niveau 3 : audit complet avec personas cyber-attaquants + auto-patch PR
+node dist/index.js audit --level=3 --chaos --predictive
+```
+
+**Les 3 niveaux en détail :**
+
+| Niveau | Ce qui est activé | Coût IA | Temps estimé |
+|---|---|---|---|
+| `--level=1` | Analyse AST locale + génération de tests + exécution Playwright. Aucun appel IA. | 0 token | 1–3 min |
+| `--level=2` *(défaut)* | Tout le niveau 1 + Vision IA pour diagnostiquer les sélecteurs cassés et suggérer un remplacement + triage intelligent des crashes | Quelques appels | 1–3 min |
+| `--level=3` | Tout le niveau 2 + les 3 Shadow Personas (frustrated_user, impulsive_buyer, malicious_attacker) + création automatique de PR de correction + auto-évolution du plugin sur erreur fatale | Plus d'appels | 3–10 min |
+
+---
+
+### `/e2e-coverage` — Carte de couverture des tests
+
+**Ce que ça fait :** Analyse ton codebase et compare les routes et formulaires existants dans ton code aux tests E2E actuellement en place. Te donne une carte visuelle précise : "tu as 47 routes, 31 sont couvertes (66%), il manque ces 16-là". Identifie aussi les formulaires non testés.
+
+**Quand l'utiliser :** Quand tu veux savoir où sont tes angles morts en matière de tests, ou pour justifier auprès d'une équipe le niveau de couverture actuel.
+
+```bash
+# Via Claude Code
+/e2e-coverage
+
+# Via CLI — génère le rapport de couverture
+node dist/index.js coverage
+
+# Rapport avec détail par route et formulaire (fichiers de test correspondants)
+node dist/index.js coverage --detail
+```
+
+---
+
+### `/e2e-update` — Mise à jour intelligente des tests
+
+**Ce que ça fait :** Quand tu ajoutes de nouvelles fonctionnalités à ton application, tes tests existants deviennent incomplets. Cette commande détecte automatiquement ce qui a changé depuis le dernier audit (nouvelles routes, formulaires modifiés, endpoints ajoutés) et génère uniquement les tests manquants — **sans jamais écraser les tests que tu as écrits manuellement**.
+
+**Quand l'utiliser :** Après avoir ajouté une nouvelle page, un nouveau formulaire, ou un nouvel endpoint API à ton application.
+
+```bash
+# Via Claude Code
+/e2e-update
+
+# Via CLI — détecte les changements et met à jour les tests
+node dist/index.js update
+
+# Avec prévisualisation de ce qui va changer (sans modifier les fichiers)
+node dist/index.js update --dry-run
+```
+
+---
+
+### `shadow` — Reverse Testing avec personas extrêmes
+
+**Ce que ça fait :** Plutôt que de tester "le comportement normal d'un utilisateur", cette commande génère des tests qui simulent des comportements extrêmes : un utilisateur frustré qui clique frénétiquement partout, un acheteur impulsif qui essaie de passer une commande sans remplir les champs obligatoires, et un attaquant malveillant qui tente des injections XSS, SQL et des traversées de répertoires. C'est l'équivalent d'un pentest automatisé intégré à tes tests E2E.
+
+**Quand l'utiliser :** Avant un lancement public, ou sur des fonctionnalités critiques (paiement, authentification, upload de fichiers).
+
+```bash
+# Via CLI — active les 3 personas sur toutes les routes
+node dist/index.js shadow --level=2
+
+# Avec simulation de pannes réseau en plus (connexion coupée en plein milieu d'un formulaire…)
+node dist/index.js shadow --level=2 --chaos
+
+# Version complète : personas + réseau + auto-patch si bugs trouvés
+node dist/index.js shadow --level=3 --chaos
+```
+
+---
+
+### `diff` — Tests ciblés sur les fichiers modifiés
+
+**Ce que ça fait :** Au lieu d'analyser tout ton projet à chaque fois (ce qui peut être long sur un gros projet), cette commande regarde uniquement les fichiers que tu as modifiés depuis ton dernier commit Git. Elle génère ou met à jour des tests uniquement pour ce qui a changé. Avec `--predictive`, elle ajoute aussi les fichiers historiquement risqués (ceux qui ont le plus souvent causé des bugs dans le passé selon l'historique Git).
+
+**Quand l'utiliser :** Dans ton workflow quotidien, avant chaque commit, pour tester rapidement ce que tu viens de modifier.
+
+```bash
+# Via CLI — teste uniquement les fichiers modifiés depuis le dernier commit
+node dist/index.js diff
+
+# Avec overlay des fichiers historiquement risqués
+node dist/index.js diff --predictive
+
+# Avec niveau 2 (Vision IA activée)
+node dist/index.js diff --level=2 --predictive
+```
+
+---
+
+### `repair` — Réparation autonome d'un bug diagnostiqué
+
+**Ce que ça fait :** Si un audit précédent a détecté et diagnostiqué un bug (via le Coroner), cette commande prend le rapport de triage, localise le fichier source concerné, génère un patch via Claude, l'applique, vérifie que les tests passent, et crée une Pull Request documentée sur GitHub. Tout ça sans que tu aies à toucher une ligne de code.
+
+**Quand l'utiliser :** Après un audit de niveau 2 ou 3 qui a identifié un `BACKEND_BUG`. Le plugin t'indique quand un bug est réparable automatiquement.
+
+```bash
+# Via CLI — charge le dernier triage et tente la réparation
+node dist/index.js repair
+
+# Sur un triage spécifique (identifiant visible dans report.html)
+node dist/index.js repair --trace=run-1718542800000
+```
+
+---
+
+### Intégration MCP — Donner le contrôle à Claude directement
+
+**Ce que c'est :** En mode MCP (Model Context Protocol), le plugin se transforme en "serveur d'outils" que Claude peut appeler directement, sans que tu aies besoin de taper des commandes. Claude peut décider lui-même de lancer un audit, regarder la couverture, ou réparer un bug, en réponse à tes questions en langage naturel.
+
+**Comment l'activer :** Crée un fichier `.mcp.json` **à la racine de TON projet** (pas dans le dossier du plugin), avec ce contenu :
+
+```jsonc
+// .mcp.json — à créer à la racine de ton projet applicatif
+{
+  "mcpServers": {
+    "e2e": {
+      "command": "node",
+      "args": ["dist/index.js", "--mcp"],
+      "cwd": "/chemin/absolu/vers/test-end-to-end"
+    }
+  }
+}
+```
+
+> Remplace `/chemin/absolu/vers/test-end-to-end` par le chemin réel vers le dossier du plugin sur ta machine. Exemple : `/Users/aron/.claude/plugins/marketplaces/test-end-to-end`
+
+Une fois configuré, Claude peut utiliser ces 8 outils automatiquement :
+
+| Outil MCP | Équivalent CLI | Ce que Claude peut faire |
+|---|---|---|
+| `e2e_init` | `init` | Initialiser les tests sur ton projet |
+| `e2e_audit` | `audit` | Lancer un audit complet |
+| `e2e_shadow` | `shadow` | Tester les personas extrêmes |
+| `e2e_diff` | `diff` | Tester uniquement les fichiers modifiés |
+| `e2e_repair` | `repair` | Réparer un bug diagnostiqué |
+| `e2e_coverage` | `coverage` | Carte de couverture routes + forms |
+| `e2e_update` | `update` | Sync tests après changements de code |
+| `e2e_diagnostics` | — | Voir l'état du plugin (cache, Ollama, état) |
+
+---
+
+## ⚡ Architecture
+
+Le plugin est organisé en 5 agents spécialisés qui travaillent en séquence, orchestrés par un cerveau central.
 
 ```mermaid
-graph TB
-    CLI["⌨️ CLI / MCP Tool\nnode dist/index.js"] --> ORCH
+flowchart TD
+    CLI["🖥️ CLI / MCP\n--level --chaos --predictive"]
 
-    subgraph ORCH["🧠 Orchestrator — machine à états"]
-        STATE["IDLE → SCANNING → DISPATCHING\n→ RUNNING_TESTS → TRIAGING → PATCHING → DONE"]
-    end
+    ORC["🧠 Orchestrateur\nMachine d'état\nRouting Ollama/Anthropic\nCache SHA-256"]
 
-    ORCH --> SCOUT["🔍 Scout\nAST scan · routes · formulaires · stack"]
-    ORCH --> ARTISAN["🎨 Artisan\ngénération specs Playwright"]
-    ORCH --> RUNNER["🏃 Runner\nexécution Playwright · Zero-Token Bypass"]
-    ORCH --> CORONER["🔬 Coroner\ntriage IA · SHIELD pixel diff"]
-    ORCH --> GHOST["👻 Ghostwriter\nauto-patch · branche · PR GitHub"]
-    ORCH --> EVOLVER["🧬 Evolver\nauto-amélioration sur erreur fatale"]
-    ORCH --> SENTINEL["🛡 Sentinel\naudit sécurité PRs · OWASP"]
-    ORCH --> CHAOS["🐒 ChaosMonkey\nchaos réseau · latence · offline"]
-    ORCH --> DEPBOT["🔐 Dependabot\nnpm audit · correctifs auto"]
-    ORCH --> ARCH["👮 ArchPolice\ncomplexité cyclomatique · couplage"]
-    ORCH --> QA["🧪 QA Engineer\ntests de régression post-patch"]
-    ORCH --> RGPD["🔒 RGPD Guard\nsanitisation PII avant disque"]
-    ORCH --> COVERAGE["📊 Coverage\ncarte couverture routes/API"]
-    ORCH --> UPDATER["🔄 Updater\nsync tests après refactoring"]
+    SCOUT["🔭 Scout\nLit ton code source\nExtrait routes + formulaires\nAnalyse l'historique Git"]
+    ARTISAN["🎨 Artisan\nGénère les fichiers de tests\nCrée les Page Objects\nInjecte les personas"]
+    CORONER["🔬 Coroner\nDiagnostique les crashes\nCompare les screenshots\nAppelle la Vision IA"]
+    GHOST["👻 Ghostwriter\nLocalise le bug dans le code\nGénère le patch\nOuvre la Pull Request"]
+    EVOLVER["🧬 Evolver\nS'auto-améliore en cas d'échec\nPatch son propre code source\nJournal d'évolution"]
 
-    GHOST --> NOTIFIER["📡 Notifier\nSlack · Discord · Teams"]
-    CORONER --> NOTIFIER
-    SENTINEL --> NOTIFIER
+    REPORT["📊 report.html\nScore de confiance\nCarte des routes\nBouton Auto-Patch"]
+    PR["🔀 Pull Request\nPatch vérifié\nDocumentée automatiquement"]
 
-    CORONER --> ATLASSIAN["🎫 Atlassian\nJira Bug · Xray Test Run"]
-    GHOST --> ATLASSIAN
-    CORONER --> TRELLO["📋 Trello\ncarte crash → Done"]
-    GHOST --> TRELLO
-
-    GHOST --> DEPLOYER["☁️ CloudDeployer\nOVH · IONOS · Hostinger · SSH logs"]
-
-    RUNNER --> METRICS["📈 MetricsTracker\nSQLite WAL · FinOps · CO₂"]
-    METRICS --> DASHBOARD["🖥 Dashboard\nExpress + WebSocket · port 4321"]
+    CLI --> ORC
+    ORC --> SCOUT
+    SCOUT -->|RouteMap JSON| ARTISAN
+    ARTISAN -->|tests/ générés| CORONER
+    CORONER -->|BACKEND_BUG| GHOST
+    CORONER -->|SELECTOR_DRIFT| REPORT
+    GHOST --> PR
+    CORONER --> REPORT
+    GHOST --> REPORT
 ```
 
----
+**Le flux en langage simple :**
 
-## Agents
-
-### Cœur du pipeline
-
-| Agent | Rôle | Déclenché par |
-|-------|------|---------------|
-| **Scout** | Analyse AST multi-stack (TS/PHP/Python/Go/Rails), détecte routes + formulaires, identifie hotspots git | Phase 1 |
-| **Artisan** | Génère des specs Playwright adaptées à la stack, avec assertions sémantiques et Shadow Personas | Phase 3 |
-| **Runner** | Lance Playwright en mode CI, capture crashs + screenshots, applique le Zero-Token Bypass | Phase 3b |
-| **Coroner** | Triage IA avec SHIELD (diff pixel PNG < 1% tolérance), classifie en SELECTOR_DRIFT / ASSERTION_BUG / LAYOUT_CHANGE / BACKEND_BUG / HTTP5xx / UNKNOWN | Phase 4 |
-| **Ghostwriter** | Corrige le code, crée une branche git, ouvre une PR avec description structurée | Phase 5 |
-| **Evolver** | S'auto-améliore sur erreur fatale (niveau 3 uniquement, guard anti-boucle) | Erreur fatale |
-| **QA Engineer** | Génère un test de régression ciblé par type de verdict après chaque patch | Post-Ghostwriter |
-
-### Agents spécialisés
-
-| Agent | Commande | Rôle |
-|-------|----------|------|
-| **Sentinel** | `sentinel` | Audit sécurité des PRs : OWASP Top 10, backdoors, secrets hardcodés, typosquatting |
-| **ChaosMonkey** | `chaos` | Génère des specs de chaos réseau (latence/timeout/5xx/offline/JSON corrompu) |
-| **Dependabot** | `npm run security-fix` | `npm audit` → correctifs auto → PR sécurité GitHub |
-| **ArchPolice** | `arch` | Analyse ts-morph : complexité cyclomatique > 10, fonctions > 80 lignes, `any` implicite |
-| **RGPD Guard** | Automatique | Masque JWT / API keys / email / CB / IBAN / IP avant toute écriture disque |
-| **Coverage** | `coverage` | Cartographie les routes et API avec leur niveau de couverture |
-| **Updater** | `update` | Sync intelligente des specs après refactoring (protège les tests manuels) |
-
-### Intégrations
-
-| Module | Variables .env requises | Comportement si absent |
-|--------|------------------------|------------------------|
-| **Notifier** (Slack/Discord/Teams) | `SLACK_WEBHOOK_URL` ou `DISCORD_WEBHOOK_URL` ou `TEAMS_WEBHOOK_URL` | Silencieux — pas de notification |
-| **Atlassian** (Jira + Xray) | `JIRA_URL` + `JIRA_TOKEN` | Pas de ticket créé |
-| **Trello** | `TRELLO_API_KEY` + `TRELLO_TOKEN` + `TRELLO_TODO_LIST_ID` + `TRELLO_DONE_LIST_ID` | Pas de carte créée |
-| **CloudDeployer** (OVH) | `OVH_APP_KEY` + `OVH_APP_SECRET` + `OVH_CONSUMER_KEY` | Provider ignoré |
-| **CloudDeployer** (IONOS) | `IONOS_GITHUB_REPO` + `IONOS_GITHUB_TOKEN` | Provider ignoré |
-| **CloudDeployer** (Hostinger) | `HOSTINGER_DEPLOY_WEBHOOK_URL` | Provider ignoré |
-| **SSH Log Recovery** | `SSH_HOST` + `SSH_USER` + `SSH_PRIVATE_KEY` | Logs distants non récupérés |
-| **StripeMock** | `STRIPE_WEBHOOK_SECRET` (optionnel) | Clé de test utilisée |
-| **Sentinel** | `GITHUB_TOKEN` + GitHub CLI installé | Agent désactivé |
+1. **Scout** — lit ton projet, identifie toutes les pages, routes et formulaires. C'est la phase de "cartographie".
+2. **Artisan** — prend cette carte et génère les fichiers de tests correspondants. C'est lui qui écrit les scripts Playwright.
+3. **Coroner** — après exécution des tests, analyse les échecs. Distingue un crash serveur (500) d'un sélecteur HTML qui a changé.
+4. **Ghostwriter** — quand un bug serveur est confirmé, il trouve le code responsable, génère un correctif, et ouvre une PR.
+5. **Evolver** — si un agent échoue de manière répétée, il lit son propre code source et se corrige lui-même (guaranti max 3 tentatives/24h).
 
 ---
 
-## Installation
+## 💡 Zero-Token Bypass — Comment le plugin évite de dépenser des tokens inutilement
 
-### Prérequis
+### Le problème qu'il résout
 
-- **Node.js ≥ 18**
-- **Ollama** (optionnel mais recommandé — Zero-Token Bypass)
-- **GitHub CLI `gh`** (optionnel — Ghostwriter + Sentinel)
+Chaque fois qu'un outil IA analyse du code, il envoie ce code à un modèle de langage (Claude, GPT…) qui consomme des "tokens" — l'unité de mesure qui détermine le coût. Si tu as un projet de 200 fichiers et que tu lances un audit tous les jours, tu pourrais dépenser beaucoup de tokens pour analyser des fichiers qui n'ont pas changé depuis la veille.
 
-### Setup automatique (recommandé)
+### La solution : une empreinte digitale par fichier
+
+À chaque scan, le plugin calcule une **empreinte numérique unique** (SHA-256) pour chaque fichier — comme une signature qui change si et seulement si le contenu du fichier change. Ces empreintes sont stockées dans `.e2e-cache.json`.
+
+Lors du scan suivant, le plugin compare les empreintes actuelles avec celles sauvegardées :
+- **Empreinte identique** → fichier non modifié → **aucun agent activé, 0 token dépensé**
+- **Empreinte différente** → fichier modifié → l'agent est activé pour analyser les changements
+
+```
+1er scan (rien en cache) :  73 fichiers → 73 analysés  → coût normal
+2e scan (cache chaud)    :  73 fichiers → 0 analysé    → 0 token dépensé ✓
+Après modification code  :  73 fichiers → 3 analysés   → seulement 3 fichiers modifiés
+```
+
+### Et Ollama dans tout ça ?
+
+**Ollama** est un logiciel qui fait tourner des modèles IA sur ta propre machine, gratuitement. Le plugin détecte automatiquement si Ollama est installé et actif. Quand c'est le cas :
+
+- Les tâches "légères" (analyse AST, classification de sélecteurs, résumé de code) partent vers Ollama → **gratuit, local, rapide**
+- Les tâches "lourdes" (Vision QA sur screenshots, génération de patchs complexes) partent vers Claude (Anthropic) → **seulement quand nécessaire**
+
+Sans Ollama : tout passe par Anthropic.  
+Avec Ollama : environ 94% du traitement se fait en local, gratuitement.
+
+### La compression Byte-State (réduction supplémentaire)
+
+Quand une page HTML doit quand même être envoyée à un modèle IA (par exemple pour analyser un crash), le plugin la compresse en 3 passes avant de l'envoyer :
+
+1. **Purge** — supprime tout ce qui n'est pas utile pour comprendre la structure : balises `<script>`, `<style>`, attributs `on*` (onclick, onmouseover…), data-URIs, éléments cachés (`aria-hidden=true`)
+2. **Fusion** — regroupe les éléments identiques répétés : si tu as 50 lignes `<li class="item">`, elles deviennent `li.item × 50`
+3. **Sérialisation** — encode la structure restante sous forme compacte avec des clés hex à 4 caractères
+
+**Résultat mesuré :** 18 580 octets → 1 002 octets (réduction de 94,6%)
+
+---
+
+## 🔮 Dashboard — Interface temps réel
+
+Le dashboard est une interface web qui s'ouvre dans ton navigateur pendant l'exécution d'un audit. Elle affiche en temps réel chaque action des agents, les captures d'écran comparatives, et le score final.
 
 ```bash
-git clone https://github.com/Aronbfrt/test-end-to-end
-cd test-end-to-end
-npm run setup
+# Démarrer le dashboard (port 4321 par défaut)
+node dist/server/start.js
+
+# Sur un projet spécifique
+node dist/server/start.js /chemin/vers/ton/projet
+
+# Port personnalisé
+E2E_PORT=4444 node dist/server/start.js
+
+# Ouvrir dans le navigateur
+open http://127.0.0.1:4321
 ```
 
-Le script `scripts/setup.sh` :
-- Vérifie Node ≥ 18
-- `npm install`
-- `npx tsc --build`
-- Installe Playwright Chromium
-- Détecte Ollama → pull `llama3.2` si absent
-- Génère `.env` depuis le template
-- Crée `.e2e-work/` + met à jour `.gitignore`
+<p align="center">
+  <img src="docs/assets/dashboard-preview.png" alt="Dashboard V-Infinite — Vue d'ensemble" width="760">
+  <br>
+  <i>Vue d'ensemble — IC ring, métriques, aperçu routes, hotspots Git forensics, table complète des tests.</i>
+</p>
 
-### Setup manuel
+<p align="center">
+  <img src="docs/assets/dashboard-routes.png" alt="Route Impact Map — onglet Routes" width="760">
+  <br>
+  <i>Onglet Routes — chaque route cliquable pour révéler ses tests, durée moyenne, badge PASS/FAIL/WARN.</i>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-personas.png" alt="Shadow Personas — 4 profils extrêmes" width="760">
+  <br>
+  <i>Onglet Personas — 4 profils (Frustrated, Attacker, Chaos, Impulsive) avec stats pass/fail et tests par profil.</i>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-triage.png" alt="Triage Coroner — verdicts SHIELD" width="760">
+  <br>
+  <i>Onglet Triage — verdict par route en échec (SELECTOR_DRIFT ou SECURITY_BREACH), analyse SHIELD, bouton Auto-Patch.</i>
+</p>
+
+**Fonctionnalités du dashboard :**
+
+| Fonctionnalité | Description |
+|---|---|
+| Log temps réel | Chaque ligne d'action des 5 agents apparaît instantanément |
+| Carte des routes | Chaque route colorée en vert (OK), orange (warning), rouge (crash) |
+| Score de confiance | Indice calculé en direct de 0 à 100 |
+| Comparaison screenshots | Vue côte à côte avant/après pour les changements visuels |
+| Bouton Auto-Patch | Lance le Ghostwriter directement depuis l'interface |
+
+**Endpoints disponibles :**
+
+| Route | Description |
+|---|---|
+| `GET /` | Page principale du dashboard |
+| `GET /api/status` | État de l'orchestrateur + capacité Ollama en JSON |
+| `GET /api/report` | Rapport complet au format JSON |
+| `POST /api/repair` | Déclenche une réparation pour un `traceId` donné |
+| `WS /ws` | Connexion WebSocket pour le flux d'événements temps réel |
+
+---
+
+## 👤 Shadow Personas — Tester les comportements extrêmes
+
+### Pourquoi tester des comportements "anormaux" ?
+
+Un test classique vérifie que l'utilisateur "parfait" — celui qui remplit tous les champs correctement, clique au bon endroit, attend que la page charge — obtient le résultat attendu. Mais en production, les vrais utilisateurs ne se comportent pas comme ça. Et les attaquants non plus.
+
+Les Shadow Personas sont des profils de comportement extrêmes qui génèrent des tests réalistes pour des situations difficiles.
+
+### Les 4 personas
+
+**`frustrated_user` — L'utilisateur frustré**
+
+Simule quelqu'un qui s'énerve parce que la page est lente ou peu claire. Tests générés : clics frénétiques rapides sur les boutons (×3 en moins de 500ms), abandon de formulaire à mi-chemin et retour en arrière, soumission répétée du même formulaire, navigation via le bouton "Précédent" du navigateur en plein milieu d'un checkout.
+
+**`impulsive_buyer` — L'acheteur impulsif**
+
+Simule quelqu'un qui veut aller vite et qui ignore les consignes. Tests générés : tentative de soumission d'un formulaire avec des champs obligatoires vides, bypass des étapes de validation, passage direct à la page de paiement sans passer par le panier.
+
+**`malicious_attacker` — L'attaquant malveillant**
+
+Simule une tentative d'intrusion. Tests générés :
+- **XSS (6 payloads)** : tentatives d'injection de code JavaScript dans les champs de formulaire
+- **Injection SQL (5 payloads)** : tentatives de manipulation de la base de données via les inputs
+- **Path Traversal (3 payloads)** : tentatives d'accès à des fichiers système via les URLs
+- **Prompt Injection** : si le plugin détecte une route IA (`/chat`, `/ask`, `/assistant`…), il tente des attaques spécifiques aux LLM
+
+**`chaos_network` — Le réseau instable**
+
+Simule une connexion internet de mauvaise qualité. Tests générés : coupure de connexion en plein milieu d'un envoi de formulaire, throttling à 200ms par requête (simulation 3G faible), double-clic sur le bouton "Valider" pour tester l'idempotence (le serveur traite-t-il la commande deux fois ?).
+
+### Comment activer les personas
 
 ```bash
-npm install
-npx tsc --build
-npx playwright install chromium
-cp .env.example .env
-# Remplir les variables souhaitées dans .env
+# Activer les 4 personas sur toutes les routes détectées
+node dist/index.js shadow --level=2
+
+# Ajouter aussi la simulation réseau instable
+node dist/index.js shadow --level=2 --chaos
+
+# Version maximale : personas + réseau + correction automatique des bugs trouvés
+node dist/index.js shadow --level=3 --chaos
+
+# Ou via Claude Code
+/e2e-audit   # puis répondre "oui" quand Claude propose d'activer les personas
 ```
 
 ---
 
-## Configuration `.env`
+## 🔬 SHIELD — Pourquoi un test de sélecteur échoue ≠ un vrai bug
 
-Toutes les intégrations sont **opt-in** — une variable absente désactive le module correspondant sans erreur.
+### Le problème des faux positifs
 
-```bash
-# ── LLM local (Zero-Token Bypass) ─────────────────────────────────────────────
-OLLAMA_HOST=http://127.0.0.1:11434
+Un test E2E comme `expect(page.locator('.btn-submit')).toBeVisible()` peut échouer pour deux raisons très différentes :
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
-E2E_PORT=4321
+1. **Le bouton n'existe vraiment plus** — c'est un vrai bug, il faut alerter
+2. **Le développeur a renommé la classe CSS** de `.btn-submit` en `.btn-submit-primary` — ce n'est pas un bug, juste un changement de style
 
-# ── GitHub (Ghostwriter + Sentinel) ───────────────────────────────────────────
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxx
+Sans SHIELD, les deux cas déclenchent la même alerte rouge, ce qui génère des faux positifs épuisants.
 
-# ── ChatOps ───────────────────────────────────────────────────────────────────
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../xxx
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../xxx
-TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/.../xxx
+### Comment SHIELD fonctionne
 
-# ── Atlassian (Jira + Xray) ───────────────────────────────────────────────────
-JIRA_URL=https://monprojet.atlassian.net
-JIRA_TOKEN=ATATT3xxxxxxxxxxxxxxxxxxx
-JIRA_USER_EMAIL=dev@monprojet.com
-JIRA_PROJECT_KEY=QA
+Quand un sélecteur ne se trouve plus, le Coroner prend deux screenshots (avant le test / après l'échec) et les compare pixel par pixel. Chaque pixel est mesuré en distance euclidienne RGBA (rouge + vert + bleu + transparence).
 
-# ── Trello ────────────────────────────────────────────────────────────────────
-TRELLO_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TRELLO_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TRELLO_TODO_LIST_ID=xxxxxxxxxxxxxxxxxxxx
-TRELLO_DONE_LIST_ID=xxxxxxxxxxxxxxxxxxxx
+- **Tolérance par canal :** `32/255` — absorbe les micro-différences dues à l'anti-aliasing des polices, au rendu ClearType de Windows, ou aux différences entre OS
+- **Seuil de déclenchement :** `1% des pixels doivent être différents` pour considérer qu'il y a un vrai changement visuel
 
-# ── Stripe (test env uniquement — aucun appel Stripe réel) ────────────────────
-STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+| Résultat de la comparaison | Verdict | Action |
+|---|---|---|
+| Moins de 1% de pixels différents | `SHIELD ABSORBÉ — bruit cosmétique` | Aucune alerte. Le sélecteur a juste été renommé → Vision QA trouve le nouveau nom |
+| Plus de 5% de pixels différents | `VRAI CHANGEMENT VISUEL` | Alerte réelle. L'interface a changé significativement |
 
-# ── OVHcloud ──────────────────────────────────────────────────────────────────
-OVH_APP_KEY=xxxxxxxxxxxx
-OVH_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-OVH_CONSUMER_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-OVH_PROJECT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-OVH_SERVICE_NAME=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+**Quand SHIELD ne suffit pas :** la Vision QA prend le relais — Claude analyse le screenshot et propose un nouveau sélecteur CSS résistant aux renommages.
 
-# ── IONOS (via GitHub Actions) ────────────────────────────────────────────────
-IONOS_GITHUB_REPO=owner/repo
-IONOS_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxx
-IONOS_WORKFLOW_FILE=deploy.yml
-IONOS_DEPLOY_BRANCH=main
+---
 
-# ── Hostinger ────────────────────────────────────────────────────────────────
-HOSTINGER_DEPLOY_WEBHOOK_URL=https://api.hostinger.com/webhook/deploy/xxx
+## 🧬 Forensique Git — Trouver les fichiers les plus risqués
 
-# ── SSH log recovery ──────────────────────────────────────────────────────────
-SSH_HOST=123.456.789.0
-SSH_PORT=22
-SSH_USER=ubuntu
-SSH_PRIVATE_KEY=/home/user/.ssh/id_rsa
+### Le principe
 
-# ── Sécurité dépendances ──────────────────────────────────────────────────────
-DEPENDABOT_MIN_SEVERITY=high
+Tous les fichiers d'un projet ne méritent pas la même attention. Un fichier qui a été modifié 50 fois en 12 mois, avec des commits intitulés "hotfix urgent", "wtf ça marche pas", "revert du revert"… est statistiquement plus susceptible de causer des bugs qu'un fichier stable qui n'a pas changé depuis 6 mois.
+
+Avec `--predictive`, le plugin analyse les 12 derniers mois de `git log` et calcule un **score de risque** pour chaque fichier.
+
+### Comment le score est calculé
+
+```
+score_risque = fréquence_modification × 1.0 + score_stress × 1.5
+```
+
+Le score de stress est calculé en cherchant des mots-clés dans les messages de commits :
+
+| Mots dans les commits | Score de stress ajouté |
+|---|---|
+| `fix`, `hotfix`, `urgent`, `emergency`, `critical`, `asap`, `prod bug` | +3 |
+| `wip`, `temp`, `temporary`, `hack`, `dirty`, `quick`, `kludge`, `no time`, `just ship`, `ship it` | +2 |
+| Jurons : `crap`, `damn`, `shit`, `wtf`, `ugh`, `argh`, `ffs`, `stupid` | +3 |
+| `revert`, `rollback`, `undo`, `oops`, `broke`, `broken` | +2 |
+| Commit entre 23h et 4h du matin | +2 |
+| `!!` (ponctuation d'excitation/panique) | +1 |
+
+Les 20 fichiers avec le score le plus élevé (top 20 retournés par le Scout) reçoivent une couverture de tests plus dense — plus de variations, plus de cas limites.
+
+**Exemple réel sur ce dépôt :**
+```
+1. commands/e2e-audit.md   risque=154   (modifs=28, stress=84)
+2. commands/e2e-init.md    risque=81    (modifs=15, stress=44)
+3. README.md               risque=74    (modifs=14, stress=40)
 ```
 
 ---
 
-## Commandes
+## 📊 Score de Confiance Applicative
 
-### Pipeline principal
+Après chaque audit, un score de 0 à 100 est calculé et affiché dans `report.html` et dans les commentaires de PR automatiques.
 
-```bash
-# Niveau 1 : scan + génération + exécution des tests
-node dist/index.js audit /chemin/vers/projet
-
-# Niveau 2 : + triage Coroner (verdict + confidence)
-node dist/index.js audit /chemin/vers/projet --level=2
-
-# Niveau 3 : + auto-patch Ghostwriter + PR GitHub
-node dist/index.js audit /chemin/vers/projet --level=3
-
-# Shadow Personas (utilisateurs adversariaux)
-node dist/index.js shadow /chemin/vers/projet
-
-# Diff (tests limités aux fichiers modifiés)
-node dist/index.js diff /chemin/vers/projet [--predictive]
-
-# Réparation manuelle (traceId depuis .e2e-work/)
-node dist/index.js repair /chemin/vers/projet [--trace=<traceId>]
+```
+Score = taux_réussite_tests × 60   (tests passés / tests totaux)
+      + bonus_cache         × 10   (fichiers non modifiés / total — économie réalisée)
+      + bonus_tokens        × 10   (tokens économisés via Ollama / total estimé)
+      + couverture_routes   × 20   (routes avec ≥1 PASS / routes totales uniques)
+      − échecs_sécurité     × 5    (tests persona "attaquant" échoués)
+      → résultat borné entre 0 et 100
 ```
 
-### Agents spécialisés
+**Interprétation :**
+- **80–100** : Excellent. Le projet est bien couvert, sûr, et économique.
+- **60–79** : Bon. Quelques gaps de couverture ou alertes sécurité mineures.
+- **40–59** : Attention. Des routes importantes ne sont pas testées ou des tests de sécurité échouent.
+- **< 40** : Critique. Problèmes significatifs à traiter avant mise en production.
 
-```bash
-# Couverture
-node dist/index.js coverage /chemin/vers/projet [--detail]
+---
 
-# Synchronisation des tests après refactoring
-node dist/index.js update /chemin/vers/projet [--dry-run]
+## 🤖 Pipeline de Réparation Autonome
 
-# Audit sécurité des PRs ouvertes
-node dist/index.js sentinel /chemin/vers/projet
-node dist/index.js sentinel /chemin/vers/projet --pr=42
+Quand un crash est diagnostiqué comme un bug serveur (`BACKEND_BUG`), le pipeline de réparation se déclenche automatiquement en 6 étapes :
 
-# Analyse architecturale (complexité, couplage, any implicite)
-node dist/index.js arch /chemin/vers/projet
-
-# Génération de specs de chaos réseau
-node dist/index.js chaos /chemin/vers/projet
-
-# Correctifs de sécurité npm
-npm run security-fix
-
-# Dashboard temps réel
-npm run dashboard /chemin/vers/projet
+```
+Test échoue avec HTTP 5xx
+        │
+        ▼
+  1. LOCALISATION
+     Ghostwriter cherche le fichier source de la route concernée
+     (par slug d'URL + grep de secours sur le projet)
+        │
+        ▼
+  2. GÉNÉRATION DU PATCH
+     Claude Sonnet reçoit le code source compressé + le rapport de crash
+     → produit un tableau Patch[] avec l'ancien code exact et le nouveau
+        │
+        ▼
+  3. BRANCHE GIT
+     git checkout -b e2e-patch/<timestamp>-<nom-route>
+     Le patch est appliqué sur une branche séparée pour ne pas casser main
+        │
+        ▼
+  4. VÉRIFICATION
+     npx playwright test --grep <nom-route>
+     Le patch n'est soumis que si les tests passent
+        │
+        ▼
+  5. PULL REQUEST
+     gh pr create → PR documentée avec description du bug + explication du fix
+     (si gh n'est pas installé → brouillon .md créé dans .e2e-work/)
+        │
+        ▼
+  6. RAPPORT
+     Le score de confiance est mis à jour dans report.html
 ```
 
 ---
 
-## Niveaux d'audit
+## 🦠 Auto-Évolution (Evolver)
 
-| Niveau | Agents actifs | Durée estimée |
-|--------|--------------|---------------|
-| `--level=1` | Scout → Artisan → Runner | 1–3 min |
-| `--level=2` | + Coroner (triage IA) | 3–5 min |
-| `--level=3` | + Ghostwriter (auto-patch + PR) | 5–10 min |
+### Ce que c'est
 
----
+Si un agent du plugin plante de manière répétée (par exemple, le Scout ne reconnaît pas un nouveau framework, ou le Coroner échoue à décoder un format de screenshot), l'Evolver prend le relais. Il lit le code source TypeScript de l'agent défaillant, l'envoie à Claude avec le log d'erreur, reçoit un patch suggéré, l'applique, et commit le correctif — **le plugin se répare lui-même**.
 
-## Shadow Personas
+### Garde-fous
 
-Artisan génère des tests depuis le point de vue de 3 utilisateurs adversariaux :
-
-| Persona | Comportement simulé |
-|---------|---------------------|
-| `frustrated_user` | Clics répétés, double-soumission de formulaires, navigation arrière agressive |
-| `impulsive_buyer` | Parcours checkout accéléré, données partielles, abandon milieu de paiement |
-| `malicious_attacker` | Payloads XSS (`<script>alert(1)</script>`), injections SQL, IDOR, traversée de chemin |
+- Maximum **3 tentatives par agent en 24h** — au-delà, l'Evolver s'arrête et escalade à l'humain
+- Les améliorations sont toujours sur l'`oldCode` exact (correspondance verbatim requise) — pas de réécriture sauvage
+- Chaque intervention est enregistrée dans `.e2e-work/evolution-log.jsonl` pour traçabilité
 
 ---
 
-## Verdicts Coroner
-
-| Verdict | Cause | Action automatique |
-|---------|-------|-------------------|
-| `SELECTOR_DRIFT` | Sélecteur CSS/XPath cassé après refactoring | Evolver tente la guérison |
-| `ASSERTION_BUG` | Le test vérifie une valeur devenue incorrecte | QA Engineer génère un test de régression |
-| `LAYOUT_CHANGE` | Différence visuelle > 1% (SHIELD perceptuel PNG diff) | Screenshot + rapport |
-| `BACKEND_BUG` | Erreur 5xx serveur, panic, OOM | Ghostwriter corrige + PR |
-| `HTTP5xx` | Réponse 5xx sans corrélation backend | Alerte ChatOps + ticket Jira |
-| `UNKNOWN` | Cause indéterminée | Rapport manuel requis |
-
----
-
-## Zero-Token Bypass
-
-Chaque fichier est fingerprinté (SHA-256). Si le contenu n'a pas changé depuis le dernier run, aucun agent n'est invoqué et aucun token LLM n'est consommé.
-
-Lorsqu'Ollama est détecté (`http://127.0.0.1:11434`), les tâches d'inférence légères (AST, classification, healing) sont routées localement. Seules les analyses sémantiques profondes consomment des tokens Anthropic.
-
-**Métriques persistées dans SQLite** :
-- Tokens économisés (cumul par run)
-- CO₂ évité : `tokens_saved × 0.00198 g`
-- Budget FinOps : `tokens_saved × $0.000005`
-
----
-
-## RGPD — Sanitisation PII
-
-Chaque crash context, log et rapport est filtré avant toute persistance disque :
-
-| Type | Pattern | Masque |
-|------|---------|--------|
-| JWT | `eyJ...eyJ...sig` | `[MASKED_JWT]` |
-| API Key | `sk-`, `ghp_`, `AKIA`, `whsec_`, `xoxb-` | `[MASKED_API_KEY]` |
-| Champ secret JSON | `"password":"..."` | `"password":"[MASKED_SECRET]"` |
-| Email | `user@domain.tld` | `[MASKED_EMAIL]` |
-| Téléphone | Format FR/EU/US | `[MASKED_PHONE]` |
-| Carte bancaire | 16 chiffres groupés | `[MASKED_CARD]` |
-| IBAN | Format EU | `[MASKED_IBAN]` |
-| IP publique | Exclut 10.x / 192.168.x / 172.16-31.x / 127.x | `[MASKED_IP]` |
-
-Si Ollama disponible, un second passage détecte les fuites contextuelles (noms propres, adresses, numéros de dossier) non couverts par les regex.
-
----
-
-## Dashboard
-
-```bash
-npm run dashboard /chemin/vers/projet
-# → http://127.0.0.1:4321
-```
-
-**REST API** :
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/status` | État de l'orchestrateur + config Ollama |
-| `GET /api/report` | Dernier rapport HTML généré |
-| `GET /api/log` | Log brut du dernier run |
-| `GET /api/metrics` | Stats SQLite (FinOps, CO₂, RGPD, totaux) |
-| `GET /api/runs` | Historique des audits |
-| `GET /api/triages` | Historique des triages Coroner |
-| `GET /api/arch` | Dernier rapport ArchPolice |
-| `GET /api/dependabot` | Dernier rapport Dependabot |
-| `POST /api/repair` | Déclenche Ghostwriter sur un traceId |
-
-**WebSocket** `ws://127.0.0.1:4321/ws` — événements temps réel : `LOG` / `STATE` / `SCREENSHOT` / `METRIC` / `HOTSPOT` / `REPORT_READY`.
-
----
-
-## Sentinel — Audit PRs
-
-```bash
-node dist/index.js sentinel /chemin/vers/projet        # toutes les PRs ouvertes
-node dist/index.js sentinel /chemin/vers/projet --pr=42
-```
-
-Analyse le diff de chaque PR avec Ollama (si disponible) ou regex statiques :
-
-- **Injections** : SQL, NoSQL, Command, LDAP, XPath
-- **Backdoors** : exfiltration de données, reverse shells
-- **Secrets hardcodés** : `sk-`, `ghp_`, `AKIA`, passwords en clair
-- **Failles logiques** : bypass auth, IDOR, élévation de privilèges
-- **SSRF / XXE / désérialization**
-- **Typosquatting** de packages npm
-
-Score de risque 0–100 → `APPROVE` (< 30) / `COMMENT` (30–60) / `REJECT` (≥ 60 ou CRITICAL).
-
-Le verdict est posté comme review GitHub + notification ChatOps.
-
----
-
-## ArchPolice — Analyse architecturale
-
-```bash
-node dist/index.js arch /chemin/vers/projet
-# → .e2e-work/arch-report.json
-# → .e2e-work/arch-report.md
-```
-
-Détecte les violations architecturales dans les fichiers TypeScript :
-
-| Violation | Seuil |
-|-----------|-------|
-| `FUNCTION_TOO_LONG` | > 80 lignes |
-| `HIGH_COMPLEXITY` | Complexité cyclomatique > 10 |
-| `FILE_TOO_LARGE` | > 500 lignes |
-| `EXCESSIVE_COUPLING` | > 15 imports par fichier |
-| `UNSAFE_ANY` | Usage de `any` sans justification |
-| `MISSING_RETURN_TYPE` | Fonction exportée sans type de retour |
-
-Score de 0 à 100, grade A/B/C/D/F. Plan de refactoring généré par Ollama si disponible.
-
----
-
-## Chaos Monkey — Tests de résilience
-
-```bash
-node dist/index.js chaos /chemin/vers/projet
-```
-
-Génère des specs Playwright pour chaque route testant 6 scénarios de défaillance réseau :
-
-| Scénario | Perturbation |
-|----------|-------------|
-| `LATENCY` | +2–5 secondes sur les requêtes API et JSON |
-| `TIMEOUT` | Abandon (`timedout`) de toutes les requêtes API |
-| `ERROR_50x` | HTTP 500 + HTTP 503 sur toutes les API |
-| `OFFLINE` | Blocage total du réseau après premier chargement |
-| `CORRUPT` | JSON syntaxiquement invalide renvoyé par les API |
-| `PARTIAL` | Réponse JSON tronquée (transfert interrompu) |
-
----
-
-## Dependabot — Sécurité des dépendances
-
-```bash
-npm run security-fix                     # dans le dépôt actuel
-npm run security-fix /chemin/vers/projet # dépôt cible
-```
-
-1. `npm audit --json` — inventaire des vulnérabilités
-2. Pour chaque vulnérabilité `>= DEPENDABOT_MIN_SEVERITY` : `npm install pkg@latest`
-3. Vérification `tsc --noEmit` — revert automatique si breaking change
-4. Analyse du breaking change via Ollama (si disponible)
-5. Commit + PR GitHub avec liste des correctifs appliqués
-
----
-
-## Hébergement européen
-
-Support natif des trois principaux hébergeurs souverains :
-
-| Provider | Région | Mécanisme |
-|----------|--------|-----------|
-| **OVHcloud** | FR / DE / UK | API REST v1 — reboot soft d'instance Cloud |
-| **IONOS** | DE / FR / ES | GitHub Actions `workflow_dispatch` |
-| **Hostinger** | Lituanie (serveurs EU) | Webhook HTTP POST |
-
-Récupération des logs distants via SSH (`ssh2`) sur tous les providers :
-- `/var/log/nginx/error.log`
-- `pm2 logs`
-- `journalctl -u node`
-
----
-
-## StripeMock — Tests de paiement
-
-Simule le cycle de vie complet Stripe **sans appels aux serveurs réels** (test env uniquement) :
-
-```typescript
-import { runStripeSuite } from 'test-end-to-end/src/utils/stripeMock.js';
-
-await runStripeSuite({
-  webhookUrl: 'http://localhost:3000/webhook/stripe',
-  events: ['charge.succeeded', 'charge.failed', 'checkout.session.completed'],
-  amount: 2000,
-  currency: 'eur',
-});
-```
-
-Événements disponibles : `charge.succeeded`, `charge.failed`, `invoice.payment_succeeded`, `invoice.payment_failed`, `checkout.session.completed`, `customer.subscription.deleted`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.requires_action`.
-
-Tous les webhooks sont signés avec HMAC-SHA256 compatible vérification Stripe (`Stripe-Signature`).
-
----
-
-## Structure du projet
+## 📁 Structure du projet
 
 ```
 test-end-to-end/
-├── src/
+│
+├── src/                          Moteur TypeScript (V-Infinite)
+│   ├── index.ts                  Point d'entrée CLI + serveur MCP stdio
+│   ├── orchestrator.ts           Machine d'état · bypass Ollama · dispatch
 │   ├── agents/
-│   │   ├── archPolice.ts       # Analyse architecturale TypeScript
-│   │   ├── artisan.ts          # Génération specs Playwright
-│   │   ├── chaosMonkey.ts      # Injection chaos réseau
-│   │   ├── coroner.ts          # Triage IA + SHIELD pixel diff
-│   │   ├── coverage.ts         # Carte de couverture routes/API
-│   │   ├── dependabot.ts       # Sécurité dépendances npm
-│   │   ├── evolver.ts          # Auto-amélioration sur erreur fatale
-│   │   ├── ghostwriter.ts      # Auto-patch + branche + PR GitHub
-│   │   ├── qaEngineer.ts       # Tests de régression post-patch
-│   │   ├── rgpdGuard.ts        # Sanitisation PII (RGPD)
-│   │   ├── runner.ts           # Exécution Playwright + Zero-Token Bypass
-│   │   ├── scout.ts            # Scan AST multi-stack
-│   │   ├── sentinel.ts         # Audit sécurité Pull Requests
-│   │   └── updater.ts          # Synchronisation tests
-│   ├── integrations/
-│   │   ├── atlassian.ts        # Jira Bug tickets + Xray Test Runs
-│   │   ├── cloudDeployer.ts    # OVH / IONOS / Hostinger + SSH
-│   │   ├── notifier.ts         # Slack / Discord / Teams (ChatOps)
-│   │   └── trello.ts           # Cartes Trello crash → Done
-│   ├── server/
-│   │   ├── app.ts              # Dashboard Express + WebSocket + REST API
-│   │   └── start.ts            # Entrypoint serveur
+│   │   ├── scout.ts              Lecture AST · alignement doc · Git forensique
+│   │   ├── artisan.ts            Génération POM · Shadow Personas · Chaos
+│   │   ├── coroner.ts            Triage crashes · Vision QA · SHIELD
+│   │   ├── ghostwriter.ts        Patch bug · branche e2e-patch/* · PR
+│   │   └── evolver.ts            Auto-amélioration · evolution-log.jsonl
 │   ├── utils/
-│   │   ├── cache.ts            # Zero-Token Bypass (fingerprint SHA-256)
-│   │   ├── metricsTracker.ts   # SQLite WAL — FinOps / Green-IT
-│   │   ├── report.ts           # Rapport HTML CI/CD
-│   │   └── stripeMock.ts       # Webhooks Stripe factices (test env)
-│   ├── database/
-│   │   └── storage.sqlite      # Auto-créé au premier run (gitignored)
-│   └── orchestrator.ts         # Cerveau central — machine à états
-├── scripts/
-│   └── setup.sh                # Installation automatique
-├── .env                        # Credentials (gitignored)
-├── .env.example                # Template .env documenté
-├── package.json
-└── tsconfig.json
+│   │   ├── cache.ts              Empreintes SHA-256 — écriture atomique
+│   │   ├── compressor.ts         Compresseur DOM Byte-State (95% réduction)
+│   │   └── logDigest.ts          Crash → triptyque (assertion + DOM + console)
+│   └── server/
+│       └── app.ts                Express + WebSocket + rapport HTML CI/CD
+│
+├── commands/                     Commandes slash Claude Code
+│   ├── e2e-audit.md
+│   ├── e2e-init.md
+│   ├── e2e-coverage.md
+│   └── e2e-update.md
+│
+├── templates/
+│   ├── e2e/                      Templates Python · Selenium · Playwright · Robot
+│   ├── playwright/               Blueprint playwright.config.ts
+│   └── cypress/                  Blueprint cypress.config.ts
+│
+├── docs/assets/                  Captures d'écran + logo
+├── .e2e-cache.json               Cache empreintes SHA-256 (git-ignoré)
+├── package.json                  v2.0.0
+└── tsconfig.json                 ES2022 strict
 ```
 
 ---
 
-## Sécurité
+## 🧪 Frameworks supportés
 
-- **Aucune clé hardcodée** — toutes les credentials viennent du `.env`
-- **`.env` et `storage.sqlite` dans `.gitignore`** — non committés
-- **StripeMock** : aucun appel aux serveurs Stripe réels, uniquement test env
-- **RGPD Guard** : aucune PII ne touche le disque en clair
-- **Sentinel** : détecte les secrets hardcodés dans les PRs avant merge
-- **Dependabot** : vérifie `tsc --noEmit` avant chaque mise à jour
-
----
-
-## Contribuer
-
-```bash
-git clone https://github.com/Aronbfrt/test-end-to-end
-cd test-end-to-end
-npm run setup
-npx tsc --noEmit   # doit retourner 0 erreur
-```
+| Framework | `/e2e-init` | `/e2e-audit` | `/e2e-coverage` | `/e2e-update` | V-Infinite CLI |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Selenium + pytest** | ✅ | ✅ | ✅ | ✅ | — |
+| **Playwright Python** | ✅ | ✅ | ✅ | ✅ | — |
+| **Playwright TypeScript** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Cypress** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Robot Framework** | ✅ | ✅ | ✅ | ✅ | — |
+| **MCP natif (TypeScript)** | ✅ | ✅ | — | — | ✅ |
 
 ---
 
-## Licence
-
-MIT — [Aron Beaufort](https://github.com/Aronbfrt)
-
----
-
-*Construit avec TypeScript strict · Playwright · Ollama · SQLite · Zero placeholders · Zero ellipses.*
+<p align="center">
+  Construit avec Claude Sonnet · Ollama Zero-Token Bypass · MCP Protocol · TypeScript 5.4<br>
+  <b>Auteur :</b> <a href="https://github.com/Aronbfrt">Aron Beaufort</a> · Licence MIT
+</p>
