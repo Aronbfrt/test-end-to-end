@@ -16,6 +16,7 @@ import { appendFileSync, existsSync, readFileSync, mkdirSync, writeFileSync } fr
 import { resolve, join } from 'node:path';
 import { writeCliReport } from './utils/report.js';
 import {
+  initCachePath,
   loadCache,
   isFresh,
   fingerprint,
@@ -288,6 +289,7 @@ export async function run(config: RunConfig): Promise<void> {
   try {
     // ── Phase 0: bootstrap ──────────────────────────────────────────────────
     setState('SCANNING');
+    initCachePath(config.targetPath);
     loadCache();
     _ollama = await detectOllama();
 
@@ -585,10 +587,10 @@ export async function run(config: RunConfig): Promise<void> {
 
 function getDiffFiles(root: string): string[] {
   try {
-    const out = execSync('git diff --name-only HEAD', {
+    const out = execFileSync('git', ['diff', '--name-only', 'HEAD'], {
       cwd: root, timeout: 5000, encoding: 'utf-8',
     });
-    const staged = execSync('git diff --cached --name-only', {
+    const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
       cwd: root, timeout: 5000, encoding: 'utf-8',
     });
     return [...new Set([...out.split('\n'), ...staged.split('\n')])]
@@ -602,9 +604,9 @@ function getDiffFiles(root: string): string[] {
 
 function getHotspotFiles(root: string, allFiles: string[]): string[] {
   try {
-    const out = execSync(
-      `git -C "${root}" log --since="12 months ago" --name-only --pretty=format:"" --no-merges`,
-      { timeout: 8000, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 },
+    const out = execFileSync(
+      'git', ['log', '--since=12 months ago', '--name-only', '--pretty=format:', '--no-merges'],
+      { cwd: root, timeout: 8000, encoding: 'utf-8', maxBuffer: 5 * 1024 * 1024 },
     );
     const churn = new Map<string, number>();
     for (const line of out.split('\n').filter(Boolean)) {

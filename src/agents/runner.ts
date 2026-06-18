@@ -9,10 +9,17 @@
 
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { RunConfig } from '../orchestrator.js';
 import type { RunSummary, TestRun } from '../utils/report.js';
 import { sanitizeObject } from './rgpdGuard.js';
+
+// Use the plugin's own playwright binary so target projects don't need
+// @playwright/test installed, and there's never a version conflict.
+const _pluginRoot        = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const _pluginNodeModules = join(_pluginRoot, 'node_modules');
+const _playwrightBin     = join(_pluginNodeModules, '.bin', 'playwright');
 
 // ── Playwright JSON report types ───────────────────────────────────────────────
 
@@ -74,14 +81,21 @@ export async function runTests(config: RunConfig, cachedFiles: number): Promise<
   let rawOutput = '';
 
   try {
-    rawOutput = execSync('npx playwright test --reporter=json', {
+    rawOutput = execSync(`"${_playwrightBin}" test --reporter=json`, {
       cwd:       config.targetPath,
-      timeout:   300_000,
+      timeout:   120_000,
       encoding:  'utf-8',
       stdio:     ['ignore', 'pipe', 'ignore'],
       maxBuffer: 20 * 1024 * 1024,
-      // CI=1 prevents auto-open of HTML report on failures (blocks execSync otherwise)
-      env:       { ...process.env, CI: '1', FORCE_COLOR: '0' },
+      env:       {
+        ...process.env,
+        CI: '1',
+        FORCE_COLOR: '0',
+        // Make @playwright/test resolvable from the plugin's node_modules
+        NODE_PATH: process.env['NODE_PATH']
+          ? `${_pluginNodeModules}:${process.env['NODE_PATH']}`
+          : _pluginNodeModules,
+      },
     });
   } catch (e: unknown) {
     const err = e as { stdout?: string; message?: string };

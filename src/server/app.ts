@@ -911,6 +911,7 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
 </div>
 <script>
 var _lastTs = 0;
+var _reloading = false;
 var STATE_COLORS = {
   IDLE:'#1e3a5f|#60a5fa', SCANNING:'#1e3a5f|#60a5fa',
   CACHE_CHECK:'#1e3a5f|#60a5fa', DISPATCHING:'#1c3a1c|#4ade80',
@@ -952,7 +953,8 @@ function poll() {
       });
       feed.scrollTop = feed.scrollHeight;
     }
-    if (d.state === 'DONE' && _lastTs > 0) setTimeout(function(){ location.reload(); }, 2000);
+    var fresh = d.ts > 0 && (Date.now() - d.ts) < 10000;
+    if (d.state === 'DONE' && fresh && !_reloading) { _reloading = true; setTimeout(function(){ location.reload(); }, 2000); }
   }).catch(function(){});
 }
 setInterval(poll, 1500);

@@ -14,8 +14,8 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, writeFileSync, renameSync, existsSync, mkdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -34,8 +34,16 @@ export interface CacheFile {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const CACHE_PATH = resolve(process.cwd(), '.e2e-cache.json');
 const CACHE_VERSION = 1;
+
+let _cachePath = resolve(process.cwd(), '.e2e-cache.json');
+
+/** Must be called before loadCache() — sets cache to the target project directory. */
+export function initCachePath(targetPath: string): void {
+  const workDir = join(targetPath, '.e2e-work');
+  if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
+  _cachePath = join(workDir, '.e2e-cache.json');
+}
 
 // ── In-memory state ────────────────────────────────────────────────────────────
 
@@ -49,12 +57,12 @@ let _dirty = false;
  * Safe to call multiple times — subsequent calls are no-ops.
  */
 export function loadCache(): void {
-  if (!existsSync(CACHE_PATH)) {
+  if (!existsSync(_cachePath)) {
     _cache = { version: CACHE_VERSION, hashes: {} };
     return;
   }
   try {
-    const raw = readFileSync(CACHE_PATH, 'utf-8');
+    const raw = readFileSync(_cachePath, 'utf-8');
     const parsed: unknown = JSON.parse(raw);
     if (
       typeof parsed === 'object' &&
@@ -155,10 +163,10 @@ export function invalidate(filePath: string): void {
 export function persistCache(): void {
   if (!_dirty) return;
 
-  const tmp = CACHE_PATH + '.tmp';
+  const tmp = _cachePath + '.tmp';
   try {
     writeFileSync(tmp, JSON.stringify(_cache, null, 2), 'utf-8');
-    renameSync(tmp, CACHE_PATH);
+    renameSync(tmp, _cachePath);
     _dirty = false;
   } catch (err) {
     // Non-fatal — worst case the cache is stale on the next run.

@@ -133,9 +133,8 @@ test.describe('${testName}', () => {
   });
 
   test('page loads with 200', async ({ page }) => {
-    const resp = await page.waitForResponse((r) => r.url().includes('${route.path}'));
-    expect(resp.status()).toBeLessThan(400);
-    await expect(page).toHaveTitle(/.+/);
+    const resp = await page.goto(\`\${BASE_URL}${route.path}\`);
+    expect(resp?.status() ?? 0).toBeLessThan(400);
   });
 
   test('no console errors', async ({ page }) => {
