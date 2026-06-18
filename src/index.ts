@@ -365,6 +365,7 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
     targetPath: parsed.targetPath ? resolve(parsed.targetPath) : resolve(process.cwd()),
     traceId:    parsed.traceId,
     dryRun:     parsed.dryRun,
+    detail:     parsed.detail,
   });
 }
 

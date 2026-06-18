@@ -36,6 +36,8 @@ export interface RunConfig {
   traceId?: string;
   /** update --dry-run: show diff without writing files */
   dryRun?: boolean;
+  /** coverage --detail: print per-route matched test files */
+  detail?: boolean;
 }
 
 export type AgentTask =
