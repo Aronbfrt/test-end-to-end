@@ -130,10 +130,18 @@ Cette commande télécharge le plugin et le rend disponible dans Claude Code sou
 ### Étape 2 — Installer les dépendances du moteur TypeScript
 
 ```bash
-# Aller dans le dossier du plugin (le chemin peut varier selon ton OS)
+# macOS / Linux
 cd ~/.claude/plugins/marketplaces/test-end-to-end
 
-# Installer les dépendances Node.js
+# Windows (PowerShell)
+cd "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end"
+
+# Windows (Invite de commandes / CMD)
+cd %USERPROFILE%\.claude\plugins\marketplaces\test-end-to-end
+```
+
+```bash
+# Installer les dépendances Node.js (macOS / Linux / Windows — même commande)
 npm install
 
 # Compiler le moteur TypeScript en JavaScript
