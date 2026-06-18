@@ -45,7 +45,20 @@ Avant d'installer le plugin, vérifie que tu as ces outils sur ta machine. Sans 
 
 ### Fortement recommandé — Ollama (économie de tokens IA)
 
-**Ollama** est un logiciel gratuit qui fait tourner des modèles IA directement sur ta machine. Sans lui, toutes les analyses passent par l'API Anthropic (tokens payants). Avec lui, environ **94% des traitements se font en local**, gratuitement.
+**Ollama** est un logiciel gratuit qui fait tourner des modèles IA directement sur ta machine.
+
+**Ce qui est toujours local (zéro token) :**
+- Génération de tests — `artisan` produit tous les fichiers `.spec.ts` par templates, sans aucun appel API
+- Analyse AST — `scout` lit et classe ton code entièrement en local
+- Carte de couverture (`coverage`) et synchronisation (`update`) — 100% locaux
+
+**Ce qu'Ollama accélère :**
+- Classification des messages de commit pour détecter le stress Git — normalement envoyé à Claude, Ollama le traite gratuitement en local
+
+**Ce qui utilise toujours l'API Claude (tokens payants) :**
+- `coroner` — analyse de crash + Vision IA sur sélecteurs cassés (`--level=2+`)
+- `ghostwriter` — génération de patches chirurgicaux (`--level=3` / `repair`)
+- `evolver` — auto-amélioration sur erreur fatale (`--level=3` uniquement)
 
 ```bash
 # macOS — installeur graphique recommandé
