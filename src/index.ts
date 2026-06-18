@@ -30,16 +30,18 @@ import { run, diagnostics } from './orchestrator.js';
 // ── CLI argument parsing ───────────────────────────────────────────────────────
 
 interface ParsedArgs {
-  command: RunConfig['command'] | null;
-  level: Level;
-  chaos: boolean;
+  command:    RunConfig['command'] | null;
+  level:      Level;
+  chaos:      boolean;
   predictive: boolean;
   resetCache: boolean;
-  mcp: boolean;
-  traceId?: string;
-  dryRun: boolean;
-  detail: boolean;
+  mcp:        boolean;
+  traceId?:   string;
+  dryRun:     boolean;
+  detail:     boolean;
   targetPath?: string;
+  prNumber?:  number;
+  repo?:      string;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -56,8 +58,14 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   const validCommands: Array<RunConfig['command']> = [
     'init', 'audit', 'shadow', 'diff', 'repair', 'coverage', 'update',
+    'sentinel', 'arch', 'chaos',
   ];
   const command = (args.find((a) => validCommands.includes(a as RunConfig['command'])) ?? null) as RunConfig['command'] | null;
+
+  const prArg = args.find((a) => a.startsWith('--pr='));
+  const prNumber = prArg ? parseInt(prArg.split('=')[1] ?? '0', 10) : undefined;
+  const repoArg = args.find((a) => a.startsWith('--repo='));
+  const repo = repoArg ? repoArg.split('=').slice(1).join('=') : undefined;
 
   // First non-flag, non-command positional arg = targetPath override
   const targetPath = args.find((a) => !a.startsWith('-') && !validCommands.includes(a as RunConfig['command']));
@@ -73,6 +81,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     dryRun:     args.includes('--dry-run'),
     detail:     args.includes('--detail'),
     targetPath,
+    prNumber,
+    repo,
   };
 }
 
@@ -202,6 +212,54 @@ const TOOLS: Tool[] = [
       'Useful for nested AI agents checking system health before delegating tasks.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'e2e_sentinel',
+    description:
+      'Security audit of open GitHub Pull Requests. Detects OWASP Top 10 vulnerabilities, ' +
+      'hardcoded secrets, backdoors, and logic flaws using local LLM or static regex. ' +
+      'Posts APPROVE / COMMENT / REQUEST_CHANGES review to GitHub.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetPath: { type: 'string' },
+        prNumber:   { type: 'number', description: 'Audit a specific PR number only.' },
+        repo:       { type: 'string', description: 'GitHub repo slug (owner/repo). Auto-detected if absent.' },
+      },
+      required: ['targetPath'],
+    },
+  },
+  {
+    name: 'e2e_arch',
+    description:
+      'Static architectural analysis: cyclomatic complexity, excessive coupling, oversized files, ' +
+      'implicit `any`, missing return types. Returns a 0–100 score with grade A–F and ' +
+      'an LLM-generated refactoring plan.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetPath: { type: 'string' },
+      },
+      required: ['targetPath'],
+    },
+  },
+  {
+    name: 'e2e_chaos',
+    description:
+      'Generate Playwright chaos specs for all routes: LATENCY, TIMEOUT, ERROR_50x, OFFLINE, ' +
+      'CORRUPT (malformed JSON), PARTIAL (truncated response). Tests app resilience under network failure.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetPath: { type: 'string' },
+        scenarios: {
+          type: 'array',
+          items: { type: 'string', enum: ['LATENCY', 'TIMEOUT', 'ERROR_50x', 'OFFLINE', 'CORRUPT', 'PARTIAL'] },
+          description: 'Scenarios to inject (default: all 6).',
+        },
+      },
+      required: ['targetPath'],
+    },
+  },
 ];
 
 // ── MCP tool handler ───────────────────────────────────────────────────────────
@@ -235,6 +293,9 @@ async function handleToolCall(
     e2e_repair:   'repair',
     e2e_coverage: 'coverage',
     e2e_update:   'update',
+    e2e_sentinel: 'sentinel',
+    e2e_arch:     'arch',
+    e2e_chaos:    'chaos',
   };
   const command = commandMap[toolName];
   if (!command) return err(`Unknown tool: ${toolName}`);
@@ -243,7 +304,9 @@ async function handleToolCall(
   const traceId = args.traceId as string | undefined;
 
   try {
-    await run({ command, level, chaos, predictive, targetPath, traceId, dryRun });
+    const prNum  = typeof args.prNumber === 'number' ? args.prNumber : undefined;
+    const repoSl = typeof args.repo === 'string' ? args.repo : undefined;
+    await run({ command, level, chaos, predictive, targetPath, traceId, dryRun, prNumber: prNum, repo: repoSl });
     return ok({ status: 'done', command, level, targetPath });
   } catch (e) {
     return err((e as Error).message);
