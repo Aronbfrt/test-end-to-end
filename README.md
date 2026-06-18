@@ -52,8 +52,8 @@ Avant d'installer le plugin, vérifie que tu as ces outils sur ta machine. Sans 
 - Analyse AST — `scout` lit et classe ton code entièrement en local
 - Carte de couverture (`coverage`) et synchronisation (`update`) — 100% locaux
 
-**Ce qu'Ollama accélère :**
-- Classification des messages de commit pour détecter le stress Git — normalement envoyé à Claude, Ollama le traite gratuitement en local
+**Ce qu'Ollama améliore :**
+- Classification des messages de commit pour détecter le stress Git — sans Ollama, le plugin utilise une analyse par marqueurs regex (100% local, moins précise) ; avec Ollama, un LLM local affine le scoring
 
 **Ce qui utilise toujours l'API Claude (tokens payants) :**
 - `coroner` — analyse de crash + Vision IA sur sélecteurs cassés (`--level=2+`)
