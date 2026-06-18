@@ -12,7 +12,7 @@
  */
 
 import { execSync, execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { writeCliReport } from './utils/report.js';
 import {
@@ -109,6 +109,17 @@ function log(msg: string): void {
 function setState(next: OrchestratorState): void {
   log(`state: ${_state} → ${next}`);
   _state = next;
+  // Write state to file so the dashboard (separate process) can poll it
+  if (_config?.targetPath) {
+    const workDir = join(_config.targetPath, '.e2e-work');
+    try {
+      if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
+      writeFileSync(
+        join(workDir, 'state.json'),
+        JSON.stringify({ state: next, ts: Date.now(), command: _config.command }),
+      );
+    } catch { /* ignore — never crash the orchestrator for dashboard */ }
+  }
 }
 
 // ── Ollama detection ───────────────────────────────────────────────────────────

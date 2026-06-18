@@ -896,17 +896,75 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
         <code>node dist/index.js shadow --level=3 --chaos</code></div>
     </div>
   </div>
-  <div class="status"><div class="dot"></div>Serveur actif — en attente d'un audit</div>
+  <div class="status"><div class="dot" id="dot"></div><span id="status-text">Serveur actif — en attente d'un audit</span></div>
+</div>
+<div id="live-block" style="display:none;margin-top:20px;max-width:520px;width:100%">
+  <div style="background:#1a2236;border:1px solid #263147;border-radius:12px;padding:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8">État en direct</div>
+      <div id="state-pill" style="padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;background:#1e3a5f;color:#60a5fa">IDLE</div>
+      <div id="cmd-label" style="font-size:10px;color:#64748b"></div>
+    </div>
+    <div id="log-feed" style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:#94a3b8;
+      max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:3px"></div>
+  </div>
 </div>
 <script>
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  try {
-    const ws = new WebSocket(proto + '//' + location.host + '/ws');
-    ws.onmessage = function(e) {
-      const ev = JSON.parse(e.data);
-      if (ev.type === 'REPORT_READY') location.reload();
-    };
-  } catch(_) {}
+var _lastTs = 0;
+var STATE_COLORS = {
+  IDLE:'#1e3a5f|#60a5fa', SCANNING:'#1e3a5f|#60a5fa',
+  CACHE_CHECK:'#1e3a5f|#60a5fa', DISPATCHING:'#1c3a1c|#4ade80',
+  AWAITING_AGENTS:'#1c3a1c|#4ade80', RUNNING_TESTS:'#2d1f00|#fbbf24',
+  TRIAGING:'#2d1f00|#fbbf24', PATCHING:'#2d0e0e|#f87171', DONE:'#0a2d14|#4ade80'
+};
+function stateColor(s) {
+  var c = STATE_COLORS[s] || '1e3a5f|#60a5fa'; var p = c.split('|');
+  return 'background:' + p[0] + ';color:' + p[1];
+}
+function poll() {
+  fetch('/api/live').then(function(r){ return r.json(); }).then(function(d) {
+    var block = document.getElementById('live-block');
+    var pill  = document.getElementById('state-pill');
+    var cmd   = document.getElementById('cmd-label');
+    var feed  = document.getElementById('log-feed');
+    var dot   = document.getElementById('dot');
+    var txt   = document.getElementById('status-text');
+    if (d.state !== 'IDLE') {
+      block.style.display = 'block';
+      dot.style.background = d.state === 'DONE' ? '#4ade80' : '#fbbf24';
+      dot.style.boxShadow  = d.state === 'DONE' ? '0 0 4px #4ade80' : '0 0 4px #fbbf24';
+      txt.textContent = d.state === 'DONE' ? 'Audit terminé — rechargement...' : 'Audit en cours...';
+    }
+    pill.textContent = d.state;
+    pill.setAttribute('style', pill.getAttribute('style').replace(/background[^;]+;color:[^;]+/, stateColor(d.state)));
+    if (d.command) cmd.textContent = '(' + d.command + ')';
+    if (d.log && d.ts !== _lastTs) {
+      _lastTs = d.ts;
+      feed.innerHTML = '';
+      d.log.forEach(function(line) {
+        var el = document.createElement('div');
+        el.style.cssText = 'padding:2px 0;border-bottom:1px solid #1e293b';
+        el.textContent = line;
+        if (line.includes('DONE')) el.style.color = '#4ade80';
+        else if (line.includes('Error') || line.includes('error')) el.style.color = '#f87171';
+        else if (line.includes('RUNNING') || line.includes('TRIAGING')) el.style.color = '#fbbf24';
+        feed.appendChild(el);
+      });
+      feed.scrollTop = feed.scrollHeight;
+    }
+    if (d.state === 'DONE' && _lastTs > 0) setTimeout(function(){ location.reload(); }, 2000);
+  }).catch(function(){});
+}
+setInterval(poll, 1500);
+poll();
+var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+try {
+  var ws = new WebSocket(proto + '//' + location.host + '/ws');
+  ws.onmessage = function(e) {
+    var ev = JSON.parse(e.data);
+    if (ev.type === 'REPORT_READY') location.reload();
+  };
+} catch(_) {}
 </script>
 </body>
 </html>`);
@@ -915,6 +973,19 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
 
   app.get('/api/status', (_req: Request, res: Response) => {
     res.json(diagnostics());
+  });
+
+  // Live state written by orchestrator (cross-process polling)
+  app.get('/api/live', (_req: Request, res: Response) => {
+    const statePath = join(targetPath, '.e2e-work', 'state.json');
+    const logPath   = join(targetPath, '.e2e-work', 'latest.log');
+    const state = existsSync(statePath)
+      ? JSON.parse(readFileSync(statePath, 'utf-8') as string) as { state: string; ts: number; command: string }
+      : { state: 'IDLE', ts: 0, command: '' };
+    const logLines = existsSync(logPath)
+      ? readFileSync(logPath, 'utf-8').split('\n').filter(Boolean).slice(-50)
+      : [];
+    res.json({ ...state, log: logLines });
   });
 
   app.get('/api/report', (_req: Request, res: Response) => {
