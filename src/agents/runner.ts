@@ -73,12 +73,14 @@ export async function runTests(config: RunConfig, cachedFiles: number): Promise<
   let rawOutput = '';
 
   try {
-    rawOutput = execSync('npx playwright test --reporter=json,html', {
+    rawOutput = execSync('npx playwright test --reporter=json', {
       cwd:       config.targetPath,
       timeout:   300_000,
       encoding:  'utf-8',
       stdio:     ['ignore', 'pipe', 'ignore'],
       maxBuffer: 20 * 1024 * 1024,
+      // CI=1 prevents auto-open of HTML report on failures (blocks execSync otherwise)
+      env:       { ...process.env, CI: '1', FORCE_COLOR: '0' },
     });
   } catch (e: unknown) {
     const err = e as { stdout?: string; message?: string };
