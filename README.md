@@ -373,7 +373,7 @@ node dist/index.js audit --level=3 --chaos --predictive
 # Via CLI — génère le rapport de couverture
 node dist/index.js coverage
 
-# Rapport avec détail par catégorie (routes / forms / API)
+# Rapport avec détail par route et formulaire (fichiers de test correspondants)
 node dist/index.js coverage --detail
 ```
 

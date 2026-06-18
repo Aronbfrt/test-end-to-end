@@ -256,6 +256,22 @@ export async function run(
     console.log('[coverage] ✓ couverture complète');
   }
 
+  // --detail: print per-route matched test files
+  if (config.detail) {
+    console.log('\n[coverage] détail par route :');
+    routeCoverage.forEach((r) => {
+      const status = r.covered ? '✓' : '✗';
+      console.log(`  ${status}  ${r.method.toUpperCase()} ${r.route}`);
+      r.testFiles.forEach((f) => console.log(`       → ${f.replace(config.targetPath, '.')}`));
+    });
+    console.log('\n[coverage] détail par formulaire :');
+    formCoverage.forEach((f) => {
+      const status = f.covered ? '✓' : '✗';
+      console.log(`  ${status}  FORM ${f.action}`);
+      f.testFiles.forEach((tf) => console.log(`       → ${tf.replace(config.targetPath, '.')}`));
+    });
+  }
+
   generateCoverageHtml(report, config.targetPath);
 
   // Persist JSON for other agents
