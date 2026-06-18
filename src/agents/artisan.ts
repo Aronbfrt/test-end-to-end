@@ -18,7 +18,10 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const _pluginRoot = join(dirname(fileURLToPath(import.meta.url)), '../../');
 
 import type { AgentTask, RouteMap, RunConfig } from '../orchestrator.js';
 import type { ScanResult } from './scout.js';
@@ -585,7 +588,7 @@ export async function run(
   // ── Playwright config at output root ──────────────────────────────────────
   const pwConfig = join(config.targetPath, 'playwright.config.ts');
   if (!existsSync(pwConfig)) {
-    const templateConfig = join(resolve(config.targetPath), 'templates', 'playwright', 'playwright.config.ts');
+    const templateConfig = join(_pluginRoot, 'templates', 'playwright', 'playwright.config.ts');
     if (existsSync(templateConfig)) {
       writeFileSync(pwConfig, readFileSync(templateConfig, 'utf-8'), 'utf-8');
     }
