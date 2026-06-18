@@ -34,3 +34,5 @@ tests/
 # SQLite database (FinOps / Green-IT metrics)
 src/database/storage.sqlite
 .e2e-work/storage.sqlite
+.e2e-work/
+tsconfig.tsbuildinfo
