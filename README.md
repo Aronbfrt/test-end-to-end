@@ -57,13 +57,20 @@ curl -fsSL https://ollama.com/install.sh | sh
 # Windows — installeur graphique
 # → https://ollama.com/download/windows
 
-# Après installation (macOS / Linux / Windows) — télécharger le modèle
-ollama pull llama3.2
+# Après installation — choisir le modèle selon ta RAM :
 
-# Vérifier qu'Ollama tourne bien
+# ✅ Recommandé — machines avec 8 Go de RAM ou moins (rapide, léger, 2 Go)
+ollama pull llama3.2:3b
+
+# 🚀 Performances supérieures — machines avec 16 Go de RAM ou plus (meilleure qualité, 4.7 Go)
+ollama pull llama3.1:8b
+
+# Vérifier que le modèle est bien installé
 ollama list
-# → tu dois voir "llama3.2" dans la liste
+# → tu dois voir "llama3.2:3b" ou "llama3.1:8b" dans la liste
 ```
+
+> **Quel modèle choisir ?** Le plugin utilise Ollama pour classifier des messages de commit et détecter des anomalies de sélecteur CSS — des tâches simples. `llama3.2:3b` est parfaitement suffisant et démarre en 2 secondes. `llama3.1:8b` donne de meilleurs résultats sur les projets complexes (commits ambigus, frameworks rares) mais consomme ~5x plus de RAM. Si tu as les deux installés, le plugin choisit automatiquement le premier détecté par `ollama list`.
 
 > **Ollama n'est pas obligatoire.** Si tu ne l'installes pas, le plugin utilise l'API Claude normalement — ça marche pareil, mais consomme des tokens pour chaque analyse.
 
