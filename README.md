@@ -257,10 +257,18 @@ node "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end\dist\index.j
 
 ### Résultat attendu
 
-Après la première exécution, tu trouveras dans `.e2e-work/` :
-- Les tests générés dans `tests/`
-- Un rapport `report.html` avec le score de confiance
-- Un log de ce que l'IA a découvert dans ton code
+Après la première exécution, deux dossiers apparaissent à la racine de ton projet :
+
+**`tests/`** — tests générés par le moteur
+- `tests/<route>/base.spec.ts` — tests fonctionnels par route
+- `tests/<route>/persona_*.spec.ts` — tests par Shadow Persona
+- `tests/report.html` — rapport de confiance (score IC, verdicts, hotspots)
+
+**`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
+- `*.triage.json` — résultats de triage Coroner (utilisés par `repair`)
+- `coverage.html` / `coverage.json` — carte de couverture (générée par `coverage`)
+- `last-routes.json` — snapshot routes pour le mode `update`
+- `pr-*.md` — brouillon Pull Request (créé si `gh` n'est pas installé)
 
 ---
 
