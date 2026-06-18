@@ -86,7 +86,9 @@ export async function runTests(config: RunConfig, cachedFiles: number): Promise<
     const err = e as { stdout?: string; message?: string };
     rawOutput = err.stdout ?? '';
     if (!rawOutput) {
-      console.log(`[runner] playwright unavailable or no tests: ${err.message ?? String(e)}`);
+      const msg = err.message ?? String(e);
+      const label = msg.includes('ETIMEDOUT') ? 'playwright test run timed out (> 5 min)' : `playwright unavailable: ${msg}`;
+      console.log(`[runner] ${label}`);
       return { runs, tokensUsed: 0, tokensSaved: 0, cachedFiles };
     }
   }

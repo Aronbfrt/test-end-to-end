@@ -278,7 +278,7 @@ Après la première exécution, deux dossiers apparaissent à la racine de ton p
 - `tests/<route>/persona_frustrated.spec.ts` — Shadow Persona utilisateur frustré (`--level=3` ou `shadow`)
 - `tests/<route>/persona_attacker.spec.ts` — Shadow Persona attaquant malveillant (`--level=3` ou `shadow`)
 - `tests/<route>/persona_impulsive.spec.ts` — Shadow Persona acheteur impulsif (`--level=3` ou `shadow`)
-- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (`--chaos` ou `--level=3`)
+- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (`--chaos` ou `--level=3`, uniquement pour les routes avec formulaire)
 - `tests/report.html` — rapport de confiance (score IC 0–100, résultats par route, verdicts)
 
 **`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
