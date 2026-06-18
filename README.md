@@ -101,11 +101,7 @@ gh auth login
 Le plugin *génère* les tests Playwright. Pour les *exécuter* localement :
 
 ```bash
-# macOS / Linux
-npm install -g @playwright/test
-playwright install chromium
-
-# Windows (PowerShell en tant qu'administrateur — requis pour installer les binaires browser)
+# macOS / Linux / Windows — mêmes commandes
 npm install -g @playwright/test
 playwright install chromium
 
@@ -113,7 +109,7 @@ playwright install chromium
 playwright --version
 ```
 
-> **Windows :** l'installation des navigateurs nécessite d'ouvrir PowerShell en tant qu'administrateur (clic droit → "Exécuter en tant qu'administrateur").
+> **Windows :** lance PowerShell en tant qu'administrateur (clic droit → "Exécuter en tant qu'administrateur") avant de lancer `playwright install chromium` — requis pour installer les binaires browser.
 
 ---
 
