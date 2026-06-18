@@ -30,7 +30,7 @@ import { recordRun, recordTriage, recordPatch } from './utils/metricsTracker.js'
 export type Level = 1 | 2 | 3;
 
 export interface RunConfig {
-  command: 'init' | 'audit' | 'shadow' | 'diff' | 'repair' | 'coverage' | 'update';
+  command: 'init' | 'audit' | 'shadow' | 'diff' | 'repair' | 'coverage' | 'update' | 'sentinel' | 'arch' | 'chaos';
   level: Level;
   chaos: boolean;
   predictive: boolean;
@@ -41,6 +41,14 @@ export interface RunConfig {
   dryRun?: boolean;
   /** coverage --detail: print per-route matched test files */
   detail?: boolean;
+  /** Port the target app is listening on (default 3000) */
+  port?: number;
+  /** Chaos scenarios to inject (chaosMonkey.ts) */
+  chaosScenarios?: import('./agents/chaosMonkey.js').ChaosScenario[];
+  /** Sentinel: audit only this PR number */
+  prNumber?: number;
+  /** GitHub repo slug (owner/repo) for sentinel */
+  repo?: string;
 }
 
 export type AgentTask =
@@ -316,6 +324,34 @@ export async function run(config: RunConfig): Promise<void> {
       return;
     }
 
+    // sentinel: PR security audit
+    if (config.command === 'sentinel') {
+      setState('DISPATCHING');
+      const { run: sentinelRun } = await import('./agents/sentinel.js');
+      await sentinelRun(config, _ollama, config.prNumber, config.repo);
+      setState('DONE');
+      return;
+    }
+
+    // arch: architectural police analysis
+    if (config.command === 'arch') {
+      setState('DISPATCHING');
+      const { run: archRun } = await import('./agents/archPolice.js');
+      await archRun(config, _ollama);
+      setState('DONE');
+      return;
+    }
+
+    // chaos: generate chaos spec files only (no test run)
+    if (config.command === 'chaos') {
+      setState('DISPATCHING');
+      const rawScanForChaos = await dispatch<RouteMap>({ type: 'SCAN_AST', files: scanFiles });
+      const { run: chaosRun } = await import('./agents/chaosMonkey.js');
+      await chaosRun(config, rawScanForChaos);
+      setState('DONE');
+      return;
+    }
+
     const rawScan = await dispatch<RouteMap & { hotspots?: Array<{ file: string; risk: number; churn: number; stress: number }> }>({
       type: 'SCAN_AST',
       files: scanFiles,
@@ -368,6 +404,20 @@ export async function run(config: RunConfig): Promise<void> {
 
       // Persist triage metrics + ChatOps alert
       const firstFailRun = testSummary.runs.find((r) => r.verdict === 'FAIL');
+
+      // Integrations: Atlassian (Jira/Xray) + Trello
+      const crashInfo = {
+        traceId:    traceId,
+        route:      firstFailRun?.route ?? '/',
+        verdict:    triageResult.verdict,
+        confidence: triageResult.confidence,
+        reasoning:  triageResult.reasoning,
+        targetPath: config.targetPath,
+      };
+      const { onCrash: atlassianCrash, atlassianEnabled } = await import('./integrations/atlassian.js');
+      const { onCrash: trelloCrash, trelloEnabled }       = await import('./integrations/trello.js');
+      if (atlassianEnabled()) atlassianCrash(crashInfo).catch(() => { /* non-fatal */ });
+      if (trelloEnabled())    trelloCrash(crashInfo).catch(() => { /* non-fatal */ });
       await recordTriage({
         traceId:    traceId,
         verdict:    triageResult.verdict,
@@ -462,6 +512,18 @@ export async function run(config: RunConfig): Promise<void> {
             config,
             _ollama,
           ).catch((e) => console.warn(`[qaEngineer] ${(e as Error).message}`));
+        }
+
+        // Close Atlassian ticket + move Trello card to Done
+        const { onPatch: atlassianPatch, atlassianEnabled: aEnabled } = await import('./integrations/atlassian.js');
+        const { onPatch: trelloPatch, trelloEnabled: tEnabled }       = await import('./integrations/trello.js');
+        if (aEnabled()) atlassianPatch(patchTraceId).catch(() => { /* non-fatal */ });
+        if (tEnabled()) trelloPatch(patchTraceId).catch(() => { /* non-fatal */ });
+
+        // Trigger cloud deploy if configured
+        const { triggerDeploy, cloudDeployerEnabled } = await import('./integrations/cloudDeployer.js');
+        if (cloudDeployerEnabled()) {
+          triggerDeploy(false).catch(() => { /* non-fatal */ });
         }
       } else {
         log('Ghostwriter on standby — no triage result available (run audit first, or use --trace=<id>)');

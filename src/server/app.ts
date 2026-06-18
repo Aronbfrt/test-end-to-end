@@ -936,6 +936,46 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
     res.send(readFileSync(logPath, 'utf-8'));
   });
 
+  // ── Metrics API (SQLite) ────────────────────────────────────────────────────
+
+  app.get('/api/metrics', (_req: Request, res: Response) => {
+    import('../utils/metricsTracker.js').then(({ getStats }) => {
+      res.json(getStats(targetPath));
+    }).catch((e) => res.status(500).json({ error: (e as Error).message }));
+  });
+
+  app.get('/api/runs', (req: Request, res: Response) => {
+    const limit = parseInt((req.query['limit'] as string) ?? '20', 10);
+    import('../utils/metricsTracker.js').then(({ getRecentRuns }) => {
+      res.json(getRecentRuns(limit, targetPath));
+    }).catch((e) => res.status(500).json({ error: (e as Error).message }));
+  });
+
+  app.get('/api/triages', (req: Request, res: Response) => {
+    const limit = parseInt((req.query['limit'] as string) ?? '20', 10);
+    import('../utils/metricsTracker.js').then(({ getRecentTriages }) => {
+      res.json(getRecentTriages(limit, targetPath));
+    }).catch((e) => res.status(500).json({ error: (e as Error).message }));
+  });
+
+  app.get('/api/arch', (_req: Request, res: Response) => {
+    const archPath = join(targetPath, '.e2e-work', 'arch-report.json');
+    if (!existsSync(archPath)) {
+      res.status(404).json({ error: 'No arch report yet — run: node dist/index.js arch <path>' });
+      return;
+    }
+    res.json(JSON.parse(readFileSync(archPath, 'utf-8')));
+  });
+
+  app.get('/api/dependabot', (_req: Request, res: Response) => {
+    const depPath = join(targetPath, '.e2e-work', 'dependabot-report.json');
+    if (!existsSync(depPath)) {
+      res.status(404).json({ error: 'No dependabot report yet — run: npm run security-fix' });
+      return;
+    }
+    res.json(JSON.parse(readFileSync(depPath, 'utf-8')));
+  });
+
   app.post('/api/repair', async (req: Request, res: Response) => {
     const { traceId } = req.body as { traceId?: string };
     if (!traceId) {
