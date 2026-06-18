@@ -424,7 +424,7 @@ function getHotspotFiles(root: string, allFiles: string[]): string[] {
     }
     return [...churn.entries()]
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 15)
+      .slice(0, 20)
       .map(([f]) => f);
   } catch {
     return [];

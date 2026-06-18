@@ -496,7 +496,7 @@ Quand une page HTML doit quand même être envoyée à un modèle IA (par exempl
 
 1. **Purge** — supprime tout ce qui n'est pas utile pour comprendre la structure : balises `<script>`, `<style>`, attributs `on*` (onclick, onmouseover…), data-URIs, éléments cachés (`aria-hidden=true`)
 2. **Fusion** — regroupe les éléments identiques répétés : si tu as 50 lignes `<li class="item">`, elles deviennent `li.item × 50`
-3. **Sérialisation** — encode la structure restante sous forme compacte avec des clés à 2 caractères
+3. **Sérialisation** — encode la structure restante sous forme compacte avec des clés hex à 4 caractères
 
 **Résultat mesuré :** 18 580 octets → 1 002 octets (réduction de 94,6%)
 
@@ -659,14 +659,14 @@ Le score de stress est calculé en cherchant des mots-clés dans les messages de
 
 | Mots dans les commits | Score de stress ajouté |
 |---|---|
-| `fix`, `hotfix`, `urgent`, `critical`, `asap` | +3 |
-| `wip`, `temp`, `hack`, `dirty`, `quick` | +2 |
-| Jurons (`crap`, `wtf`, `ugh`, `damn`…) | +3 |
-| `revert`, `rollback`, `oops`, `broke` | +2 |
+| `fix`, `hotfix`, `urgent`, `emergency`, `critical`, `asap`, `prod bug` | +3 |
+| `wip`, `temp`, `temporary`, `hack`, `dirty`, `quick`, `kludge`, `no time`, `just ship`, `ship it` | +2 |
+| Jurons : `crap`, `damn`, `shit`, `wtf`, `ugh`, `argh`, `ffs`, `stupid` | +3 |
+| `revert`, `rollback`, `undo`, `oops`, `broke`, `broken` | +2 |
 | Commit entre 23h et 4h du matin | +2 |
 | `!!` (ponctuation d'excitation/panique) | +1 |
 
-Les 20 fichiers avec le score le plus élevé reçoivent une couverture de tests plus dense — plus de variations, plus de cas limites.
+Les 20 fichiers avec le score le plus élevé (top 20 retournés par le Scout) reçoivent une couverture de tests plus dense — plus de variations, plus de cas limites.
 
 **Exemple réel sur ce dépôt :**
 ```
@@ -682,10 +682,10 @@ Les 20 fichiers avec le score le plus élevé reçoivent une couverture de tests
 Après chaque audit, un score de 0 à 100 est calculé et affiché dans `report.html` et dans les commentaires de PR automatiques.
 
 ```
-Score = taux_réussite_tests × 60
+Score = taux_réussite_tests × 60   (tests passés / tests totaux)
       + bonus_cache         × 10   (fichiers non modifiés / total — économie réalisée)
-      + bonus_tokens        × 10   (tokens économisés grâce à Ollama / total estimé)
-      + couverture          × 20   (routes testées / routes totales)
+      + bonus_tokens        × 10   (tokens économisés via Ollama / total estimé)
+      + couverture_routes   × 20   (routes avec ≥1 PASS / routes totales uniques)
       − échecs_sécurité     × 5    (tests persona "attaquant" échoués)
       → résultat borné entre 0 et 100
 ```

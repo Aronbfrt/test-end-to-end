@@ -120,11 +120,15 @@ function computeConfidenceIndex(summary: RunSummary): number {
     ? Math.min(summary.cachedFiles / total, 1)
     : 0;
 
+  const passedRoutes = new Set(summary.runs.filter((r) => r.verdict === 'PASS').map((r) => r.route)).size;
+  const totalRoutes  = new Set(summary.runs.map((r) => r.route)).size;
+  const routeCoverage = totalRoutes > 0 ? passedRoutes / totalRoutes : 0;
+
   const score =
     passRate * 60 +
     cachedPct * 10 +
     savedPct * 10 +
-    Math.min(passed / Math.max(total, 1), 1) * 20 -
+    routeCoverage * 20 -
     securityFails * 5;
 
   return Math.round(Math.max(0, Math.min(100, score)));
@@ -648,8 +652,16 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
           style="font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;cursor:pointer">Vider</button>
       </div>
     </div>
-    <div class="log-page" id="log-area">
-      <div class="log-empty">En attente de connexion WebSocket…</div>
+    <div style="flex:1;min-height:0;display:flex;gap:0;overflow:hidden">
+      <div class="log-page" id="log-area" style="flex:1;border-right:1px solid var(--border)">
+        <div class="log-empty">En attente de connexion WebSocket…</div>
+      </div>
+      <div id="ss-area" style="width:320px;overflow-y:auto;flex-shrink:0;
+        scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+        <div class="ss-empty" style="padding:24px 16px;text-align:center;color:var(--muted);font-size:11px">
+          Screenshots SHIELD<br>apparaîtront ici<br>lors du triage Coroner.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -704,6 +716,24 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     });
   }
 
+  var screenshotArea = document.getElementById('ss-area');
+  function addScreenshot(label, b64){
+    if(!screenshotArea) return;
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'padding:10px 16px;border-bottom:1px solid var(--border)';
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px';
+    lbl.textContent = label;
+    var img = document.createElement('img');
+    img.src = 'data:image/png;base64,'+b64;
+    img.style.cssText = 'max-width:100%;border-radius:4px;border:1px solid var(--border)';
+    wrap.append(lbl, img);
+    screenshotArea.appendChild(wrap);
+    if(screenshotArea.querySelector('.ss-empty')) screenshotArea.querySelector('.ss-empty').remove();
+    // Switch to logs tab to show screenshot
+    showTab('logs');
+  }
+
   function addLog(ts, ag, msg){
     if(logEl.querySelector('.log-empty')) logEl.innerHTML = '';
     var r = document.createElement('div'); r.className = 'le';
@@ -739,6 +769,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
           if(k==='cachedFiles'){ var el=document.getElementById('c-val'); if(el)el.textContent=v; }
           if(k==='tokensSaved'){ var el=document.getElementById('t-val'); if(el)el.textContent=v; }
         }
+        if(ev.type==='SCREENSHOT'){ addScreenshot(ev.payload.label, ev.payload.b64Png); }
         if(ev.type==='REPORT_READY') location.reload();
       };
     } catch(_){ syncDots(false); }

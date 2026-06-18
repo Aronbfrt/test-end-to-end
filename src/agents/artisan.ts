@@ -322,6 +322,74 @@ ${hasAiFeature ? `  test('prompt injection rejected by AI feature', async ({ pag
 `;
 }
 
+function generateImpulsiveBuyerTest(
+  route: { method: string; path: string },
+  form: { action: string; method: string; fields: string[] } | undefined,
+  baseUrl: string,
+): string {
+  const testName = routeToTestName(route.path);
+  return `import { test, expect } from '@playwright/test';
+
+// Shadow Persona: impulsive_buyer
+// Skips required fields, forces direct checkout, ignores validation warnings.
+
+const BASE_URL = process.env.TEST_BASE_URL ?? '${baseUrl}';
+
+test.describe('[persona:impulsive] ${testName}', () => {
+  test('submitting empty required fields returns 4xx not 5xx', async ({ page }) => {
+    await page.goto(\`\${BASE_URL}${route.path}\`);
+    await page.waitForLoadState('domcontentloaded');
+
+    // Click submit without filling anything
+    await page.locator('button[type="submit"], input[type="submit"]').first().click({ force: true }).catch(() => null);
+
+    const status = await page.evaluate(() =>
+      fetch(window.location.href, { method: 'POST', body: new FormData() })
+        .then((r) => r.status)
+        .catch(() => 0),
+    );
+    // Server must reject gracefully (4xx) rather than crash (5xx)
+    expect(status).not.toBeGreaterThanOrEqual(500);
+  });
+
+${form ? `  test('skipping validation steps does not bypass server auth', async ({ page }) => {
+    // Attempt to jump directly to a downstream step (e.g. /checkout/confirm)
+    const downstream = '${route.path}'.replace(/\\/cart|\\/basket/i, '/checkout/confirm')
+                                      .replace(/\\/checkout$/i, '/checkout/confirm');
+    const res = await page.goto(\`\${BASE_URL}\${downstream}\`).catch(() => null);
+    const status = res?.status() ?? 0;
+
+    // Must redirect (3xx) or reject (4xx) — not serve a 200 for unauthorised step
+    if (status === 200) {
+      const body = await page.locator('body').innerText().catch(() => '');
+      // Should not render actual order confirmation without cart data
+      expect(body.toLowerCase()).not.toMatch(/order confirmed|payment processed|merci pour votre commande/i);
+    }
+  });
+
+  test('double-click on submit does not create duplicate records', async ({ page }) => {
+    await page.goto(\`\${BASE_URL}${route.path}\`);
+    await page.waitForLoadState('domcontentloaded');
+
+    // Fill minimum required fields
+    for (const field of ${JSON.stringify(form.fields.slice(0, 2))}) {
+      await page.locator(\`[name="\${field}"], #\${field}\`).fill('test-impulsive').catch(() => null);
+    }
+
+    const submitBtn = page.locator('button[type="submit"], input[type="submit"]').first();
+    await submitBtn.click({ force: true }).catch(() => null);
+    await submitBtn.click({ force: true }).catch(() => null); // double-click
+
+    // Give server time to process both requests
+    await page.waitForTimeout(800);
+    const body = await page.locator('body').innerText().catch(() => '');
+    // Must not show a duplicate-record error (ideally idempotent)
+    expect(body).not.toMatch(/already exists|duplicate entry|unique constraint/i);
+  });` : ''}
+});
+`;
+}
+
 function generateChaosTest(
   route: { method: string; path: string },
   baseUrl: string,
@@ -473,7 +541,7 @@ export async function run(
 
     // ── Shadow Personas (level 3 or --chaos) ──────────────────────────────────
     if (config.chaos || config.level === 3 || personas?.length) {
-      const activePersonas = personas ?? ['frustrated_user', 'malicious_attacker'] as PersonaId[];
+      const activePersonas = personas ?? ['frustrated_user', 'malicious_attacker', 'impulsive_buyer'] as PersonaId[];
 
       if (activePersonas.includes('frustrated_user')) {
         const path = join(featureDir, 'persona_frustrated.spec.ts');
@@ -490,6 +558,15 @@ export async function run(
           const content = generateMaliciousAttackerTest(route, associatedForm, aiDetected, baseUrl);
           writeFileSync(path, content, 'utf-8');
           generated.push({ path, content, persona: 'malicious_attacker' });
+        }
+      }
+
+      if (activePersonas.includes('impulsive_buyer')) {
+        const path = join(featureDir, 'persona_impulsive.spec.ts');
+        if (!existsSync(path)) {
+          const content = generateImpulsiveBuyerTest(route, associatedForm, baseUrl);
+          writeFileSync(path, content, 'utf-8');
+          generated.push({ path, content, persona: 'impulsive_buyer' });
         }
       }
 
