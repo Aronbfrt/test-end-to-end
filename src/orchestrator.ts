@@ -87,6 +87,7 @@ let _config: RunConfig | null = null;
 let _ollama: OllamaCapability | null = null;
 let _lastHotspots: Array<{ file: string; risk: number; churn: number; stress: number }> = [];
 let _logIntercepted = false;
+let _cliLogPath: string | null = null;
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
 
@@ -245,17 +246,19 @@ export async function run(config: RunConfig): Promise<void> {
   const _logPath  = join(_workDir, 'latest.log');
   try {
     mkdirSync(_workDir, { recursive: true });
-    appendFileSync(_logPath,
+    _cliLogPath = _logPath;
+    appendFileSync(_cliLogPath,
       `\n${'═'.repeat(60)}\nRun: ${new Date().toISOString()}\n${'═'.repeat(60)}\n`,
       'utf-8',
     );
-    // Persist console.log to file — guard prevents re-wrapping across MCP multi-calls
+    // Persist console.log to file — guard prevents re-wrapping across MCP multi-calls.
+    // The interceptor always reads _cliLogPath (module-level) so it follows the current run's path.
     if (!_logIntercepted) {
       _logIntercepted = true;
       const _origLog = console.log.bind(console);
       console.log = (...args: unknown[]) => {
         const msg = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
-        try { appendFileSync(_logPath, `${new Date().toISOString()} ${msg}\n`, 'utf-8'); } catch { /* non-fatal */ }
+        try { if (_cliLogPath) appendFileSync(_cliLogPath, `${new Date().toISOString()} ${msg}\n`, 'utf-8'); } catch { /* non-fatal */ }
         _origLog(...args);
       };
     }
