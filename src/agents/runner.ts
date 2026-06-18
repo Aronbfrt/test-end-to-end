@@ -73,7 +73,7 @@ export async function runTests(config: RunConfig, cachedFiles: number): Promise<
   let rawOutput = '';
 
   try {
-    rawOutput = execSync('npx playwright test --reporter=json', {
+    rawOutput = execSync('npx playwright test --reporter=json,html', {
       cwd:       config.targetPath,
       timeout:   300_000,
       encoding:  'utf-8',
