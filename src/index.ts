@@ -42,6 +42,7 @@ interface ParsedArgs {
   targetPath?: string;
   prNumber?:  number;
   repo?:      string;
+  port?:      number;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -66,6 +67,8 @@ function parseArgs(argv: string[]): ParsedArgs {
   const prNumber = prArg ? parseInt(prArg.split('=')[1] ?? '0', 10) : undefined;
   const repoArg = args.find((a) => a.startsWith('--repo='));
   const repo = repoArg ? repoArg.split('=').slice(1).join('=') : undefined;
+  const portArg = args.find((a) => a.startsWith('--port='));
+  const port = portArg ? parseInt(portArg.split('=')[1] ?? '3000', 10) : undefined;
 
   // First non-flag, non-command positional arg = targetPath override
   const targetPath = args.find((a) => !a.startsWith('-') && !validCommands.includes(a as RunConfig['command']));
@@ -83,6 +86,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     targetPath,
     prNumber,
     repo,
+    port,
   };
 }
 
@@ -343,6 +347,7 @@ async function startMcpServer(): Promise<void> {
 
 const HELP = `
 test-end-to-end V-Infinite 2.0.0 — Autonomous QA Engine
+13 agents · 11 MCP tools · Zero-Token Bypass via SHA-256 + Ollama
 
 USAGE
   node dist/index.js <command> [targetPath] [flags]
@@ -350,37 +355,39 @@ USAGE
 COMMANDS
   init        Initialise le projet cible : détecte le stack, amorce le cache,
               génère la config Playwright.
-              Ex: node dist/index.js init
-                  node dist/index.js init /mon/projet
+              Ex: node dist/index.js init /mon/projet
 
   audit       Audit E2E complet : scan AST → génération tests → triage → rapport.
-              Ex: node dist/index.js audit
-                  node dist/index.js audit --level=2 --predictive
+              Ex: node dist/index.js audit --level=2 --predictive
 
   shadow      Zero-prompt Reverse Testing + Shadow Personas (Frustrated / Attacker /
-              Chaos / Impulsive). Fonctionne sans qu'on décrive une seule fonctionnalité.
+              Impulsive). Fonctionne sans qu'on décrive une seule fonctionnalité.
               Ex: node dist/index.js shadow --level=3 --chaos
 
   diff        Cible le scan sur les fichiers modifiés (git diff HEAD + staged).
-              --predictive ajoute les hotspots Git des 12 derniers mois.
-              Ex: node dist/index.js diff
-                  node dist/index.js diff --predictive --level=2
+              Ex: node dist/index.js diff --predictive --level=2
 
   repair      Active Ghostwriter pour patcher un bug confirmé par le Coroner.
-              Charge automatiquement le dernier triage (.e2e-work/*.triage.json).
-              Ex: node dist/index.js repair
-                  node dist/index.js repair --trace=run-1718542800000
+              Ex: node dist/index.js repair --trace=run-1718542800000
 
   coverage    Carte de couverture : routes + forms vs fichiers de test existants.
-              Génère .e2e-work/coverage.html et coverage.json.
-              Ex: node dist/index.js coverage
-                  node dist/index.js coverage --detail
+              Ex: node dist/index.js coverage --detail
 
-  update      Sync intelligent après changements de code.
-              Compare routes actuelles vs snapshot (.e2e-work/last-routes.json),
-              génère uniquement les tests manquants. Protège les tests manuels.
-              Ex: node dist/index.js update
-                  node dist/index.js update --dry-run
+  update      Sync intelligent après changements de code. Protège les tests manuels.
+              Ex: node dist/index.js update --dry-run
+
+  sentinel    Audit sécurité OWASP sur une Pull Request GitHub.
+              Détecte secrets, SQLi, SSRF, eval, XSS, IDOR, RCE.
+              Utilise Ollama (local, 0 token) ou regex OWASP en fallback.
+              Ex: node dist/index.js sentinel --pr=42
+                  node dist/index.js sentinel --pr=42 --repo=owner/repo
+
+  arch        Analyse l'architecture du code (complexité cyclomatique, couplage).
+              Score 0-100. Génère .e2e-work/arch-report.md
+              Ex: node dist/index.js arch /mon/projet
+
+  chaos       Génère des specs Playwright de chaos réseau (6 scénarios par route).
+              Ex: node dist/index.js chaos --port=8080
 
 FLAGS
   --level=1         Déterministe local — AST pur, sans LLM
@@ -391,11 +398,16 @@ FLAGS
   --dry-run         Affiche ce qui serait fait sans écrire de fichier (update)
   --detail          Sortie détaillée par route (coverage)
   --trace=<id>      Charge un triage spécifique par son identifiant (repair)
+  --pr=<number>     Numéro de Pull Request GitHub à auditer (sentinel)
+  --repo=<owner/r>  Dépôt cible owner/repo (sentinel)
+  --port=<number>   Port du serveur local à tester (chaos, défaut: 3000)
   --reset-cache     Vide le cache d'empreintes SHA-256
   --mcp             Démarre en mode serveur MCP (stdin/stdout JSON-RPC)
+  --version         Affiche la version
 
 DASHBOARD
-  node dist/server/start.js     → http://127.0.0.1:4321
+  node dist/server/start.js          → http://127.0.0.1:4321
+  E2E_PORT=4444 node dist/server/start.js
 
 MCP (.mcp.json)
   { "mcpServers": { "e2e": { "command": "node",
@@ -405,6 +417,11 @@ MCP (.mcp.json)
 async function runCli(parsed: ParsedArgs): Promise<void> {
   if (process.argv.includes('--help') || process.argv.includes('-h')) {
     process.stdout.write(HELP);
+    process.exit(0);
+  }
+
+  if (process.argv.includes('--version') || process.argv.includes('-v')) {
+    process.stdout.write('test-end-to-end V-Infinite 2.0.0\n');
     process.exit(0);
   }
 
@@ -429,6 +446,9 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
     traceId:    parsed.traceId,
     dryRun:     parsed.dryRun,
     detail:     parsed.detail,
+    prNumber:   parsed.prNumber,
+    repo:       parsed.repo,
+    port:       parsed.port,
   });
 }
 

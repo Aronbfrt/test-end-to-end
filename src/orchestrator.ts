@@ -292,7 +292,8 @@ export async function run(config: RunConfig): Promise<void> {
     setState('CACHE_CHECK');
     const staleFiles = filterStale(allFiles);
 
-    if (staleFiles.length === 0 && !['repair', 'shadow', 'coverage', 'update'].includes(config.command)) {
+    const bypassExempt = ['repair', 'shadow', 'coverage', 'update', 'sentinel', 'arch', 'chaos'];
+    if (staleFiles.length === 0 && !bypassExempt.includes(config.command)) {
       log('All files fresh — Zero-Token Bypass: nothing to do');
       setState('DONE');
       return;

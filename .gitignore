@@ -26,3 +26,11 @@ node_modules/
 package-lock.json
 playwright.config.ts
 tests/
+
+# Secrets & local config
+.env
+.env.local
+
+# SQLite database (FinOps / Green-IT metrics)
+src/database/storage.sqlite
+.e2e-work/storage.sqlite

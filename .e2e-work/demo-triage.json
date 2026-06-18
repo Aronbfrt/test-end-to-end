@@ -1,0 +1,14 @@
+{
+  "traceId": "run-1718542800000",
+  "verdict": "SELECTOR_DRIFT",
+  "confidence": 0.87,
+  "route": "/api/checkout",
+  "statusCode": 200,
+  "bugReport": {
+    "route": "/api/checkout",
+    "statusCode": 200,
+    "assertion": "Expected selector '.btn-checkout-submit' to be visible",
+    "htmlSnippet": "<button class=\"btn-submit-primary\" data-action=\"checkout\">",
+    "consoleOutput": ""
+  }
+}

@@ -1,7 +1,7 @@
 /**
  * metricsTracker.ts — Couche persistance SQLite (FinOps, Green-IT, historique).
  *
- * Base : src/database/storage.sqlite
+ * Base : .e2e-work/storage.sqlite
  * Tables :
  *   runs      — historique des audits (IC, passed/failed, durée)
  *   triages   — résultats Coroner (verdict, confidence, route)
@@ -26,7 +26,7 @@ import Database from 'better-sqlite3';
 type DB = InstanceType<typeof Database>;
 
 const _dir    = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = resolve(_dir, '../../src/database/storage.sqlite');
+const DB_PATH = resolve(_dir, '../../.e2e-work/storage.sqlite');
 const DB_DIR  = dirname(DB_PATH);
 
 // ── Lazy SQLite init ──────────────────────────────────────────────────────────
