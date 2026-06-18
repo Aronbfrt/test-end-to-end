@@ -595,7 +595,7 @@ export async function run(
 
   console.log(
     `[artisan] generated ${generated.length} files — ` +
-    `${routes.length} routes × ${config.chaos ? 'base+personas+chaos' : config.level === 3 ? 'base+personas' : 'base'}`,
+    `${routes.length} routes × ${config.chaos ? 'base+personas+chaos' : (config.level === 3 || config.command === 'shadow') ? 'base+personas' : 'base'}`,
   );
   console.log('[artisan] files written:');
   generated.slice(0, 10).forEach((f) =>
