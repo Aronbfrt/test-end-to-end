@@ -152,6 +152,8 @@ npm run build
 
 ### Étape 3 — Vérifier que tout fonctionne
 
+> **Important :** cette commande doit être lancée depuis le dossier du plugin (celui où tu es allé à l'étape 2). Si tu as ouvert un nouveau terminal, refais le `cd` de l'étape 2 avant.
+
 ```bash
 node dist/index.js --help
 ```
@@ -219,7 +221,10 @@ MCP (.mcp.json)
     "args": ["/chemin/dist/index.js", "--mcp"] } } }
 ```
 
-Si tu vois une erreur, vérifie que Node.js 18+ est bien installé.
+Si tu vois une erreur :
+- `Cannot find module` → `npm run build` n'a pas été lancé (étape 2), ou tu n'es pas dans le bon dossier
+- `node: command not found` → Node.js n'est pas installé ou pas dans le PATH → [nodejs.org](https://nodejs.org)
+- Autre erreur → vérifie que Node.js 18+ est bien installé : `node --version`
 
 ---
 
@@ -240,11 +245,14 @@ Claude va t'accompagner pas à pas pour configurer les tests sur ton projet. Il 
 ### Utilisation via le CLI (contrôle total)
 
 ```bash
-# Lancer un audit complet sur ton projet (remplace /chemin/vers/ton/projet)
+# macOS / Linux
 node ~/.claude/plugins/marketplaces/test-end-to-end/dist/index.js audit /chemin/vers/ton/projet --level=2
 
-# Exemple concret si ton projet est dans ~/dev/mon-app
+# Exemple macOS / Linux (projet dans ~/dev/mon-app)
 node ~/.claude/plugins/marketplaces/test-end-to-end/dist/index.js audit ~/dev/mon-app --level=2 --predictive
+
+# Windows (PowerShell)
+node "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end\dist\index.js" audit C:\chemin\vers\ton\projet --level=2
 ```
 
 ### Résultat attendu
