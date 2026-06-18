@@ -30,19 +30,22 @@ import { run, diagnostics } from './orchestrator.js';
 // ── CLI argument parsing ───────────────────────────────────────────────────────
 
 interface ParsedArgs {
-  command:    RunConfig['command'] | null;
-  level:      Level;
-  chaos:      boolean;
-  predictive: boolean;
-  resetCache: boolean;
-  mcp:        boolean;
-  traceId?:   string;
-  dryRun:     boolean;
-  detail:     boolean;
-  targetPath?: string;
-  prNumber?:  number;
-  repo?:      string;
-  port?:      number;
+  command:      RunConfig['command'] | null;
+  level:        Level;
+  chaos:        boolean;
+  predictive:   boolean;
+  resetCache:   boolean;
+  mcp:          boolean;
+  traceId?:     string;
+  dryRun:       boolean;
+  detail:       boolean;
+  targetPath?:  string;
+  prNumber?:    number;
+  repo?:        string;
+  port?:        number;
+  applyPatches: boolean;
+  unsupervised: boolean;
+  evolveFile?:  string;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -61,6 +64,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     'init', 'audit', 'shadow', 'diff', 'repair', 'coverage', 'update',
     'sentinel', 'arch', 'chaos',
   ];
+  const specialCommands = ['e2e-evolve-apply'];
   const command = (args.find((a) => validCommands.includes(a as RunConfig['command'])) ?? null) as RunConfig['command'] | null;
 
   const prArg = args.find((a) => a.startsWith('--pr='));
@@ -70,23 +74,31 @@ function parseArgs(argv: string[]): ParsedArgs {
   const portArg = args.find((a) => a.startsWith('--port='));
   const port = portArg ? parseInt(portArg.split('=')[1] ?? '3000', 10) : undefined;
 
+  // e2e-evolve-apply <file>
+  const evolveIdx = args.indexOf('e2e-evolve-apply');
+  const evolveFile = evolveIdx >= 0 ? args[evolveIdx + 1] : undefined;
+
   // First non-flag, non-command positional arg = targetPath override
-  const targetPath = args.find((a) => !a.startsWith('-') && !validCommands.includes(a as RunConfig['command']));
+  const allKnown = [...validCommands, ...specialCommands, evolveFile].filter(Boolean) as string[];
+  const targetPath = args.find((a) => !a.startsWith('-') && !allKnown.includes(a));
 
   return {
     command,
     level,
-    chaos:      args.includes('--chaos'),
-    predictive: args.includes('--predictive'),
-    resetCache: args.includes('--reset-cache'),
-    mcp:        args.includes('--mcp') || process.env.MCP_MODE === '1',
+    chaos:        args.includes('--chaos'),
+    predictive:   args.includes('--predictive'),
+    resetCache:   args.includes('--reset-cache'),
+    mcp:          args.includes('--mcp') || process.env.MCP_MODE === '1',
     traceId,
-    dryRun:     args.includes('--dry-run'),
-    detail:     args.includes('--detail'),
+    dryRun:       args.includes('--dry-run'),
+    detail:       args.includes('--detail'),
     targetPath,
     prNumber,
     repo,
     port,
+    applyPatches: args.includes('--apply'),
+    unsupervised: args.includes('--unsupervised'),
+    evolveFile,
   };
 }
 
@@ -155,14 +167,15 @@ const TOOLS: Tool[] = [
   {
     name: 'e2e_shadow',
     description:
-      'Zero-prompt Reverse Testing + Shadow Personas. ' +
+      'Zero-prompt Reverse Testing + Shadow Personas (Frustrated / Malicious Attacker / Impulsive Buyer). ' +
       'The Scout deconstructs the AST and the Artisan generates 100% inferred E2E coverage ' +
-      'using cognitive extreme user profiles.',
+      'using cognitive extreme user profiles. Tests written to tests/shadow/.',
     inputSchema: {
       type: 'object',
       properties: {
         targetPath: { type: 'string' },
         level:      { type: 'number', enum: [1, 2, 3] },
+        chaos:      { type: 'boolean', description: 'Add Chaos Network fault simulation (mid-submit disconnect, throttle, double-click).' },
       },
       required: ['targetPath'],
     },
@@ -401,9 +414,15 @@ FLAGS
   --pr=<number>     Numéro de Pull Request GitHub à auditer (sentinel)
   --repo=<owner/r>  Dépôt cible owner/repo (sentinel)
   --port=<number>   Port du serveur local à tester (chaos, défaut: 3000)
+  --apply           ghostwriter: applique les patches en attente (défaut: dry-run)
+  --unsupervised    evolver: applique les évolutions sans validation humaine (DANGER)
   --reset-cache     Vide le cache d'empreintes SHA-256
   --mcp             Démarre en mode serveur MCP (stdin/stdout JSON-RPC)
   --version         Affiche la version
+
+COMMANDES SPÉCIALES
+  e2e-evolve-apply <file>   Applique une évolution en attente et l'archive
+                            Ex: node dist/index.js e2e-evolve-apply .e2e-work/evolutions-pending/123-scout.evolution.json
 
 DASHBOARD
   node dist/server/start.js          → http://127.0.0.1:4321
@@ -414,6 +433,68 @@ MCP (.mcp.json)
     "args": ["/chemin/dist/index.js", "--mcp"] } } }
 `.trimStart();
 
+async function applyEvolution(filePath: string): Promise<void> {
+  const { existsSync, readFileSync, mkdirSync, renameSync, writeFileSync } = await import('node:fs');
+  const { join, resolve: resolvePath, dirname } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+
+  const absFile = resolvePath(filePath);
+  if (!existsSync(absFile)) {
+    console.error(`[e2e-evolve-apply] file not found: ${absFile}`);
+    process.exit(1);
+  }
+
+  let entry: {
+    agentModule: string;
+    critique: { improvements: Array<{ filePath: string; oldCode: string; newCode: string; rationale: string }> };
+  };
+  try {
+    entry = JSON.parse(readFileSync(absFile, 'utf-8'));
+  } catch (e) {
+    console.error(`[e2e-evolve-apply] invalid JSON: ${(e as Error).message}`);
+    process.exit(1);
+  }
+
+  const improvements = entry.critique?.improvements ?? [];
+  const patchedFiles: string[] = [];
+
+  for (const imp of improvements) {
+    const absPath = resolvePath(imp.filePath);
+    if (!existsSync(absPath)) {
+      console.warn(`[e2e-evolve-apply] target not found: ${absPath}`);
+      continue;
+    }
+    const src = readFileSync(absPath, 'utf-8');
+    if (!src.includes(imp.oldCode)) {
+      console.warn(`[e2e-evolve-apply] oldCode not found in ${absPath} — skipping`);
+      continue;
+    }
+    writeFileSync(absPath, src.replace(imp.oldCode, imp.newCode), 'utf-8');
+    patchedFiles.push(absPath);
+    console.log(`[e2e-evolve-apply] patched: ${absPath} — ${imp.rationale}`);
+  }
+
+  if (patchedFiles.length > 0) {
+    try {
+      execFileSync('git', ['add', ...patchedFiles], { timeout: 10_000 });
+      execFileSync('git', ['commit', '-m',
+        `refactor(evolver): apply supervised evolution for ${entry.agentModule}\n\nApplied via e2e-evolve-apply from ${filePath}`,
+      ], { timeout: 10_000 });
+      console.log('[e2e-evolve-apply] committed');
+    } catch (e) {
+      console.warn(`[e2e-evolve-apply] git commit failed: ${(e as Error).message}`);
+    }
+  }
+
+  // Move to evolutions-applied/
+  const appliedDir = join(dirname(absFile), '..', 'evolutions-applied');
+  if (!existsSync(appliedDir)) mkdirSync(appliedDir, { recursive: true });
+  const dest = join(appliedDir, absFile.split('/').pop()!);
+  renameSync(absFile, dest);
+  console.log(`[e2e-evolve-apply] archived → ${dest}`);
+  console.log(`[e2e-evolve-apply] done — ${patchedFiles.length} file(s) patched`);
+}
+
 async function runCli(parsed: ParsedArgs): Promise<void> {
   if (process.argv.includes('--help') || process.argv.includes('-h')) {
     process.stdout.write(HELP);
@@ -423,6 +504,12 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
   if (process.argv.includes('--version') || process.argv.includes('-v')) {
     process.stdout.write('test-end-to-end V-Infinite 2.0.0\n');
     process.exit(0);
+  }
+
+  // Special command: e2e-evolve-apply <file>
+  if (parsed.evolveFile !== undefined) {
+    await applyEvolution(parsed.evolveFile);
+    return;
   }
 
   if (!parsed.command) {
@@ -438,17 +525,19 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
   }
 
   await run({
-    command:    parsed.command,
-    level:      parsed.level,
-    chaos:      parsed.chaos,
-    predictive: parsed.predictive,
-    targetPath: parsed.targetPath ? resolve(parsed.targetPath) : resolve(process.cwd()),
-    traceId:    parsed.traceId,
-    dryRun:     parsed.dryRun,
-    detail:     parsed.detail,
-    prNumber:   parsed.prNumber,
-    repo:       parsed.repo,
-    port:       parsed.port,
+    command:      parsed.command,
+    level:        parsed.level,
+    chaos:        parsed.chaos,
+    predictive:   parsed.predictive,
+    targetPath:   parsed.targetPath ? resolve(parsed.targetPath) : resolve(process.cwd()),
+    traceId:      parsed.traceId,
+    dryRun:       parsed.dryRun,
+    detail:       parsed.detail,
+    prNumber:     parsed.prNumber,
+    repo:         parsed.repo,
+    port:         parsed.port,
+    applyPatches: parsed.applyPatches,
+    supervised:   !parsed.unsupervised,
   });
 }
 

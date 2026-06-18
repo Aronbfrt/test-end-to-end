@@ -20,6 +20,19 @@
 import { createHmac } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 
+// ── SSH command whitelist ─────────────────────────────────────────────────────
+
+const ALLOWED_SSH_COMMANDS = ['tail', 'cat', 'journalctl', 'pm2'];
+
+function assertSafeCommand(cmd: string): void {
+  for (const segment of cmd.split(/[;|&]+/).map((s) => s.trim()).filter(Boolean)) {
+    const base = segment.replace(/^sudo\s+/, '').split(/\s+/)[0];
+    if (base && !ALLOWED_SSH_COMMANDS.includes(base)) {
+      throw new Error(`[cloudDeployer] SSH command not in whitelist: ${base}`);
+    }
+  }
+}
+
 // ── OVHcloud ──────────────────────────────────────────────────────────────────
 
 interface OvhConfig {
@@ -193,6 +206,10 @@ function getSshConfig(): SshConfig | null {
   const port       = parseInt(process.env.SSH_PORT ?? '22', 10);
 
   if (!host || !username || !keyPath) return null;
+  if (keyPath.includes('-----BEGIN')) {
+    console.warn('[cloudDeployer] SSH_PRIVATE_KEY must be a file path, not inline key content');
+    return null;
+  }
   if (!existsSync(keyPath)) {
     console.warn(`[cloudDeployer] SSH_PRIVATE_KEY path not found: ${keyPath}`);
     return null;
@@ -211,6 +228,14 @@ export async function recoverRemoteLogs(
   const cfg = getSshConfig();
   if (!cfg) {
     return { host: 'unknown', lines: [], error: 'SSH_HOST/SSH_USER/SSH_PRIVATE_KEY manquants' };
+  }
+
+  for (const cmd of commands) {
+    try {
+      assertSafeCommand(cmd);
+    } catch (e) {
+      return { host: cfg.host, lines: [], error: (e as Error).message };
+    }
   }
 
   return new Promise((resolve) => {
@@ -258,10 +283,11 @@ export async function recoverRemoteLogs(
     });
 
     conn.connect({
-      host:       cfg.host,
-      port:       cfg.port ?? 22,
-      username:   cfg.username,
-      privateKey: cfg.privateKey,
+      host:         cfg.host,
+      port:         cfg.port ?? 22,
+      username:     cfg.username,
+      privateKey:   cfg.privateKey,
+      timeout:      5_000,
       readyTimeout: 10_000,
     });
   });

@@ -13,11 +13,12 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { execSync, execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import type { AgentTask, BugReport, RunConfig } from '../orchestrator.js';
+import { anthropicLimiter } from '../orchestrator.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -77,11 +78,13 @@ function locateHandler(targetPath: string, route: string): string[] {
 
   // Structural match
   try {
-    const out = execSync(
-      `find "${targetPath}" -type f \\( -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.php" \\) ` +
-      `-not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*"`,
-      { timeout: 5000, encoding: 'utf-8' },
-    );
+    const out = execFileSync('find', [
+      targetPath, '-type', 'f',
+      '(', '-name', '*.ts', '-o', '-name', '*.js', '-o', '-name', '*.py', '-o', '-name', '*.php', ')',
+      '-not', '-path', '*/node_modules/*',
+      '-not', '-path', '*/.git/*',
+      '-not', '-path', '*/dist/*',
+    ], { timeout: 5000, encoding: 'utf-8' });
     for (const f of out.split('\n').filter(Boolean)) {
       if (f.includes(slug)) candidates.push(f);
     }
@@ -90,12 +93,11 @@ function locateHandler(targetPath: string, route: string): string[] {
   // Grep for route string
   if (candidates.length === 0) {
     try {
-      const out = execSync(
-        `grep -rl "${route}" "${targetPath}" ` +
-        `--include="*.ts" --include="*.js" --include="*.py" --include="*.php" ` +
-        `--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist`,
-        { timeout: 5000, encoding: 'utf-8' },
-      );
+      const out = execFileSync('grep', [
+        '-rl', route, targetPath,
+        '--include=*.ts', '--include=*.js', '--include=*.py', '--include=*.php',
+        '--exclude-dir=node_modules', '--exclude-dir=.git', '--exclude-dir=dist',
+      ], { timeout: 5000, encoding: 'utf-8' });
       candidates.push(...out.split('\n').filter(Boolean));
     } catch { /* ignore */ }
   }
@@ -152,6 +154,7 @@ IMPORTANT:
 - Never add console.log or debug code.
 - Never change public API signatures.`;
 
+  await anthropicLimiter.acquire();
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
@@ -321,6 +324,28 @@ export async function run(
       patchedFiles: [],
       verificationPassed: false,
       reasoning: 'Claude could not identify the bug with sufficient confidence.',
+    };
+  }
+
+  // ── Dry-run gate (default) — write pending patch JSON, do NOT touch files ──
+  const patchId = `patch-${Date.now()}`;
+  if (!config.applyPatches) {
+    const pendingDir = join(root, '.e2e-work', 'patches-pending');
+    if (!existsSync(pendingDir)) mkdirSync(pendingDir, { recursive: true });
+    const pendingPath = join(pendingDir, `${patchId}.patch.json`);
+    writeFileSync(
+      pendingPath,
+      JSON.stringify({ patchId, generatedAt: new Date().toISOString(), bug, patches }, null, 2),
+      'utf-8',
+    );
+    console.log(`[ghostwriter] dry-run: ${patches.length} patch(es) saved → ${pendingPath}`);
+    console.log('[ghostwriter] re-run with --apply flag to apply patches and open PR');
+    return {
+      success: true,
+      branch: '',
+      patchedFiles: [],
+      verificationPassed: false,
+      reasoning: `Dry-run: ${patches.length} patch(es) pending at ${pendingPath}`,
     };
   }
 

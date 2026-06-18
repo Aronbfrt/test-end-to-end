@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>test-end-to-end — Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--surface:#1a2236;--border:#263147;
+  --text:#e2e8f0;--muted:#64748b;--subtle:#94a3b8;
+  --pass:#4ade80;--fail:#f87171;--warn:#fbbf24;
+  --accent:#6366f1;--accent2:#06b6d4;--accent3:#f472b6;
+}
+html,body{height:100dvh;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column}
+
+/* ── Topbar ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 18px;height:50px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px;white-space:nowrap}
+.brand em{color:var(--accent);font-style:normal}
+.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.4px;white-space:nowrap}
+.b-live{background:#052e16;color:var(--pass);border:1px solid #166534}
+.b-idle{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3}
+.b-run{background:#2d1f00;color:var(--warn);border:1px solid #92400e}
+.b-err{background:#2d0e0e;color:var(--fail);border:1px solid #7f1d1d}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.ws-ind{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.ws-dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.ws-dot.live{background:var(--pass);box-shadow:0 0 5px var(--pass);animation:bl 2s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── Nav tabs ── */
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+  background:var(--surface);border-bottom:1px solid var(--border);padding:0 18px}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{padding:0 14px;height:40px;border:none;background:transparent;color:var(--muted);
+  cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;position:relative;
+  border-bottom:2px solid transparent;transition:all .15s}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:#fff;border-bottom-color:var(--accent)}
+.nav-cnt{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:10px;
+  font-size:9px;font-weight:700;background:#1e293b;color:var(--muted)}
+.nav-cnt.red{background:#2d0e0e;color:var(--fail)}
+.nav-cnt.grn{background:#0a2d14;color:var(--pass)}
+
+/* ── Pages ── */
+.pages{flex:1;min-height:0;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:20px 22px;
+  display:none;flex-direction:column;gap:14px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.page.active{display:flex}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-head{padding:10px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-title{font-size:10px;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
+.card-meta{font-size:10px;color:var(--muted)}
+.card-body{padding:16px}
+.empty{padding:32px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── Tables ── */
+table{width:100%;border-collapse:collapse}
+th{padding:7px 14px;text-align:left;font-size:9px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:1px solid var(--border)}
+td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1a2a40}
+.mono{font-family:'SF Mono','Fira Code',monospace;font-size:11px}
+.dim{color:var(--muted)}
+.pill{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px}
+.p-pass{background:#0a2d14;color:var(--pass)}
+.p-fail{background:#2d0e0e;color:var(--fail)}
+.p-skip{background:#1e293b;color:var(--muted)}
+.p-warn{background:#2d1f00;color:var(--warn)}
+.p-info{background:#1e1b4b;color:#818cf8}
+
+/* ── Hero metrics ── */
+.metrics-row{display:flex;gap:12px;flex-wrap:wrap}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:16px 20px;flex:1;min-width:130px}
+.metric-val{font-size:26px;font-weight:800;line-height:1;margin-bottom:4px}
+.metric-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.c-pass{color:var(--pass)}.c-fail{color:var(--fail)}.c-warn{color:var(--warn)}
+.c-blue{color:#60a5fa}.c-purple{color:#a78bfa}.c-pink{color:var(--accent3)}
+
+/* ── Progress bar ── */
+.progress{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s}
+
+/* ── Action buttons ── */
+.btn{padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff}
+.btn-danger{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff}
+.btn-success{background:linear-gradient(135deg,#065f46,#059669);color:#fff}
+.btn.loading{opacity:.5;cursor:not-allowed}
+
+/* ── FinOps card ── */
+.finops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px}
+.fcard{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px}
+.fcard-val{font-size:22px;font-weight:800;line-height:1;margin-bottom:3px}
+.fcard-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Sentinel / Arch ── */
+.finding{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.finding:last-child{border-bottom:none}
+.finding-sev{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
+.sev-critical{background:#3b0000;color:#fca5a5}.sev-high{background:#2d0e0e;color:var(--fail)}
+.sev-medium{background:#2d1f00;color:var(--warn)}.sev-low{background:#1e293b;color:var(--muted)}
+.finding-body{flex:1}
+.finding-file{font-size:11px;font-family:'SF Mono','Fira Code',monospace;color:var(--subtle);margin-bottom:2px}
+.finding-msg{font-size:12px;color:var(--text)}
+
+/* ── Integrations ── */
+.int-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:16px}
+.int-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;
+  display:flex;align-items:center;gap:12px}
+.int-icon{font-size:22px;flex-shrink:0}
+.int-info{flex:1}
+.int-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
+.int-status{font-size:11px}
+.int-ok{color:var(--pass)}.int-off{color:var(--muted)}
+
+/* ── Footer ── */
+footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:6px 18px;font-size:10px;color:var(--muted);
+  display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<!-- ══ Topbar ══ -->
+<div class="topbar">
+  <span class="brand">test-end-to-end <em>V∞</em></span>
+  <span class="badge b-idle" id="state-badge">IDLE</span>
+  <div class="topbar-right">
+    <div class="ws-ind">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-label">—</span>
+    </div>
+    <span id="topbar-ts" style="font-size:10px;color:var(--muted)"></span>
+  </div>
+</div>
+
+<!-- ══ Tabs ══ -->
+<nav class="nav">
+  <button class="nav-btn active" data-tab="runs">Runs <span class="nav-cnt" id="cnt-runs">—</span></button>
+  <button class="nav-btn" data-tab="coverage">Coverage <span class="nav-cnt" id="cnt-cov">—</span></button>
+  <button class="nav-btn" data-tab="crashs">Crashs <span class="nav-cnt" id="cnt-crash">—</span></button>
+  <button class="nav-btn" data-tab="evolutions">Évolutions <span class="nav-cnt" id="cnt-evo">—</span></button>
+  <button class="nav-btn" data-tab="sentinel">Sentinel <span class="nav-cnt" id="cnt-sent">—</span></button>
+  <button class="nav-btn" data-tab="arch">ArchPolice <span class="nav-cnt" id="cnt-arch">—</span></button>
+  <button class="nav-btn" data-tab="integrations">Intégrations</button>
+  <button class="nav-btn" data-tab="finops">FinOps</button>
+</nav>
+
+<!-- ══ Pages ══ -->
+<div class="pages">
+
+  <!-- ── Runs ── -->
+  <div class="page active" id="page-runs">
+    <div class="metrics-row" id="runs-metrics">
+      <div class="metric"><div class="metric-val c-blue" id="m-total">—</div><div class="metric-lbl">Runs totaux</div></div>
+      <div class="metric"><div class="metric-val c-pass" id="m-passed">—</div><div class="metric-lbl">Tests passés</div></div>
+      <div class="metric"><div class="metric-val c-fail" id="m-failed">—</div><div class="metric-lbl">Tests échoués</div></div>
+      <div class="metric"><div class="metric-val c-purple" id="m-saved">—</div><div class="metric-lbl">Tokens écon.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Historique des runs</span>
+        <button class="btn btn-primary" onclick="loadTab('runs')">↺ Actualiser</button>
+      </div>
+      <div id="runs-table"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Coverage ── -->
+  <div class="page" id="page-coverage">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Couverture des routes</span>
+        <span class="card-meta" id="cov-pct-label">—</span>
+      </div>
+      <div id="cov-body"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Crashs ── -->
+  <div class="page" id="page-crashs">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Crash Reports &amp; Triage</span>
+        <span class="card-meta" id="crash-meta">—</span>
+      </div>
+      <div id="crash-body"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Evolutions ── -->
+  <div class="page" id="page-evolutions">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Évolutions en attente</span>
+        <span class="card-meta" id="evo-meta">—</span>
+      </div>
+      <div id="evo-body"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Sentinel ── -->
+  <div class="page" id="page-sentinel">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Sentinel — Audit PR</span>
+        <span class="card-meta" id="sent-meta">—</span>
+      </div>
+      <div id="sent-body"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── ArchPolice ── -->
+  <div class="page" id="page-arch">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">ArchPolice — Analyse statique</span>
+        <span class="card-meta" id="arch-meta">—</span>
+      </div>
+      <div id="arch-body"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+  <!-- ── Integrations ── -->
+  <div class="page" id="page-integrations">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Intégrations actives</span></div>
+      <div class="int-grid" id="int-grid">
+        <div class="empty" style="grid-column:1/-1">Chargement…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Log en direct</span></div>
+      <div id="live-log" style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;
+        color:var(--subtle);padding:12px 16px;max-height:260px;overflow-y:auto;
+        scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+        <div style="color:var(--muted)">En attente…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FinOps ── -->
+  <div class="page" id="page-finops">
+    <div class="card">
+      <div class="card-head"><span class="card-title">FinOps &amp; Green-IT</span></div>
+      <div class="finops-grid" id="finops-grid">
+        <div class="empty" style="grid-column:1/-1">Chargement…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Métriques globales</span></div>
+      <div id="finops-table"><div class="empty">Chargement…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>test-end-to-end V-Infinite 2.0.0</span>
+  <span id="footer-ts">—</span>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+// ── Tab routing ──────────────────────────────────────────────────────────────
+var TABS = ['runs','coverage','crashs','evolutions','sentinel','arch','integrations','finops'];
+var _loaded = {};
+
+function showTab(id) {
+  TABS.forEach(function(t) {
+    var p = document.getElementById('page-'+t);
+    var b = document.querySelector('[data-tab="'+t+'"]');
+    if (p) p.classList.toggle('active', t === id);
+    if (b) b.classList.toggle('active', t === id);
+  });
+  location.hash = id === 'runs' ? '' : id;
+  if (!_loaded[id]) { _loaded[id] = true; loadTab(id); }
+}
+
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { showTab(btn.dataset.tab); });
+});
+var _h = location.hash.replace('#','');
+if (TABS.includes(_h)) showTab(_h); else loadTab('runs');
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function pill(v) {
+  var cls = v==='PASS'?'p-pass':v==='FAIL'?'p-fail':v==='SKIP'?'p-skip':v==='UNKNOWN'?'p-warn':'p-info';
+  return '<span class="pill '+cls+'">'+esc(v)+'</span>';
+}
+function relTime(ts) {
+  var d = Date.now() - ts; if (d < 60000) return Math.round(d/1000)+'s';
+  if (d < 3600000) return Math.round(d/60000)+'min'; return Math.round(d/3600000)+'h';
+}
+
+// ── Load per-tab data ─────────────────────────────────────────────────────────
+function loadTab(tab) {
+  switch(tab) {
+    case 'runs':       loadRuns();        break;
+    case 'coverage':   loadCoverage();    break;
+    case 'crashs':     loadCrashs();      break;
+    case 'evolutions': loadEvolutions();  break;
+    case 'sentinel':   loadSentinel();    break;
+    case 'arch':       loadArch();        break;
+    case 'integrations': loadIntegrations(); break;
+    case 'finops':     loadFinOps();      break;
+  }
+}
+
+// ── Runs ──────────────────────────────────────────────────────────────────────
+function loadRuns() {
+  fetch('/api/runs?limit=50').then(function(r){return r.json();}).then(function(rows) {
+    var total = rows.length;
+    var passed = rows.reduce(function(a,r){return a+(r.passed||0);},0);
+    var failed = rows.reduce(function(a,r){return a+(r.failed||0);},0);
+    var saved  = rows.reduce(function(a,r){return a+(r.tokensSaved||0);},0);
+    document.getElementById('m-total').textContent  = total;
+    document.getElementById('m-passed').textContent = passed;
+    document.getElementById('m-failed').textContent = failed;
+    document.getElementById('m-saved').textContent  = saved.toLocaleString();
+    var cnt = document.getElementById('cnt-runs');
+    cnt.textContent = total; cnt.className = 'nav-cnt'+(failed>0?' red':total>0?' grn':'');
+    if (!rows.length) { document.getElementById('runs-table').innerHTML = '<div class="empty">Aucun run enregistré — lance un audit</div>'; return; }
+    var html = '<table><thead><tr><th>Commande</th><th>Niveau</th><th>Passés</th><th>Échoués</th><th>Cache</th><th>Score CI</th><th>Il y a</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+      html += '<tr>'
+        +'<td><span class="pill p-info">'+esc(r.command||'audit')+'</span></td>'
+        +'<td class="dim">L'+esc(r.level||2)+'</td>'
+        +'<td class="c-pass">'+esc(r.passed||0)+'</td>'
+        +'<td class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</td>'
+        +'<td class="dim">'+esc(r.cached||0)+'</td>'
+        +'<td>'+(r.ciScore!=null?'<span class="pill '+(r.ciScore>=80?'p-pass':r.ciScore>=60?'p-warn':'p-fail')+'">'+r.ciScore+'/100</span>':'<span class="dim">—</span>')+'</td>'
+        +'<td class="dim">'+(r.ts?relTime(r.ts):'—')+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('runs-table').innerHTML = html;
+  }).catch(function(e) { document.getElementById('runs-table').innerHTML = '<div class="empty c-fail">Erreur: '+esc(e.message)+'</div>'; });
+}
+
+// ── Coverage ─────────────────────────────────────────────────────────────────
+function loadCoverage() {
+  fetch('/api/coverage').then(function(r){
+    if(!r.ok) throw new Error('Aucune donnée — run: node dist/index.js coverage <path>');
+    return r.json();
+  }).then(function(d) {
+    var pct = d.coveragePercent ?? d.percent ?? '?';
+    document.getElementById('cov-pct-label').textContent = pct+'% couvert';
+    document.getElementById('cnt-cov').textContent = pct+'%';
+    var rows = d.routes || d.gaps || [];
+    var html = '<div style="padding:16px">'
+      +'<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>Couverture globale</span><strong>'+pct+'%</strong></div>'
+      +'<div class="progress"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
+    if (rows.length) {
+      html += '<table><thead><tr><th>Route</th><th>Méthode</th><th>Tests</th><th>Statut</th></tr></thead><tbody>';
+      rows.forEach(function(r) {
+        var covered = r.testFiles && r.testFiles.length > 0;
+        html += '<tr><td class="mono">'+esc(r.path||r.route||r)+'</td>'
+          +'<td class="dim">'+(r.method||'GET')+'</td>'
+          +'<td class="dim">'+(r.testFiles?r.testFiles.length:covered?'✓':'0')+'</td>'
+          +'<td>'+pill(covered?'PASS':'FAIL')+'</td></tr>';
+      });
+      html += '</tbody></table>';
+    } else { html += '<div class="empty">Aucune route détectée</div>'; }
+    html += '</div>';
+    document.getElementById('cov-body').innerHTML = html;
+  }).catch(function(e) { document.getElementById('cov-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+// ── Crashs ───────────────────────────────────────────────────────────────────
+function loadCrashs() {
+  fetch('/api/crashs').then(function(r){return r.json();}).then(function(list) {
+    var cnt = document.getElementById('cnt-crash');
+    cnt.textContent = list.length; cnt.className = 'nav-cnt'+(list.length>0?' red':'');
+    document.getElementById('crash-meta').textContent = list.length+' rapport(s)';
+    if (!list.length) { document.getElementById('crash-body').innerHTML = '<div class="empty">✅ Aucun crash enregistré</div>'; return; }
+    var html = '';
+    list.forEach(function(c) {
+      html += '<div class="finding"><div class="finding-sev sev-'+(c.verdict==='BACKEND_BUG'?'high':c.verdict==='SELECTOR_DRIFT'?'medium':'low')+'">'
+        +esc(c.verdict||'UNKNOWN')+'</div><div class="finding-body">'
+        +'<div class="finding-file">'+esc(c.bugReport?.route||c.route||'—')+'</div>'
+        +'<div class="finding-msg">'+esc(c.reasoning||c.bugReport?.assertion||'—')+'</div>'
+        +'<div style="margin-top:6px;display:flex;gap:6px;align-items:center">'
+        +'<span style="font-size:10px;color:var(--muted)">Confiance: '+(Math.round((c.confidence||0)*100))+'%</span>'
+        +(c.verdict==='BACKEND_BUG'?'<button class="btn btn-primary" onclick="triggerRepair(\''+esc(c.traceId||'')+'\',this)">👻 Auto-Patch</button>':'')
+        +'</div></div></div>';
+    });
+    document.getElementById('crash-body').innerHTML = html;
+  }).catch(function(e) { document.getElementById('crash-body').innerHTML = '<div class="empty c-fail">'+esc(e.message)+'</div>'; });
+}
+
+window.triggerRepair = function(traceId, btn) {
+  btn.classList.add('loading'); btn.textContent = '⏳…';
+  fetch('/api/repair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({traceId:traceId})})
+  .then(function(r){return r.json();}).then(function(){
+    btn.classList.remove('loading'); btn.classList.add('btn-success'); btn.textContent = '✓ Queued';
+  }).catch(function(e){ btn.classList.remove('loading'); btn.textContent = '✗ '+e.message.slice(0,20); });
+};
+
+// ── Evolutions ───────────────────────────────────────────────────────────────
+function loadEvolutions() {
+  fetch('/api/evolutions/pending').then(function(r){return r.json();}).then(function(list) {
+    var cnt = document.getElementById('cnt-evo');
+    cnt.textContent = list.length; cnt.className = 'nav-cnt'+(list.length>0?' red':'');
+    document.getElementById('evo-meta').textContent = list.length+' évolution(s) en attente';
+    if (!list.length) { document.getElementById('evo-body').innerHTML = '<div class="empty">✅ Aucune évolution en attente</div>'; return; }
+    var html = '';
+    list.forEach(function(e) {
+      html += '<div class="finding"><div class="finding-sev sev-medium">PENDING</div>'
+        +'<div class="finding-body">'
+        +'<div class="finding-file mono">'+esc(e.agentModule||'?')+' — '+esc(e._file||'')+'</div>'
+        +'<div class="finding-msg">'+esc(e.reason||'—')+'</div>'
+        +'<div style="margin-top:6px;display:flex;gap:6px">'
+        +'<span style="font-size:10px;color:var(--muted)">Root cause: '+esc(e.critique?.rootCause||'—')+'</span>'
+        +'<button class="btn btn-success" onclick="applyEvolution(\''+esc(e._file||'')+'\',this)">▶ Appliquer</button>'
+        +'</div></div></div>';
+    });
+    document.getElementById('evo-body').innerHTML = html;
+  }).catch(function(e){ document.getElementById('evo-body').innerHTML = '<div class="empty c-fail">'+esc(e.message)+'</div>'; });
+}
+
+window.applyEvolution = function(file, btn) {
+  btn.classList.add('loading'); btn.textContent = '⏳…';
+  fetch('/api/evolution/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:file})})
+  .then(function(r){return r.json();}).then(function(){
+    btn.classList.remove('loading'); btn.classList.add('btn-success'); btn.textContent = '✓ Applied';
+    setTimeout(function(){_loaded.evolutions=false; loadTab('evolutions');}, 2000);
+  }).catch(function(e){ btn.classList.remove('loading'); btn.textContent='✗ Erreur'; });
+};
+
+// ── Sentinel ─────────────────────────────────────────────────────────────────
+function loadSentinel() {
+  fetch('/api/sentinel').then(function(r){
+    if(!r.ok) throw new Error('Aucun rapport — run: node dist/index.js sentinel <path>');
+    return r.json();
+  }).then(function(d) {
+    var findings = d.findings || [];
+    var cnt = document.getElementById('cnt-sent');
+    cnt.textContent = findings.length; cnt.className = 'nav-cnt'+(findings.length>0?' red':'');
+    document.getElementById('sent-meta').textContent = 'PR #'+(d.prNumber||'?')+' — '+findings.length+' finding(s)';
+    var html = findings.length ? '' : '<div class="empty">✅ Aucun problème de sécurité détecté</div>';
+    findings.forEach(function(f) {
+      var sev = (f.severity||'').toLowerCase();
+      html += '<div class="finding"><div class="finding-sev sev-'+sev+'">'+esc(f.severity||'INFO')+'</div>'
+        +'<div class="finding-body"><div class="finding-file mono">'+esc(f.file||'—')+':'+(f.line||'?')+'</div>'
+        +'<div class="finding-msg">'+esc(f.message||f.description||'—')+'</div>'
+        +(f.rule?'<div style="font-size:10px;color:var(--muted);margin-top:3px">'+esc(f.rule)+'</div>':'')
+        +'</div></div>';
+    });
+    document.getElementById('sent-body').innerHTML = html;
+  }).catch(function(e){ document.getElementById('sent-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+// ── ArchPolice ───────────────────────────────────────────────────────────────
+function loadArch() {
+  fetch('/api/arch').then(function(r){
+    if(!r.ok) throw new Error('Aucun rapport — run: node dist/index.js arch <path>');
+    return r.json();
+  }).then(function(d) {
+    var score = d.score ?? d.globalScore ?? '?';
+    var grade = d.grade ?? '?';
+    document.getElementById('arch-meta').textContent = 'Score: '+score+'/100 — Grade '+grade;
+    document.getElementById('cnt-arch').textContent = grade;
+    var issues = d.issues || d.violations || [];
+    var html = '<div style="padding:16px">'
+      +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">'
+      +'<div style="font-size:40px;font-weight:900;color:'+(score>=80?'var(--pass)':score>=60?'var(--warn)':'var(--fail)')+'">'+score+'</div>'
+      +'<div>'
+      +'<div style="font-size:20px;font-weight:700;color:#fff">Grade '+grade+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+issues.length+' problème(s) détecté(s)</div>'
+      +'</div></div>'
+      +'<div class="progress" style="margin-bottom:14px"><div class="progress-fill" style="width:'+score+'%;background:linear-gradient(90deg,'+(score>=80?'var(--pass)':score>=60?'var(--warn)':'var(--fail)')+'transparent)"></div></div>'
+      +'</div>';
+    if (issues.length) {
+      html += '<div>';
+      issues.forEach(function(i) {
+        var sev = (i.severity||'medium').toLowerCase();
+        html += '<div class="finding"><div class="finding-sev sev-'+sev+'">'+esc(i.severity||i.type||'ISSUE')+'</div>'
+          +'<div class="finding-body"><div class="finding-file mono">'+esc(i.file||i.filePath||'—')+'</div>'
+          +'<div class="finding-msg">'+esc(i.message||i.description||'—')+'</div></div></div>';
+      });
+      html += '</div>';
+    }
+    document.getElementById('arch-body').innerHTML = html;
+  }).catch(function(e){ document.getElementById('arch-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+// ── Integrations ─────────────────────────────────────────────────────────────
+function loadIntegrations() {
+  var INTEGRATIONS = [
+    {icon:'🟣',name:'Slack',key:'SLACK_WEBHOOK_URL'},
+    {icon:'🔵',name:'Discord',key:'DISCORD_WEBHOOK_URL'},
+    {icon:'🔷',name:'Teams',key:'TEAMS_WEBHOOK_URL'},
+    {icon:'🟠',name:'Jira/Xray',key:'JIRA_HOST'},
+    {icon:'🟢',name:'Trello',key:'TRELLO_API_KEY'},
+    {icon:'☁️',name:'OVHcloud',key:'OVH_APP_KEY'},
+    {icon:'🔶',name:'IONOS',key:'IONOS_GITHUB_REPO'},
+    {icon:'🏠',name:'Hostinger',key:'HOSTINGER_DEPLOY_WEBHOOK_URL'},
+    {icon:'🔐',name:'SSH Logs',key:'SSH_HOST'},
+    {icon:'📊',name:'GitHub PR',key:'GITHUB_TOKEN'},
+  ];
+  fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
+    var env = d.config || {};
+    var html = INTEGRATIONS.map(function(i) {
+      var active = !!(env[i.key] || false);
+      return '<div class="int-card">'
+        +'<div class="int-icon">'+i.icon+'</div>'
+        +'<div class="int-info"><div class="int-name">'+esc(i.name)+'</div>'
+        +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configuré':'○ Non configuré')+'</div>'
+        +'</div></div>';
+    }).join('');
+    document.getElementById('int-grid').innerHTML = html;
+  }).catch(function(){
+    var html = INTEGRATIONS.map(function(i){
+      return '<div class="int-card"><div class="int-icon">'+i.icon+'</div>'
+        +'<div class="int-info"><div class="int-name">'+esc(i.name)+'</div>'
+        +'<div class="int-status int-off">○ Statut inconnu</div></div></div>';
+    }).join('');
+    document.getElementById('int-grid').innerHTML = html;
+  });
+}
+
+// ── FinOps ────────────────────────────────────────────────────────────────────
+function loadFinOps() {
+  fetch('/api/finops').then(function(r){return r.json();}).then(function(d) {
+    var html = [
+      {val: (d.totalRuns||0), lbl:'Runs totaux', cls:'c-blue'},
+      {val: (d.totalPassed||0), lbl:'Tests passés', cls:'c-pass'},
+      {val: (d.totalFailed||0), lbl:'Tests échoués', cls:'c-fail'},
+      {val: Number(d.totalTokensSaved||0).toLocaleString(), lbl:'Tokens économisés', cls:'c-purple'},
+      {val: '$'+Number(d.costSaved||0).toFixed(3), lbl:'Coût évité (API)', cls:'c-warn'},
+      {val: Number(d.co2Saved||0).toFixed(4)+'g', lbl:'CO₂ évité (Green-IT)', cls:'c-pink'},
+    ].map(function(m){
+      return '<div class="fcard"><div class="fcard-val '+m.cls+'">'+esc(m.val)+'</div><div class="fcard-lbl">'+esc(m.lbl)+'</div></div>';
+    }).join('');
+    document.getElementById('finops-grid').innerHTML = html;
+    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Passés</th><th>Échoués</th><th>Il y a</th></tr></thead><tbody>';
+    var rows = d.recentRuns || [];
+    if (rows.length) {
+      rows.slice(0,10).forEach(function(r){
+        table += '<tr><td><span class="pill p-info">'+esc(r.command||'audit')+'</span></td>'
+          +'<td class="dim mono" style="font-size:10px">'+esc((r.target||'').split('/').slice(-2).join('/'))+'</td>'
+          +'<td class="c-pass">'+esc(r.passed||0)+'</td>'
+          +'<td class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</td>'
+          +'<td class="dim">'+(r.ts?relTime(r.ts):'—')+'</td></tr>';
+      });
+    } else { table += '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Aucune donnée</td></tr>'; }
+    table += '</tbody></table>';
+    document.getElementById('finops-table').innerHTML = table;
+  }).catch(function(e){ document.getElementById('finops-grid').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+}
+
+// ── State badge ───────────────────────────────────────────────────────────────
+var STATE_CLS = {IDLE:'b-idle',SCANNING:'b-run',CACHE_CHECK:'b-run',DISPATCHING:'b-run',
+  AWAITING_AGENTS:'b-run',RUNNING_TESTS:'b-run',TRIAGING:'b-run',PATCHING:'b-run',
+  DONE:'b-live',ERROR:'b-err'};
+function setStateBadge(state) {
+  var el = document.getElementById('state-badge');
+  el.textContent = state;
+  el.className = 'badge '+(STATE_CLS[state]||'b-idle');
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+function wsConnect() {
+  try {
+    var ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onopen = function() {
+      document.getElementById('ws-dot').className = 'ws-dot live';
+      document.getElementById('ws-label').textContent = 'Connecté';
+    };
+    ws.onclose = function() {
+      document.getElementById('ws-dot').className = 'ws-dot';
+      document.getElementById('ws-label').textContent = 'Déconnecté';
+      setTimeout(wsConnect, 3000);
+    };
+    ws.onmessage = function(e) {
+      var ev = JSON.parse(e.data);
+      if (ev.type === 'STATE') { setStateBadge(ev.payload); }
+      if (ev.type === 'LOG') {
+        var feed = document.getElementById('live-log');
+        if (feed) {
+          var d = document.createElement('div');
+          d.style.cssText = 'padding:2px 0;border-bottom:1px solid var(--border)';
+          d.textContent = ev.payload;
+          feed.appendChild(d); feed.scrollTop = feed.scrollHeight;
+        }
+      }
+      if (ev.type === 'REPORT_READY') {
+        _loaded = {};
+        var cur = document.querySelector('.nav-btn.active');
+        if (cur) { var t = cur.dataset.tab; _loaded[t] = true; loadTab(t); }
+      }
+    };
+  } catch(_) {
+    document.getElementById('ws-dot').className = 'ws-dot';
+  }
+}
+wsConnect();
+
+// ── Live state poll (fallback for cross-process CLI) ─────────────────────────
+setInterval(function() {
+  fetch('/api/live').then(function(r){return r.json();}).then(function(d) {
+    setStateBadge(d.state);
+    document.getElementById('topbar-ts').textContent = d.command ? '('+d.command+')' : '';
+    document.getElementById('footer-ts').textContent = d.state === 'DONE' && d.ts ? 'Terminé '+relTime(d.ts)+' ago' : d.state;
+  }).catch(function(){});
+}, 3000);
+
+// Keyboard shortcut: press digit 1-8 to switch tabs
+document.addEventListener('keydown', function(e) {
+  var n = parseInt(e.key); if (n >= 1 && n <= TABS.length) showTab(TABS[n-1]);
+});
+
+})();
+</script>
+</body>
+</html>

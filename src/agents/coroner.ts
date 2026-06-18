@@ -23,6 +23,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, join, basename, dirname } from 'node:path';
 
 import type { AgentTask, BugReport, RunConfig } from '../orchestrator.js';
+import { anthropicLimiter } from '../orchestrator.js';
 import { digest, toPromptBlock } from '../utils/logDigest.js';
 import type { RawCrashLog } from '../utils/logDigest.js';
 
@@ -245,6 +246,7 @@ async function visionHeal(
   ].join('\n');
 
   try {
+    await anthropicLimiter.acquire();
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 512,

@@ -16,11 +16,12 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 import type { AgentTask, RunConfig } from '../orchestrator.js';
+import { anthropicLimiter } from '../orchestrator.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ Rules:
 - If the failure is environmental (network, OS, missing binary), return {"agentModule":"${agentModule}","rootCause":"environmental","improvements":[]}.`;
 
   try {
+    await anthropicLimiter.acquire();
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
@@ -293,11 +295,38 @@ export async function run(
 
   console.log(`[evolver] root cause: ${critique.rootCause}`);
 
+  // ── Supervised gate (default: ON) ──────────────────────────────────────────
+  const supervised = config.supervised !== false;
+  if (supervised) {
+    const pendingDir = join(workDir, 'evolutions-pending');
+    if (!existsSync(pendingDir)) mkdirSync(pendingDir, { recursive: true });
+    const pendingPath = join(pendingDir, `${Date.now()}-${agentModule}.evolution.json`);
+    writeFileSync(
+      pendingPath,
+      JSON.stringify({
+        ts: Date.now(),
+        agentModule,
+        failedTaskType: failedTask.type,
+        reason,
+        critique,
+      }, null, 2),
+      'utf-8',
+    );
+    console.log(`[evolver] supervised: evolution proposal saved → ${pendingPath}`);
+    console.log('[evolver] apply with: node dist/index.js e2e-evolve-apply <file>');
+    appendEvolutionLog({ ts: Date.now(), failedTaskType: failedTask.type, reason, filesPatched: [], success: false }, workDir);
+    return { filesPatched: [], success: false };
+  }
+
+  console.warn(
+    '[evolver] ⚠️  UNSUPERVISED MODE ACTIVE — self-patches applied directly to plugin source without human review. ' +
+    'Pass config.supervised=true (or omit) to gate changes behind e2e-evolve-apply.',
+  );
+
   // ── Apply improvements ─────────────────────────────────────────────────────
   const patchedFiles: string[] = [];
   for (const imp of critique.improvements) {
     if (applyImprovement(imp, srcRoot)) {
-      // Resolve absolute path for git
       let absPath = imp.filePath;
       if (!existsSync(absPath)) absPath = join(srcRoot, imp.filePath);
       patchedFiles.push(absPath);

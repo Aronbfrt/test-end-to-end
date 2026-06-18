@@ -18,9 +18,12 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'node:http';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { diagnostics } from '../orchestrator.js';
+
+const _serverDir = dirname(fileURLToPath(import.meta.url));
 import type { TestRun, RunSummary, HotspotEntry } from '../utils/report.js';
 import { computeConfidenceIndex } from '../utils/report.js';
 
@@ -818,6 +821,10 @@ export function createApp(targetPath: string) {
 
   app.use(express.json());
 
+  // Serve static assets from dist/server/public/
+  const publicDir = join(_serverDir, 'public');
+  if (existsSync(publicDir)) app.use(express.static(publicDir));
+
   // ── WebSocket handler ──────────────────────────────────────────────────────
   _wss.on('connection', (ws) => {
     ws.send(JSON.stringify({
@@ -839,6 +846,12 @@ export function createApp(targetPath: string) {
   // ── REST routes ────────────────────────────────────────────────────────────
 
   app.get('/', (_req: Request, res: Response) => {
+    // Serve the new 8-tab SPA dashboard
+    const spaPath = join(_serverDir, 'public', 'index.html');
+    if (existsSync(spaPath)) {
+      res.sendFile(spaPath);
+      return;
+    }
     const reportPath = join(targetPath, 'tests', 'report.html');
     if (existsSync(reportPath)) {
       res.sendFile(reportPath);
@@ -1047,6 +1060,113 @@ try {
       return;
     }
     res.json(JSON.parse(readFileSync(depPath, 'utf-8')));
+  });
+
+  app.get('/api/coverage', (_req: Request, res: Response) => {
+    const covPath = join(targetPath, '.e2e-work', 'coverage.json');
+    if (!existsSync(covPath)) {
+      res.status(404).json({ error: 'No coverage data — run: node dist/index.js coverage <path>' });
+      return;
+    }
+    res.json(JSON.parse(readFileSync(covPath, 'utf-8')));
+  });
+
+  app.get('/api/crashs', (_req: Request, res: Response) => {
+    const workDir = join(targetPath, '.e2e-work');
+    if (!existsSync(workDir)) { res.json([]); return; }
+    const files = readdirSync(workDir).filter((f) => f.endsWith('.triage.json'));
+    const results = files.map((f) => {
+      try { return JSON.parse(readFileSync(join(workDir, f), 'utf-8')); } catch { return null; }
+    }).filter(Boolean);
+    res.json(results);
+  });
+
+  app.get('/api/evolutions/pending', (_req: Request, res: Response) => {
+    const pendingDir = join(targetPath, '.e2e-work', 'evolutions-pending');
+    if (!existsSync(pendingDir)) { res.json([]); return; }
+    const files = readdirSync(pendingDir).filter((f) => f.endsWith('.evolution.json'));
+    const results = files.map((f) => {
+      try {
+        const data = JSON.parse(readFileSync(join(pendingDir, f), 'utf-8'));
+        return { ...data, _file: f };
+      } catch { return null; }
+    }).filter(Boolean);
+    res.json(results);
+  });
+
+  app.get('/api/sentinel', (_req: Request, res: Response) => {
+    const sentPath = join(targetPath, '.e2e-work', 'sentinel-report.json');
+    if (!existsSync(sentPath)) {
+      res.status(404).json({ error: 'No sentinel report — run: node dist/index.js sentinel <path>' });
+      return;
+    }
+    res.json(JSON.parse(readFileSync(sentPath, 'utf-8')));
+  });
+
+  app.get('/api/finops', (_req: Request, res: Response) => {
+    import('../utils/metricsTracker.js').then(({ getStats, computeCo2Saved, computeFinOpsSaved }) => {
+      const stats = getStats(targetPath);
+      const co2Saved = computeCo2Saved(stats.tokensSaved ?? 0);
+      const costSaved = computeFinOpsSaved(stats.tokensSaved ?? 0);
+      res.json({ ...stats, co2Saved, costSaved });
+    }).catch((e) => res.status(500).json({ error: (e as Error).message }));
+  });
+
+  app.post('/api/evolution/apply', async (req: Request, res: Response) => {
+    const { file } = req.body as { file?: string };
+    if (!file) { res.status(400).json({ error: 'file required' }); return; }
+    const safeFile = file.replace(/[^a-zA-Z0-9._-]/g, '');
+    const absFile = join(targetPath, '.e2e-work', 'evolutions-pending', safeFile);
+    if (!existsSync(absFile)) { res.status(404).json({ error: 'evolution file not found' }); return; }
+    res.json({ status: 'queued', file: safeFile });
+    setImmediate(async () => {
+      try {
+        const { execFileSync: efs } = await import('node:child_process');
+        const entry = JSON.parse(readFileSync(absFile, 'utf-8')) as {
+          critique: { improvements: Array<{ filePath: string; oldCode: string; newCode: string }> };
+        };
+        const patched: string[] = [];
+        for (const imp of (entry.critique?.improvements ?? [])) {
+          if (existsSync(imp.filePath)) {
+            const src = readFileSync(imp.filePath, 'utf-8');
+            if (src.includes(imp.oldCode)) {
+              writeFileSync(imp.filePath, src.replace(imp.oldCode, imp.newCode), 'utf-8');
+              patched.push(imp.filePath);
+            }
+          }
+        }
+        if (patched.length > 0) {
+          try { efs('git', ['add', ...patched], { timeout: 10_000 }); efs('git', ['commit', '-m', 'refactor(evolver): apply supervised evolution'], { timeout: 10_000 }); } catch { /* non-fatal */ }
+        }
+        const appliedDir = join(targetPath, '.e2e-work', 'evolutions-applied');
+        if (!existsSync(appliedDir)) mkdirSync(appliedDir, { recursive: true });
+        renameSync(absFile, join(appliedDir, safeFile));
+        streamLog(`[evolution] applied: ${patched.length} file(s) patched, archived → evolutions-applied/`);
+      } catch (e) { streamLog(`[evolution] apply error: ${(e as Error).message}`); }
+    });
+  });
+
+  app.post('/api/patch/apply', async (req: Request, res: Response) => {
+    const { file } = req.body as { file?: string };
+    if (!file) { res.status(400).json({ error: 'file required' }); return; }
+    const safeFile = file.replace(/[^a-zA-Z0-9._-]/g, '');
+    const absFile = join(targetPath, '.e2e-work', 'patches-pending', safeFile);
+    if (!existsSync(absFile)) { res.status(404).json({ error: 'patch file not found' }); return; }
+    res.json({ status: 'queued', file: safeFile });
+    setImmediate(async () => {
+      try {
+        const { run } = await import('../agents/ghostwriter.js') as {
+          run: (t: import('../orchestrator.js').AgentTask, c: import('../orchestrator.js').RunConfig, o: null) => Promise<unknown>
+        };
+        const patchData = JSON.parse(readFileSync(absFile, 'utf-8')) as { bug: import('../orchestrator.js').BugReport };
+        const result = await run(
+          { type: 'WRITE_PATCH', bugReport: patchData.bug },
+          { command: 'repair', level: 2, chaos: false, predictive: false, targetPath, applyPatches: true },
+          null,
+        ) as { success: boolean; branch: string; prUrl?: string };
+        streamLog(`[ghostwriter] patch apply: ${result.success ? '✓' : '✗'} branch=${result.branch}`);
+      } catch (e) { streamLog(`[ghostwriter] patch apply error: ${(e as Error).message}`); }
+    });
   });
 
   app.post('/api/repair', async (req: Request, res: Response) => {

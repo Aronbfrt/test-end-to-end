@@ -50,6 +50,10 @@ export interface RunConfig {
   prNumber?: number;
   /** GitHub repo slug (owner/repo) for sentinel */
   repo?: string;
+  /** ghostwriter: apply patches to disk and open PR (default: false = dry-run) */
+  applyPatches?: boolean;
+  /** evolver: when true (default), proposals saved to .e2e-work/evolutions-pending/ instead of applied directly */
+  supervised?: boolean;
 }
 
 export type AgentTask =
@@ -121,6 +125,17 @@ function setState(next: OrchestratorState): void {
       );
     } catch { /* ignore — never crash the orchestrator for dashboard */ }
   }
+}
+
+/**
+ * Reject paths containing null bytes or traversal sequences.
+ * Returns the resolved absolute path.
+ */
+function sanitizePath(p: string, label = 'path'): string {
+  if (!p || p.includes('\0') || /(?:^|\/)\.\.(?:\/|$)/.test(p)) {
+    throw new Error(`[orchestrator] unsafe ${label}: "${p}"`);
+  }
+  return resolve(p);
 }
 
 // ── Ollama detection ───────────────────────────────────────────────────────────
@@ -262,6 +277,7 @@ export function getLastHotspots(): typeof _lastHotspots {
  */
 export async function run(config: RunConfig): Promise<void> {
   _config = config;
+  config.targetPath = sanitizePath(config.targetPath, 'targetPath');
 
   // ── CLI log file (active even without the dashboard server) ────────────────
   const _workDir  = join(config.targetPath, '.e2e-work');
@@ -295,7 +311,7 @@ export async function run(config: RunConfig): Promise<void> {
 
     // ── Phase 1: discover source files ─────────────────────────────────────
     const { glob } = await import('glob');
-    const allFiles = await glob('**/*.{ts,js,py,php,rb,go}', {
+    const allFiles = await glob('**/*.{ts,js,py,php,rb,go,html,htm}', {
       cwd: config.targetPath,
       ignore: ['node_modules/**', 'dist/**', '.git/**', '**/*.d.ts'],
       absolute: true,
@@ -372,6 +388,17 @@ export async function run(config: RunConfig): Promise<void> {
     });
     const scanResult: RouteMap = rawScan;
     _lastHotspots = rawScan.hotspots ?? [];
+
+    // ── Persist route snapshot (used by coverage + update) ─────────────────
+    try {
+      const workDir = join(config.targetPath, '.e2e-work');
+      if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
+      writeFileSync(
+        join(workDir, 'last-routes.json'),
+        JSON.stringify({ ...scanResult, savedAt: new Date().toISOString() }, null, 2),
+        'utf-8',
+      );
+    } catch (e) { log(`last-routes.json write failed: ${(e as Error).message}`); }
 
     setState('AWAITING_AGENTS');
 
@@ -461,12 +488,13 @@ export async function run(config: RunConfig): Promise<void> {
         const workDir = join(config.targetPath, '.e2e-work');
         try {
           if (config.traceId) {
-            // explicit --trace=<id>
-            const p = join(workDir, `${config.traceId}.triage.json`);
+            // explicit --trace=<id>: sanitize to prevent path traversal
+            const safeTraceId = config.traceId.replace(/[^a-zA-Z0-9._-]/g, '');
+            const p = join(workDir, `${safeTraceId}.triage.json`);
             if (existsSync(p)) {
               const saved = JSON.parse(readFileSync(p, 'utf-8')) as import('./agents/coroner.js').TriageResult;
               bugReport = saved.bugReport;
-              log(`loaded triage from disk: ${config.traceId}`);
+              log(`loaded triage from disk: ${safeTraceId}`);
             } else {
               log(`triage file not found: ${p}`);
             }
@@ -622,6 +650,32 @@ function getHotspotFiles(root: string, allFiles: string[]): string[] {
     return [];
   }
 }
+
+// ── Rate limiter (shared by all Anthropic callers) ─────────────────────────────
+
+class RateLimiter {
+  private tokens: number;
+  private lastRefill: number;
+  constructor(private maxTokens: number, private refillPerSecond: number) {
+    this.tokens = maxTokens;
+    this.lastRefill = Date.now();
+  }
+  async acquire(): Promise<void> {
+    const now = Date.now();
+    const elapsed = (now - this.lastRefill) / 1000;
+    this.tokens = Math.min(this.maxTokens, this.tokens + elapsed * this.refillPerSecond);
+    this.lastRefill = now;
+    if (this.tokens < 1) {
+      const waitMs = ((1 - this.tokens) / this.refillPerSecond) * 1000;
+      await new Promise<void>((r) => setTimeout(r, waitMs));
+    }
+    this.tokens -= 1;
+  }
+}
+
+export const anthropicLimiter = new RateLimiter(5, 1);
+
+// ── Diagnostics ────────────────────────────────────────────────────────────────
 
 /**
  * Expose orchestrator diagnostics (used by the MCP tool + Express dashboard).
