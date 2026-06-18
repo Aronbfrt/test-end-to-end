@@ -1,7 +1,7 @@
 {
   "name": "test-end-to-end",
   "version": "2.0.0",
-  "description": "Autonomous QA ecosystem — MCP server + cognitive agents",
+  "description": "Autonomous E2E QA engine for Claude Code — 13 specialized agents, MCP server, Zero-Token Bypass",
   "type": "module",
   "main": "dist/index.js",
   "engines": {
@@ -9,6 +9,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
+    "prepare": "tsc",
     "build": "tsc",
     "dev": "node --loader ts-node/esm src/index.ts",
     "e2e:init": "node dist/index.js init",
@@ -19,6 +20,9 @@
     "e2e:coverage": "node dist/index.js coverage",
     "e2e:update": "node dist/index.js update",
     "e2e:update:dry": "node dist/index.js update --dry-run",
+    "e2e:sentinel": "node dist/index.js sentinel",
+    "e2e:arch": "node dist/index.js arch",
+    "e2e:chaos": "node dist/index.js chaos",
     "setup": "bash scripts/setup.sh",
     "security-fix": "node dist/agents/dependabot.js",
     "dashboard": "node dist/server/start.js"

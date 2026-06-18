@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "test-end-to-end",
   "metadata": {
-    "description": "Autonomous QA ecosystem & MCP server for Claude Code — zero-prompt E2E generation, AI Vision crash triage, self-healing selectors, autonomous bug PRs. Selenium · Playwright · Cypress · Robot Framework + V-Infinite TypeScript MCP engine."
+    "description": "Autonomous E2E QA engine for Claude Code — 13 specialized agents, 11 MCP tools, Zero-Token Bypass via SHA-256 + Ollama. Scout · Artisan · Coroner · Ghostwriter · Evolver · Sentinel (OWASP) · ChaosMonkey · ArchPolice · Dependabot · RGPD Guard · Jira/Trello/Slack/OVH integrations."
   },
   "owner": {
     "name": "Aron Beaufort"
@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "test-end-to-end",
-      "description": "/e2e-init · /e2e-audit · /e2e-coverage · /e2e-update (Python/Selenium/Playwright/Cypress/Robot). V-Infinite MCP: zero-prompt AST-driven test generation, Shadow Personas, SHIELD pixel-diff, Ghostwriter auto-PR, Evolver self-improvement.",
+      "description": "10 slash commands: /e2e-init · /e2e-audit · /e2e-coverage · /e2e-update · /e2e-diff · /e2e-repair · /e2e-shadow · /e2e-sentinel · /e2e-arch · /e2e-chaos. 11 MCP tools. Playwright · Cypress · Selenium · Robot Framework. Level 1 (0 token) → Level 3 (auto-patch PR + OWASP audit + chaos + deployment).",
       "version": "2.0.0",
       "author": {
         "name": "Aron Beaufort"
@@ -19,9 +19,10 @@
       "category": "testing",
       "homepage": "https://github.com/Aronbfrt/test-end-to-end",
       "tags": [
-        "testing", "e2e", "mcp", "autonomous", "ai",
-        "selenium", "playwright", "cypress", "robot-framework",
-        "security", "seo", "accessibility", "self-healing"
+        "testing", "e2e", "mcp", "autonomous", "ai", "qa",
+        "playwright", "cypress", "selenium", "robot-framework",
+        "security", "owasp", "chaos-engineering", "architecture",
+        "jira", "trello", "slack", "self-healing", "zero-token"
       ]
     }
   ]
