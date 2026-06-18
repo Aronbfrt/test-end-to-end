@@ -332,15 +332,18 @@ export async function run(config: RunConfig): Promise<void> {
       personas: shadowPersonas,
     });
 
-    // ── Phase 3b: run tests + generate report ───────────────────────────────
-    setState('RUNNING_TESTS');
-    const cachedFiles = allFiles.length - staleFiles.length;
-    const { runTests } = await import('./agents/runner.js');
-    const testSummary = await runTests(config, cachedFiles);
-    if (testSummary.runs.length > 0) {
-      const reportPath = join(config.targetPath, 'tests', 'report.html');
-      const ci = writeCliReport({ ...testSummary, hotspots: _lastHotspots }, reportPath);
-      log(`report written → ${reportPath} (IC: ${ci}/100)`);
+    // ── Phase 3b: run tests + generate report (audit / diff / shadow only) ────
+    let testSummary: import('./utils/report.js').RunSummary = { runs: [], tokensUsed: 0, tokensSaved: 0, cachedFiles: 0 };
+    if (['audit', 'diff', 'shadow'].includes(config.command)) {
+      setState('RUNNING_TESTS');
+      const cachedFiles = allFiles.length - staleFiles.length;
+      const { runTests } = await import('./agents/runner.js');
+      testSummary = await runTests(config, cachedFiles);
+      if (testSummary.runs.length > 0) {
+        const reportPath = join(config.targetPath, 'tests', 'report.html');
+        const ci = writeCliReport({ ...testSummary, hotspots: _lastHotspots }, reportPath);
+        log(`report written → ${reportPath} (IC: ${ci}/100)`);
+      }
     }
 
     // ── Phase 4: triage (level 2+ on audit/diff/shadow) ─────────────────────
