@@ -177,7 +177,7 @@ USAGE
 
 COMMANDS
   init        Initialise le projet cible : détecte le stack, amorce le cache,
-              génère la config Playwright/Cypress.
+              génère la config Playwright.
               Ex: node dist/index.js init
                   node dist/index.js init /mon/projet
 
