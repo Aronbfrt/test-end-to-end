@@ -123,7 +123,70 @@ npm run build
 node dist/index.js --help
 ```
 
-Tu dois voir la liste des commandes disponibles. Si tu vois une erreur, vérifie que Node.js 18+ est bien installé.
+Tu dois voir ceci :
+
+```
+test-end-to-end V-Infinite 2.0.0 — Autonomous QA Engine
+
+USAGE
+  node dist/index.js <command> [targetPath] [flags]
+
+COMMANDS
+  init        Initialise le projet cible : détecte le stack, amorce le cache,
+              génère la config Playwright/Cypress.
+              Ex: node dist/index.js init
+                  node dist/index.js init /mon/projet
+
+  audit       Audit E2E complet : scan AST → génération tests → triage → rapport.
+              Ex: node dist/index.js audit
+                  node dist/index.js audit --level=2 --predictive
+
+  shadow      Zero-prompt Reverse Testing + Shadow Personas (Frustrated / Attacker /
+              Chaos / Impulsive). Fonctionne sans qu'on décrive une seule fonctionnalité.
+              Ex: node dist/index.js shadow --level=3 --chaos
+
+  diff        Cible le scan sur les fichiers modifiés (git diff HEAD + staged).
+              --predictive ajoute les hotspots Git des 12 derniers mois.
+              Ex: node dist/index.js diff
+                  node dist/index.js diff --predictive --level=2
+
+  repair      Active Ghostwriter pour patcher un bug confirmé par le Coroner.
+              Charge automatiquement le dernier triage (.e2e-work/*.triage.json).
+              Ex: node dist/index.js repair
+                  node dist/index.js repair --trace=run-1718542800000
+
+  coverage    Carte de couverture : routes + forms vs fichiers de test existants.
+              Génère .e2e-work/coverage.html et coverage.json.
+              Ex: node dist/index.js coverage
+                  node dist/index.js coverage --detail
+
+  update      Sync intelligent après changements de code.
+              Compare routes actuelles vs snapshot (.e2e-work/last-routes.json),
+              génère uniquement les tests manquants. Protège les tests manuels.
+              Ex: node dist/index.js update
+                  node dist/index.js update --dry-run
+
+FLAGS
+  --level=1         Déterministe local — AST pur, sans LLM
+  --level=2         Hybride cognitif — Vision IA sur sélecteur cassé (défaut)
+  --level=3         Meta-Agent Infinite — Shadow Personas + Ghostwriter + Evolver
+  --chaos           Inject scénarios de faute réseau / double-submit / i18n
+  --predictive      Git forensics 12 mois → hotspot ranking
+  --dry-run         Affiche ce qui serait fait sans écrire de fichier (update)
+  --detail          Sortie détaillée par route (coverage)
+  --trace=<id>      Charge un triage spécifique par son identifiant (repair)
+  --reset-cache     Vide le cache d'empreintes SHA-256
+  --mcp             Démarre en mode serveur MCP (stdin/stdout JSON-RPC)
+
+DASHBOARD
+  node dist/server/start.js     → http://127.0.0.1:4321
+
+MCP (.mcp.json)
+  { "mcpServers": { "e2e": { "command": "node",
+    "args": ["/chemin/dist/index.js", "--mcp"] } } }
+```
+
+Si tu vois une erreur, vérifie que Node.js 18+ est bien installé.
 
 ---
 
