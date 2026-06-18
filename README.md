@@ -405,7 +405,7 @@ node dist/index.js repair --trace=run-1718542800000
 
 > Remplace `/chemin/absolu/vers/test-end-to-end` par le chemin réel vers le dossier du plugin sur ta machine. Exemple : `/Users/aron/.claude/plugins/marketplaces/test-end-to-end`
 
-Une fois configuré, Claude peut utiliser ces 6 outils automatiquement :
+Une fois configuré, Claude peut utiliser ces 8 outils automatiquement :
 
 | Outil MCP | Équivalent CLI | Ce que Claude peut faire |
 |---|---|---|
@@ -414,6 +414,8 @@ Une fois configuré, Claude peut utiliser ces 6 outils automatiquement :
 | `e2e_shadow` | `shadow` | Tester les personas extrêmes |
 | `e2e_diff` | `diff` | Tester uniquement les fichiers modifiés |
 | `e2e_repair` | `repair` | Réparer un bug diagnostiqué |
+| `e2e_coverage` | `coverage` | Carte de couverture routes + forms |
+| `e2e_update` | `update` | Sync tests après changements de code |
 | `e2e_diagnostics` | — | Voir l'état du plugin (cache, Ollama, état) |
 
 ---
@@ -506,10 +508,13 @@ Le dashboard est une interface web qui s'ouvre dans ton navigateur pendant l'ex�
 
 ```bash
 # Démarrer le dashboard (port 4321 par défaut)
-node --input-type=module <<'EOF'
-import { startServer } from './dist/server/app.js';
-startServer(process.cwd());
-EOF
+node dist/server/start.js
+
+# Sur un projet spécifique
+node dist/server/start.js /chemin/vers/ton/projet
+
+# Port personnalisé
+E2E_PORT=4444 node dist/server/start.js
 
 # Ouvrir dans le navigateur
 open http://127.0.0.1:4321
