@@ -15,7 +15,7 @@
 <p align="center">
   Tu pointes le plugin sur n'importe quel projet. Il lit ton code source, comprend tes routes et tes formulaires,<br>
   génère une batterie de tests E2E complets, diagnostique chaque crash avec l'IA,<br>
-  répare automatiquement les sélecteurs cassés, et ouvre des Pull Requests avec des patchs chirurgicaux.<br>
+  diagnostique les sélecteurs cassés (Vision IA suggère un remplacement), et ouvre des Pull Requests avec des patchs chirurgicaux.<br>
   <b>Zéro configuration manuelle. Zéro prompt humain à écrire.</b>
 </p>
 
@@ -268,17 +268,17 @@ node "$env:USERPROFILE\.claude\plugins\marketplaces\test-end-to-end\dist\index.j
 
 Après la première exécution, deux dossiers apparaissent à la racine de ton projet :
 
-**`tests/`** — tests générés par le moteur
-- `tests/<route>/base.spec.ts` — tests fonctionnels par route
-- `tests/<route>/persona_frustrated.spec.ts` — Shadow Persona utilisateur frustré
-- `tests/<route>/persona_attacker.spec.ts` — Shadow Persona attaquant malveillant
-- `tests/<route>/persona_impulsive.spec.ts` — Shadow Persona acheteur impulsif
-- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (généré avec `--chaos` ou `--level=3`)
-- `tests/report.html` — rapport de confiance (score IC, verdicts, hotspots)
+**`tests/`** — tests générés puis exécutés par le moteur
+- `tests/<route>/base.spec.ts` — tests fonctionnels par route (généré à tous les niveaux)
+- `tests/<route>/persona_frustrated.spec.ts` — Shadow Persona utilisateur frustré (`--level=3` ou `shadow`)
+- `tests/<route>/persona_attacker.spec.ts` — Shadow Persona attaquant malveillant (`--level=3` ou `shadow`)
+- `tests/<route>/persona_impulsive.spec.ts` — Shadow Persona acheteur impulsif (`--level=3` ou `shadow`)
+- `tests/<route>/chaos_network.spec.ts` — injection de fautes réseau (`--chaos` ou `--level=3`)
+- `tests/report.html` — rapport de confiance (score IC 0–100, résultats par route, verdicts)
 
 **`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
 - `latest.log` — log complet de ce que l'IA a découvert (visible dans le dashboard → onglet Logs, téléchargeable via le bouton ⬇)
-- `*.triage.json` — résultats de triage Coroner (utilisés par `repair`)
+- `*.triage.json` — résultats de triage Coroner (générés à `--level=2+`, utilisés par `repair`)
 - `coverage.html` / `coverage.json` — carte de couverture (générée par `coverage`)
 - `last-routes.json` — snapshot routes pour le mode `update`
 - `pr-*.md` — brouillon Pull Request (créé si `gh` n'est pas installé)
@@ -355,7 +355,7 @@ node dist/index.js audit --level=3 --chaos --predictive
 | Niveau | Ce qui est activé | Coût IA | Temps estimé |
 |---|---|---|---|
 | `--level=1` | Analyse AST locale + génération de tests. Aucun appel IA. | 0 token | < 30 sec |
-| `--level=2` *(défaut)* | Tout le niveau 1 + Vision IA pour réparer les sélecteurs cassés + triage intelligent des crashes | Quelques appels | 1–3 min |
+| `--level=2` *(défaut)* | Tout le niveau 1 + Vision IA pour diagnostiquer les sélecteurs cassés et suggérer un remplacement + triage intelligent des crashes | Quelques appels | 1–3 min |
 | `--level=3` | Tout le niveau 2 + les 3 Shadow Personas (frustrated_user, impulsive_buyer, malicious_attacker) + création automatique de PR de correction + auto-évolution du plugin sur erreur fatale | Plus d'appels | 3–10 min |
 
 ---

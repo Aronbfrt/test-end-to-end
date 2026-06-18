@@ -26,7 +26,7 @@ node dist/index.js diff /path/to/project --level=2
 
 | Flag | Effect |
 |---|---|
-| `--predictive` | Reads 12 months of `git log`, ranks files by churn × stress, overlays top 15 hotspot files onto the diff scope |
+| `--predictive` | Reads 12 months of `git log`, ranks files by churn × stress, overlays top 20 hotspot files onto the diff scope |
 | `--level=2` | Activates Vision QA for broken selectors (default) |
 | `--level=3` | Full: personas + auto-patch |
 

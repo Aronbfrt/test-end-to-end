@@ -14,6 +14,7 @@
 import { execSync, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { writeCliReport } from './utils/report.js';
 import {
   loadCache,
   isFresh,
@@ -67,6 +68,7 @@ export type OrchestratorState =
   | 'CACHE_CHECK'
   | 'DISPATCHING'
   | 'AWAITING_AGENTS'
+  | 'RUNNING_TESTS'
   | 'TRIAGING'
   | 'PATCHING'
   | 'DONE'
@@ -307,6 +309,17 @@ export async function run(config: RunConfig): Promise<void> {
       routes: scanResult,
       personas: shadowPersonas,
     });
+
+    // ── Phase 3b: run tests + generate report ───────────────────────────────
+    setState('RUNNING_TESTS');
+    const cachedFiles = allFiles.length - staleFiles.length;
+    const { runTests } = await import('./agents/runner.js');
+    const testSummary = await runTests(config, cachedFiles);
+    if (testSummary.runs.length > 0) {
+      const reportPath = join(config.targetPath, 'tests', 'report.html');
+      const ci = writeCliReport({ ...testSummary, hotspots: _lastHotspots }, reportPath);
+      log(`report written → ${reportPath} (IC: ${ci}/100)`);
+    }
 
     // ── Phase 4: triage (level 2+ on audit/diff/shadow) ─────────────────────
     let triageResult: import('./agents/coroner.js').TriageResult | null = null;

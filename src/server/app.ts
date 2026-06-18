@@ -21,41 +21,17 @@ import { createServer } from 'node:http';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { diagnostics } from '../orchestrator.js';
+import type { TestRun, RunSummary, HotspotEntry } from '../utils/report.js';
+import { computeConfidenceIndex } from '../utils/report.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
+
+export type { TestRun, RunSummary, HotspotEntry };
 
 export interface WsEvent {
   type: 'LOG' | 'STATE' | 'SCREENSHOT' | 'METRIC' | 'HOTSPOT' | 'REPORT_READY';
   payload: unknown;
   ts: number;
-}
-
-export interface TestRun {
-  id: string;
-  route: string;
-  testName: string;
-  verdict: 'PASS' | 'FAIL' | 'SKIP';
-  durationMs: number;
-  screenshotPath?: string;
-  traceId?: string;
-}
-
-export interface HotspotEntry {
-  file: string;
-  risk: number;
-  churn: number;
-  stress: number;
-}
-
-export interface RunSummary {
-  runs: TestRun[];
-  /** Token usage for this session (from Anthropic response metadata). */
-  tokensUsed: number;
-  tokensSaved: number;
-  /** Files bypassed by cache — zero cost. */
-  cachedFiles: number;
-  /** Optional — populated by scout in --predictive mode. */
-  hotspots?: HotspotEntry[];
 }
 
 // ── WebSocket broadcast ────────────────────────────────────────────────────────
@@ -101,47 +77,6 @@ export function streamScreenshot(b64Png: string, label: string): void {
 }
 
 // ── CI/CD report generator ─────────────────────────────────────────────────────
-
-/**
- * Compute the Applicative Confidence Index (0–100).
- *
- * Formula:
- *   baseScore = passRate × 60          (weight: test results)
- *   cacheBonus = min(cachedPct, 1) × 10 (reward for unchanged files)
- *   tokenBonus = min(savedPct, 1) × 10  (reward for token efficiency)
- *   securityPenalty = failedSecurity × 5
- *   result = clamp(baseScore + cacheBonus + tokenBonus − securityPenalty, 0, 100)
- */
-function computeConfidenceIndex(summary: RunSummary): number {
-  const total   = summary.runs.length;
-  if (total === 0) return 0;
-
-  const passed  = summary.runs.filter((r) => r.verdict === 'PASS').length;
-  const passRate = passed / total;
-  const securityFails = summary.runs.filter(
-    (r) => r.verdict === 'FAIL' && r.testName.includes('attacker'),
-  ).length;
-
-  const savedPct  = summary.tokensUsed > 0
-    ? summary.tokensSaved / (summary.tokensUsed + summary.tokensSaved)
-    : 0;
-  const cachedPct = summary.cachedFiles > 0 && total > 0
-    ? Math.min(summary.cachedFiles / total, 1)
-    : 0;
-
-  const passedRoutes = new Set(summary.runs.filter((r) => r.verdict === 'PASS').map((r) => r.route)).size;
-  const totalRoutes  = new Set(summary.runs.map((r) => r.route)).size;
-  const routeCoverage = totalRoutes > 0 ? passedRoutes / totalRoutes : 0;
-
-  const score =
-    passRate * 60 +
-    cachedPct * 10 +
-    savedPct * 10 +
-    routeCoverage * 20 -
-    securityFails * 5;
-
-  return Math.round(Math.max(0, Math.min(100, score)));
-}
 
 function badgeColor(score: number): string {
   if (score >= 80) return '#22c55e'; // green
