@@ -10,13 +10,13 @@
   <img src="https://img.shields.io/badge/licence-MIT-f59e0b?style=for-the-badge" alt="MIT">
 </p>
 
-<h3 align="center">L'usine de QA cognitive autonome pour Claude Code.</h3>
+<h3 align="center">L'usine de QA cognitive autonome pour Claude Code — 13 agents spécialisés.</h3>
 
 <p align="center">
   Tu pointes le plugin sur n'importe quel projet. Il lit ton code source, comprend tes routes et tes formulaires,<br>
   génère une batterie de tests E2E complets, diagnostique chaque crash avec l'IA,<br>
-  diagnostique les sélecteurs cassés (Vision IA suggère un remplacement), et ouvre des Pull Requests avec des patchs chirurgicaux.<br>
-  <b>Zéro configuration manuelle. Zéro prompt humain à écrire.</b>
+  audite la sécurité OWASP des Pull Requests, analyse l'architecture de ton code, scanne les dépendances npm vulnérables,<br>
+  et ouvre des Pull Requests avec des patchs chirurgicaux. <b>Zéro configuration manuelle. Zéro prompt humain à écrire.</b>
 </p>
 
 <p align="center">
@@ -25,6 +25,7 @@
   <a href="#-démarrage-rapide"><b>Démarrage rapide</b></a> ·
   <a href="#️-commandes-en-détail"><b>Commandes</b></a> ·
   <a href="#-architecture"><b>Architecture</b></a> ·
+  <a href="#-intégrations"><b>Intégrations</b></a> ·
   <a href="#-dashboard"><b>Dashboard</b></a>
 </p>
 
@@ -215,6 +216,24 @@ COMMANDS
               Ex: node dist/index.js update
                   node dist/index.js update --dry-run
 
+  sentinel    Audit sécurité OWASP sur les Pull Requests GitHub.
+              Analyse le diff de la PR avec Ollama (local) ou regex statique.
+              Détecte : secrets en dur, SQLi, SSRF, eval(), XSS, IDOR, RCE.
+              Ex: node dist/index.js sentinel --pr=42
+                  node dist/index.js sentinel --pr=42 --repo=owner/repo
+
+  arch        Analyse l'architecture du code source TypeScript/JavaScript.
+              Détecte fonctions trop longues, complexité cyclomatique élevée,
+              fichiers trop gros, couplage excessif (imports).
+              Ex: node dist/index.js arch
+                  node dist/index.js arch /chemin/vers/ton/projet
+
+  chaos       Injecte des scénarios de chaos réseau sur les routes existantes.
+              Génère des specs Playwright : LATENCY, TIMEOUT, ERROR_50x, OFFLINE,
+              CORRUPT (JSON malformé), PARTIAL (réponse tronquée).
+              Ex: node dist/index.js chaos
+                  node dist/index.js chaos --port=8080
+
 FLAGS
   --level=1         Déterministe local — AST pur, sans LLM
   --level=2         Hybride cognitif — Vision IA sur sélecteur cassé (défaut)
@@ -224,6 +243,9 @@ FLAGS
   --dry-run         Affiche ce qui serait fait sans écrire de fichier (update)
   --detail          Sortie détaillée par route (coverage)
   --trace=<id>      Charge un triage spécifique par son identifiant (repair)
+  --pr=<number>     Numéro de Pull Request GitHub à auditer (sentinel)
+  --repo=<owner/r>  Dépôt cible (sentinel, si différent du courant)
+  --port=<number>   Port du serveur local à tester (chaos, défaut : 3000)
   --reset-cache     Vide le cache d'empreintes SHA-256
   --mcp             Démarre en mode serveur MCP (stdin/stdout JSON-RPC)
 
@@ -457,6 +479,84 @@ node dist/index.js repair --trace=run-1718542800000
 
 ---
 
+### `sentinel` — Audit sécurité OWASP sur une Pull Request
+
+**Ce que ça fait :** Récupère le diff d'une Pull Request GitHub et l'analyse à la recherche de 9 classes de vulnérabilités OWASP : secrets hardcodés (mots de passe, tokens, clés API), injection SQL, SSRF, `eval()`/`exec()`, XSS, accès fichier non-filtré (`readFileSync`), IDOR, injection de commande shell, et RCE. L'analyse utilise Ollama en priorité (100% local, 0 token) ; si Ollama n'est pas disponible, elle bascule sur un moteur regex statique intégré.
+
+**Quand l'utiliser :** Avant de merger une PR en production, automatiquement en CI/CD, ou à la demande sur une PR dont tu veux vérifier la sécurité.
+
+```bash
+# Auditer la PR #42 du dépôt courant
+node dist/index.js sentinel --pr=42
+
+# Auditer une PR sur un dépôt spécifique
+node dist/index.js sentinel --pr=42 --repo=owner/mon-projet
+
+# Via Claude Code — Claude appelle Sentinel automatiquement
+/e2e-audit   # Sentinel s'active sur chaque PR créée par Ghostwriter
+```
+
+**Résultat :** Un tableau de résultats avec pour chaque finding : la sévérité (`HIGH` / `MEDIUM` / `LOW`), la ligne du fichier concernée, la description du problème, et une suggestion de correction. Un résumé est posté en notification Slack/Discord si configuré.
+
+**Prérequis :** `GITHUB_TOKEN` dans `.env` + `gh` CLI installé. Si l'un des deux est absent, Sentinel désactive l'analyse de PR mais continue sur le diff local.
+
+---
+
+### `arch` — Police de l'architecture du code
+
+**Ce que ça fait :** Scanne tous les fichiers TypeScript et JavaScript de ton projet et mesure 4 métriques architecturales :
+- **Longueur des fonctions** — toute fonction de plus de 80 lignes est signalée
+- **Complexité cyclomatique** — compte les branches (`if/else/for/while/case/?? /&&/||/catch`) — seuil à 10
+- **Taille des fichiers** — tout fichier de plus de 500 lignes est signalé
+- **Couplage par imports** — tout fichier avec plus de 15 imports est signalé
+
+Le score d'architecture est calculé de 0 à 100 : `100 − (pénalités / fichiers × 10)`. Un rapport Markdown complet est généré dans `.e2e-work/arch-report.md`.
+
+**Quand l'utiliser :** En revue de code périodique, avant un refactoring, ou pour justifier une dette technique auprès de l'équipe.
+
+```bash
+# Analyser le projet courant
+node dist/index.js arch
+
+# Analyser un projet spécifique
+node dist/index.js arch /chemin/vers/ton/projet
+
+# Via Claude Code — Claude peut lire le rapport via le dashboard
+# GET http://127.0.0.1:4321/api/arch
+```
+
+**Résultat :** `.e2e-work/arch-report.json` (données brutes) + `.e2e-work/arch-report.md` (rapport lisible avec liste des violations par fichier et suggestions de découpage).
+
+---
+
+### `chaos` — Injection de chaos réseau
+
+**Ce que ça fait :** Prend toutes les routes détectées dans ton projet et génère des fichiers de tests Playwright spécialisés dans la simulation de pannes réseau. Pour chaque route (jusqu'à 10), il génère 6 specs :
+
+| Scénario | Ce qui est simulé |
+|---|---|
+| `LATENCY` | Délai de 3 à 5 secondes sur toutes les requêtes API — vérifie que la page n'affiche pas d'erreur |
+| `TIMEOUT` | Toutes les requêtes API avortées (`ETIMEDOUT`) — vérifie l'absence de crash JavaScript |
+| `ERROR_50x` | Les API retournent HTTP 500 / 503 — vérifie qu'aucune stack trace n'est exposée |
+| `OFFLINE` | Toutes les requêtes réseau bloquées — vérifie que la page n'est pas blanche |
+| `CORRUPT` | Les API retournent du JSON syntaxiquement invalide — vérifie l'absence d'erreur non catchée |
+| `PARTIAL` | Les API retournent une réponse JSON tronquée — vérifie l'absence d'erreur visible |
+
+**Quand l'utiliser :** Avant un lancement public, lors d'une revue de résilience, ou pour vérifier que ton frontend gère correctement les erreurs réseau.
+
+```bash
+# Générer les specs chaos pour le projet courant (port 3000)
+node dist/index.js chaos
+
+# Avec un port personnalisé
+node dist/index.js chaos --port=8080
+
+# Via Claude Code
+/e2e-audit   # le flag --chaos active ChaosMonkey dans le pipeline standard
+```
+
+---
+
 ### Intégration MCP — Donner le contrôle à Claude directement
 
 **Ce que c'est :** En mode MCP (Model Context Protocol), le plugin se transforme en "serveur d'outils" que Claude peut appeler directement, sans que tu aies besoin de taper des commandes. Claude peut décider lui-même de lancer un audit, regarder la couverture, ou réparer un bug, en réponse à tes questions en langage naturel.
@@ -478,7 +578,7 @@ node dist/index.js repair --trace=run-1718542800000
 
 > Remplace `/chemin/absolu/vers/test-end-to-end` par le chemin réel vers le dossier du plugin sur ta machine. Exemple : `/Users/aron/.claude/plugins/marketplaces/test-end-to-end`
 
-Une fois configuré, Claude peut utiliser ces 8 outils automatiquement :
+Une fois configuré, Claude peut utiliser ces 11 outils automatiquement :
 
 | Outil MCP | Équivalent CLI | Ce que Claude peut faire |
 |---|---|---|
@@ -489,47 +589,223 @@ Une fois configuré, Claude peut utiliser ces 8 outils automatiquement :
 | `e2e_repair` | `repair` | Réparer un bug diagnostiqué |
 | `e2e_coverage` | `coverage` | Carte de couverture routes + forms |
 | `e2e_update` | `update` | Sync tests après changements de code |
+| `e2e_sentinel` | `sentinel` | Auditer la sécurité OWASP d'une PR GitHub |
+| `e2e_arch` | `arch` | Analyser la complexité architecturale du code |
+| `e2e_chaos` | `chaos` | Générer des specs de chaos réseau |
 | `e2e_diagnostics` | — | Voir l'état du plugin (cache, Ollama, état) |
 
 ---
 
 ## ⚡ Architecture
 
-Le plugin est organisé en 5 agents spécialisés qui travaillent en séquence, orchestrés par un cerveau central.
+Le plugin est organisé en **13 agents et modules spécialisés**, orchestrés par un cerveau central.
 
 ```mermaid
 flowchart TD
     CLI["🖥️ CLI / MCP\n--level --chaos --predictive"]
 
-    ORC["🧠 Orchestrateur\nMachine d'état\nRouting Ollama/Anthropic\nCache SHA-256"]
+    ORC["🧠 Orchestrateur\nMachine d'état · routing Ollama/Anthropic\nCache SHA-256 · métriques FinOps"]
 
-    SCOUT["🔭 Scout\nLit ton code source\nExtrait routes + formulaires\nAnalyse l'historique Git"]
-    ARTISAN["🎨 Artisan\nGénère les fichiers de tests\nCrée les Page Objects\nInjecte les personas"]
-    CORONER["🔬 Coroner\nDiagnostique les crashes\nCompare les screenshots\nAppelle la Vision IA"]
-    GHOST["👻 Ghostwriter\nLocalise le bug dans le code\nGénère le patch\nOuvre la Pull Request"]
-    EVOLVER["🧬 Evolver\nS'auto-améliore en cas d'échec\nPatch son propre code source\nJournal d'évolution"]
+    SCOUT["🔭 Scout\nLit le code source\nExtrait routes + formulaires\nAnalyse historique Git"]
+    ARTISAN["🎨 Artisan\nGénère les tests Playwright\nCrée les Page Objects\nInjecte les personas"]
+    CORONER["🔬 Coroner\nDiagnostique les crashes\nCompare screenshots SHIELD\nAppelle la Vision IA"]
+    GHOST["👻 Ghostwriter\nLocalise le bug\nGénère le patch\nOuvre la Pull Request"]
+    EVOLVER["🧬 Evolver\nAuto-amélioration sur échec\nPatch son propre code source\nJournal d'évolution"]
 
-    REPORT["📊 report.html\nScore de confiance\nCarte des routes\nBouton Auto-Patch"]
-    PR["🔀 Pull Request\nPatch vérifié\nDocumentée automatiquement"]
+    SENTINEL["🛡️ Sentinel\nOWASP PR Security Audit\nOllama diff analysis\nDétecte secrets / SQLi / SSRF"]
+    CHAOS["🐒 ChaosMonkey\nLatence · Timeout · HTTP 50x\nOffline · JSON corrompu · Partiel\n6 scénarios Playwright"]
+    ARCH["🏛️ ArchPolice\nComplexité cyclomatique\nFonctions trop longues\nCouplage excessif"]
+    DEPEND["📦 Dependabot\nnpm audit · auto-upgrade\nType-check après patch\nRevert si régression"]
+
+    ATLASSIAN["📋 Atlassian\nJira Bug auto-créé\nXray execution liée\nFermeture sur patch"]
+    TRELLO["📌 Trello\nCarte créée sur crash\nDéplacée en Done sur patch"]
+    CLOUD["☁️ CloudDeployer\nOVH / IONOS / Hostinger\nSSH log recovery post-crash"]
+
+    NOTIF["🔔 Notifier\nSlack Block Kit\nDiscord embed\nTeams Adaptive Card"]
+    RGPD["🔒 RGPD Guard\nSanitise PII avant disk\nJWT · CB · IBAN · email · IP"]
+    METRICS["📊 MetricsTracker\nSQLite WAL · FinOps\nGreen-IT CO₂"]
+
+    REPORT["📋 report.html\nScore de confiance\nCarte des routes\nBouton Auto-Patch"]
+    PR["🔀 Pull Request\nPatch vérifié\nDocumentée auto"]
 
     CLI --> ORC
     ORC --> SCOUT
+    ORC -->|sentinel| SENTINEL
+    ORC -->|arch| ARCH
+    ORC -->|chaos| CHAOS
     SCOUT -->|RouteMap JSON| ARTISAN
     ARTISAN -->|tests/ générés| CORONER
     CORONER -->|BACKEND_BUG| GHOST
     CORONER -->|SELECTOR_DRIFT| REPORT
     GHOST --> PR
+    GHOST --> ATLASSIAN
+    GHOST --> TRELLO
+    GHOST --> CLOUD
+    CORONER --> NOTIF
+    GHOST --> NOTIF
+    SENTINEL --> NOTIF
+    EVOLVER -.->|auto-repair| ORC
+    RGPD -.->|filtre tout| METRICS
+    METRICS --> REPORT
     CORONER --> REPORT
     GHOST --> REPORT
+    DEPEND -.->|planifié| ORC
 ```
 
-**Le flux en langage simple :**
+**Le flux principal (audit) :**
 
-1. **Scout** — lit ton projet, identifie toutes les pages, routes et formulaires. C'est la phase de "cartographie".
-2. **Artisan** — prend cette carte et génère les fichiers de tests correspondants. C'est lui qui écrit les scripts Playwright.
-3. **Coroner** — après exécution des tests, analyse les échecs. Distingue un crash serveur (500) d'un sélecteur HTML qui a changé.
-4. **Ghostwriter** — quand un bug serveur est confirmé, il trouve le code responsable, génère un correctif, et ouvre une PR.
-5. **Evolver** — si un agent échoue de manière répétée, il lit son propre code source et se corrige lui-même (guaranti max 3 tentatives/24h).
+1. **Scout** — lit ton projet, identifie toutes les pages, routes et formulaires. Phase de "cartographie".
+2. **Artisan** — prend cette carte et génère les fichiers de tests Playwright correspondants.
+3. **Coroner** — après exécution, analyse les échecs. Distingue un crash serveur (500) d'un sélecteur HTML renommé (SHIELD).
+4. **Ghostwriter** — quand un bug serveur est confirmé, localise le code responsable, génère un correctif, ouvre une PR.
+5. **Evolver** — si un agent échoue de manière répétée, lit son propre code source et se corrige (max 3 tentatives/24h).
+
+**Les 8 agents supplémentaires (V-Infinite) :**
+
+6. **Sentinel** — analyse le diff de chaque PR GitHub via Ollama (ou regex OWASP en fallback), détecte 9 patterns de vulnérabilité.
+7. **ChaosMonkey** — génère des specs Playwright qui interceptent le réseau via `page.route()` pour simuler 6 types de panne.
+8. **ArchPolice** — scanne tous les fichiers TypeScript/JS et flagge la complexité cyclomatique élevée, les fichiers trop longs, le couplage excessif.
+9. **Dependabot** — lance `npm audit`, tente d'upgrader les packages vulnérables, fait un type-check, et reverte si ça casse.
+10. **Atlassian** — crée automatiquement un ticket Jira Bug + une exécution Xray sur chaque crash, les ferme sur patch.
+11. **Trello** — crée une carte dans la colonne "À faire" sur crash, la déplace dans "Terminé" sur patch.
+12. **CloudDeployer** — déclenche un déploiement (OVH/IONOS/Hostinger) après chaque patch réussi, récupère les logs serveur via SSH.
+13. **Notifier** — envoie une notification fire-and-forget à Slack, Discord et/ou Teams à chaque événement (crash, patch, déploiement).
+
+---
+
+---
+
+## 🔌 Intégrations
+
+Toutes les intégrations sont **opt-in** : il suffit d'ajouter les variables correspondantes dans un fichier `.env` à la racine du plugin. Si une variable est absente, le module est silencieusement désactivé — il ne plante jamais.
+
+---
+
+### 💬 ChatOps — Slack, Discord, Teams
+
+Le Notifier envoie une notification instantanée à chaque événement clé : crash détecté, patch généré, déploiement déclenché, vulnérabilité Sentinel, violation ArchPolice.
+
+**Format des notifications :**
+- **Slack** : Block Kit structuré avec champs colorés (rouge = crash, vert = patch, bleu = info)
+- **Discord** : Embed avec titre, description, couleur et footer horodaté
+- **Microsoft Teams** : Adaptive Card avec titre et corps de texte
+
+Les trois peuvent être actifs simultanément — les notifications partent en parallèle (fire-and-forget, sans bloquer le pipeline).
+
+```bash
+# .env — ajouter les webhooks souhaités
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../...
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
+TEAMS_WEBHOOK_URL=https://xxx.webhook.office.com/webhookb2/...
+```
+
+> **Comment créer un webhook Slack :** [api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks)  
+> **Comment créer un webhook Discord :** Paramètres du canal → Intégrations → Webhooks
+
+---
+
+### 📋 Atlassian — Jira + Xray
+
+Quand le Coroner détecte un crash serveur (`BACKEND_BUG`), le module Atlassian crée automatiquement :
+1. Un ticket **Jira Bug** dans le projet configuré, avec le message d'erreur, la route, le traceId et le timestamp
+2. Une **exécution Xray** liée au ticket, pour tracer le résultat du test automatiquement dans ton outil de QA
+
+Quand Ghostwriter ouvre une PR de correction, le ticket est automatiquement passé en statut **Résolu** et l'exécution Xray est marquée **PASS**.
+
+```bash
+# .env — toutes les 4 variables sont requises pour activer le module
+JIRA_URL=https://monprojet.atlassian.net
+JIRA_TOKEN=ATATT3xxxxxxxxxxxxxxxxxxx        # Token API Atlassian
+JIRA_USER_EMAIL=dev@monprojet.com
+JIRA_PROJECT_KEY=QA                         # Clé du projet Jira cible
+```
+
+> **Créer un token Atlassian :** [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+
+---
+
+### 📌 Trello
+
+Alternative à Jira pour les équipes qui utilisent Trello. Sur chaque crash, une carte est créée dans la colonne "À faire" avec le titre du bug, la route concernée et le traceId dans la description. Sur patch, la carte est automatiquement déplacée dans la colonne "Terminé".
+
+```bash
+# .env — toutes les 4 variables sont requises
+TRELLO_API_KEY=...          # Clé API sur https://trello.com/app-key
+TRELLO_TOKEN=...            # Token d'autorisation (scope read,write)
+TRELLO_TODO_LIST_ID=...     # ID de la liste "À faire" (visible dans l'URL Trello)
+TRELLO_DONE_LIST_ID=...     # ID de la liste "Terminé"
+```
+
+---
+
+### ☁️ Déploiement automatique — OVH, IONOS, Hostinger
+
+Après chaque patch réussi (Ghostwriter a ouvert une PR qui passe les tests), le CloudDeployer peut déclencher automatiquement un déploiement sur ton hébergeur.
+
+**Trois hébergeurs supportés :**
+
+**OVH Cloud** — utilise l'API REST OVHcloud v1 avec signature HMAC-SHA1 authentifiée :
+```bash
+OVH_APP_KEY=xxxxx
+OVH_APP_SECRET=xxxxx
+OVH_CONSUMER_KEY=xxxxx
+OVH_PROJECT_ID=xxxxx        # ID projet Public Cloud OVH
+OVH_SERVICE_NAME=xxxxx      # Nom du service (instance ou cluster)
+```
+> **Créer des credentials OVH :** [api.ovh.com/createToken](https://api.ovh.com/createToken/index.cgi)
+
+**IONOS** — déclenche un `workflow_dispatch` GitHub Actions sur la branche de déploiement :
+```bash
+IONOS_GITHUB_REPO=owner/repo
+IONOS_GITHUB_TOKEN=ghp_xxxxxxx
+IONOS_WORKFLOW_FILE=deploy.yml      # Fichier workflow dans .github/workflows/
+IONOS_DEPLOY_BRANCH=main
+```
+
+**Hostinger** — appel POST sur un webhook de déploiement :
+```bash
+HOSTINGER_DEPLOY_WEBHOOK_URL=https://xxx.hostinger.com/deploy/webhook/...
+```
+
+**Récupération des logs serveur post-crash (SSH)**
+
+Si un crash est détecté en environnement de staging ou production, CloudDeployer peut se connecter en SSH pour récupérer les 100 dernières lignes des logs nginx, pm2 et systemd node :
+```bash
+SSH_HOST=1.2.3.4
+SSH_PORT=22
+SSH_USER=ubuntu
+SSH_PRIVATE_KEY=/home/user/.ssh/id_rsa
+```
+Les logs récupérés sont affichés dans le dashboard (onglet Triage) et inclus dans le rapport Coroner.
+
+---
+
+### 💳 StripeMock — Simulation webhooks Stripe (test uniquement)
+
+Le module StripeMock permet de simuler des événements Stripe webhook dans un environnement de test. Il génère des payloads signés HMAC-SHA256 authentiques et les envoie à ton endpoint webhook local pour tester ta gestion des événements sans toucher à l'API Stripe réelle.
+
+**8 types de carte simulés :**
+
+| Carte | Comportement |
+|---|---|
+| `visa_success` | Paiement réussi immédiatement |
+| `declined_generic` | Refus générique |
+| `auth_required` | Authentification requise avant capture |
+| `three_d_secure` | Flow 3D Secure complet |
+| `insufficient_funds` | Fonds insuffisants |
+| `expired_card` | Carte expirée |
+| `lost_card` | Carte signalée volée |
+| `network_error` | Erreur réseau simulée |
+
+**9 types d'événements simulés :**
+`payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.requires_action`, `charge.refunded`, `customer.subscription.created`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`, `checkout.session.completed`
+
+```bash
+# .env — secret webhook depuis le dashboard Stripe en mode TEST uniquement
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+> **Important :** Ce module est conçu pour l'environnement de test uniquement. Il ne fait jamais d'appels à l'API Stripe réelle. Le secret webhook doit être celui du mode test Stripe (préfixe `whsec_`).
 
 ---
 
@@ -572,6 +848,106 @@ Quand une page HTML doit quand même être envoyée à un modèle IA (par exempl
 3. **Sérialisation** — encode la structure restante sous forme compacte avec des clés hex à 4 caractères
 
 **Résultat mesuré :** 18 580 octets → 1 002 octets (réduction de 94,6%)
+
+---
+
+## 🔒 RGPD Guard — Protection automatique des données personnelles
+
+Toutes les données écrites sur disque par le plugin (logs, rapports de triage, rapports d'architecture, rapports Dependabot) passent d'abord par le RGPD Guard. Il sanitise automatiquement les catégories de données personnelles sensibles avant qu'elles ne soient écrites dans `.e2e-work/`.
+
+**Données détectées et masquées :**
+
+| Type de donnée | Pattern détecté | Remplacé par |
+|---|---|---|
+| JWT tokens | `eyJ...` (base64 header JWT) | `[JWT_REDACTED]` |
+| Clés API / Bearer tokens | `Bearer xxxxx`, `sk-xxx`, `ghp_xxx`… | `[API_KEY_REDACTED]` |
+| Numéros de carte bancaire | 13–19 chiffres avec séparateurs | `[CB_REDACTED]` |
+| IBAN | `FR76...`, `DE89...`, etc. | `[IBAN_REDACTED]` |
+| Adresses email | `x@x.x` | `[EMAIL_REDACTED]` |
+| Numéros de téléphone | formats FR, US, international | `[PHONE_REDACTED]` |
+| Adresses IP | IPv4 et IPv6 | `[IP_REDACTED]` |
+
+La sanitisation est appliquée **avant** chaque écriture sur disque. Les données en mémoire (utilisées par les agents pendant l'exécution) ne sont pas modifiées — seules les écritures persistantes sont filtrées.
+
+---
+
+## 📦 Dependabot — Audit et mise à jour des dépendances npm
+
+Le module Dependabot intégré analyse les vulnérabilités dans les dépendances npm de ton projet et tente de les corriger automatiquement, sans quitter le pipeline.
+
+**Comment ça fonctionne :**
+
+1. Lance `npm audit --json` sur le projet cible
+2. Filtre les vulnérabilités selon la sévérité minimale configurée (`DEPENDABOT_MIN_SEVERITY`, défaut : `high`)
+3. Pour chaque package vulnérable, tente un `npm install package@latest`
+4. Si la version latest est un **major bump** (ex : 2.x → 3.x), vérifie que `tsc --noEmit` passe toujours
+5. Si le type-check échoue, reverte automatiquement à la version précédente (`npm install package@ancienne-version`)
+6. Génère un rapport complet dans `.e2e-work/dependabot-report.json`
+
+```bash
+# .env — sévérité minimale pour déclencher une tentative de correctif
+DEPENDABOT_MIN_SEVERITY=high   # critical | high | moderate | low
+```
+
+**Résultat :** `.e2e-work/dependabot-report.json` avec pour chaque package : sévérité, version actuelle, version installée, statut (`patched` / `reverted` / `skipped`), et le message d'erreur si le type-check a échoué. Le rapport est accessible via `GET /api/dependabot` sur le dashboard.
+
+---
+
+## 🏛️ ArchPolice — Police de l'architecture
+
+ArchPolice analyse statiquement l'ensemble de ton codebase TypeScript et JavaScript pour détecter les dérives architecturales qui rendent le code difficile à maintenir.
+
+**4 métriques mesurées :**
+
+| Métrique | Seuil | Impact |
+|---|---|---|
+| Longueur de fonction | > 80 lignes | Difficile à tester et à comprendre |
+| Complexité cyclomatique | > 10 branches | Trop de chemins d'exécution possibles |
+| Taille de fichier | > 500 lignes | Responsabilité trop large, fort couplage probable |
+| Nombre d'imports | > 15 | Couplage excessif, dépendance difficile à tracer |
+
+**Score d'architecture :**
+```
+Score = 100 − (nombre_de_violations / nombre_de_fichiers_analysés × 10)
+→ borné entre 0 et 100
+```
+
+**Interprétation du score :**
+- **80–100** : Architecture saine. Peu ou pas de violations.
+- **60–79** : Quelques fichiers à refactorer en priorité.
+- **40–59** : Dette technique visible. Recommandé : découper les fichiers les plus longs.
+- **< 40** : Architecture dégradée. Le refactoring est urgent.
+
+**Ce que ArchPolice génère :**
+- `.e2e-work/arch-report.json` — données brutes par fichier (violations, score)
+- `.e2e-work/arch-report.md` — rapport Markdown lisible avec liste des violations triées par sévérité
+
+---
+
+## 💰 FinOps & Green-IT
+
+Le MetricsTracker enregistre automatiquement les statistiques de chaque run dans une base SQLite locale (`.e2e-work/storage.sqlite`, WAL mode).
+
+**FinOps — suivi des économies de tokens :**
+
+Chaque fichier analysé par le Zero-Token Bypass (SHA-256 cache) est compté. Les tokens évités sont convertis en économie financière estimée basée sur le tarif GPT-4o (`$0.000005 / token en entrée`).
+
+```
+Économie estimée = tokens_évités × $0.000005
+```
+
+**Green-IT — empreinte carbone :**
+
+Les tokens évités sont également convertis en CO₂ économisé, en utilisant une estimation issue des données de consommation des datacenters IA :
+
+```
+CO₂ économisé = tokens_évités × 0,00198 g
+```
+
+**Accessible via :**
+- Dashboard → onglet Métriques (score IC, tokens économisés, CO₂, coût évité)
+- `GET /api/metrics` → données JSON brutes (stats cumulées + dernier run)
+- `GET /api/runs` → historique des 10 derniers audits (date, durée, score IC)
 
 ---
 
@@ -634,6 +1010,11 @@ open http://127.0.0.1:4321
 | `GET /` | Page principale du dashboard |
 | `GET /api/status` | État de l'orchestrateur + capacité Ollama en JSON |
 | `GET /api/report` | Rapport complet au format JSON |
+| `GET /api/metrics` | Métriques FinOps + Green-IT (tokens économisés, CO₂, coût) |
+| `GET /api/runs` | Historique des derniers audits (date, durée, score IC) |
+| `GET /api/triages` | Résultats des derniers triages Coroner |
+| `GET /api/arch` | Rapport ArchPolice (violations par fichier, score architecture) |
+| `GET /api/dependabot` | Rapport Dependabot (vulnérabilités npm, patches tentés) |
 | `POST /api/repair` | Déclenche une réparation pour un `traceId` donné |
 | `WS /ws` | Connexion WebSocket pour le flux d'événements temps réel |
 
@@ -830,20 +1211,32 @@ Si un agent du plugin plante de manière répétée (par exemple, le Scout ne re
 test-end-to-end/
 │
 ├── src/                          Moteur TypeScript (V-Infinite)
-│   ├── index.ts                  Point d'entrée CLI + serveur MCP stdio
-│   ├── orchestrator.ts           Machine d'état · bypass Ollama · dispatch
+│   ├── index.ts                  Point d'entrée CLI (11 commandes) + serveur MCP stdio (11 outils)
+│   ├── orchestrator.ts           Machine d'état · bypass Ollama · dispatch · métriques SQLite
 │   ├── agents/
 │   │   ├── scout.ts              Lecture AST · alignement doc · Git forensique
 │   │   ├── artisan.ts            Génération POM · Shadow Personas · Chaos
 │   │   ├── coroner.ts            Triage crashes · Vision QA · SHIELD
 │   │   ├── ghostwriter.ts        Patch bug · branche e2e-patch/* · PR
-│   │   └── evolver.ts            Auto-amélioration · evolution-log.jsonl
+│   │   ├── evolver.ts            Auto-amélioration · evolution-log.jsonl
+│   │   ├── sentinel.ts           OWASP PR audit · Ollama diff analysis · 9 patterns
+│   │   ├── chaosMonkey.ts        6 scénarios Playwright · page.route() interception
+│   │   ├── archPolice.ts         Complexité cyclomatique · longueur · couplage · score 0-100
+│   │   └── dependabot.ts         npm audit · auto-upgrade · type-check · revert
+│   ├── integrations/
+│   │   ├── atlassian.ts          Jira Bug + Xray execution · Basic Auth Atlassian
+│   │   ├── trello.ts             Carte crash/patch · API Trello
+│   │   └── cloudDeployer.ts      OVH HMAC-SHA1 · IONOS workflow_dispatch · Hostinger · SSH logs
 │   ├── utils/
 │   │   ├── cache.ts              Empreintes SHA-256 — écriture atomique
 │   │   ├── compressor.ts         Compresseur DOM Byte-State (95% réduction)
-│   │   └── logDigest.ts          Crash → triptyque (assertion + DOM + console)
+│   │   ├── logDigest.ts          Crash → triptyque (assertion + DOM + console)
+│   │   ├── notifier.ts           Slack Block Kit · Discord embed · Teams Adaptive Card
+│   │   ├── metricsTracker.ts     SQLite WAL · FinOps ($) · Green-IT (CO₂)
+│   │   ├── rgpdGuard.ts          Sanitisation PII avant disk (JWT · CB · IBAN · email · IP)
+│   │   └── stripeMock.ts         Simulation webhooks Stripe · HMAC-SHA256 · 9 event types
 │   └── server/
-│       └── app.ts                Express + WebSocket + rapport HTML CI/CD
+│       └── app.ts                Express + WebSocket + 10 routes API REST
 │
 ├── commands/                     Commandes slash Claude Code
 │   ├── e2e-audit.md
@@ -857,10 +1250,60 @@ test-end-to-end/
 │   └── cypress/                  Blueprint cypress.config.ts
 │
 ├── docs/assets/                  Captures d'écran + logo
+├── .env.example                  Template de configuration (toutes les intégrations documentées)
 ├── .e2e-cache.json               Cache empreintes SHA-256 (git-ignoré)
 ├── package.json                  v2.0.0
 └── tsconfig.json                 ES2022 strict
+
+Généré par le moteur (dans ton projet) :
+├── tests/                        Tests Playwright générés (jamais écrasés si manuels)
+│   ├── <route>/base.spec.ts
+│   ├── <route>/persona_*.spec.ts
+│   └── <route>/chaos_*.spec.ts
+└── .e2e-work/                    Données internes (ne pas modifier manuellement)
+    ├── storage.sqlite            Métriques FinOps + Green-IT (WAL mode)
+    ├── *.triage.json             Résultats de triage Coroner
+    ├── arch-report.json/.md      Rapport ArchPolice
+    ├── dependabot-report.json    Rapport Dependabot
+    ├── coverage.html/json        Carte de couverture
+    ├── last-routes.json          Snapshot routes (mode update)
+    ├── evolution-log.jsonl       Journal auto-évolution Evolver
+    └── latest.log                Log complet du dernier audit
 ```
+
+---
+
+## ⚙️ Configuration `.env`
+
+Crée un fichier `.env` à la racine du plugin (copie de `.env.example`) avec les variables des intégrations que tu veux activer. Toutes sont optionnelles.
+
+```bash
+# Copier le template
+cp .env.example .env
+
+# Ouvrir et remplir les variables souhaitées
+```
+
+**Résumé des variables par module :**
+
+| Module | Variables requises | Obligatoire ? |
+|---|---|---|
+| Ollama (Zero-Token Bypass) | `OLLAMA_HOST` | Non (défaut : `http://127.0.0.1:11434`) |
+| Dashboard | `E2E_PORT` | Non (défaut : `4321`) |
+| Ghostwriter / Sentinel | `GITHUB_TOKEN` | Pour les PRs auto et l'audit PR |
+| Notifier Slack | `SLACK_WEBHOOK_URL` | Non |
+| Notifier Discord | `DISCORD_WEBHOOK_URL` | Non |
+| Notifier Teams | `TEAMS_WEBHOOK_URL` | Non |
+| Atlassian (Jira + Xray) | `JIRA_URL`, `JIRA_TOKEN`, `JIRA_USER_EMAIL`, `JIRA_PROJECT_KEY` | Non |
+| Trello | `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_TODO_LIST_ID`, `TRELLO_DONE_LIST_ID` | Non |
+| StripeMock | `STRIPE_WEBHOOK_SECRET` | Non (test uniquement) |
+| CloudDeployer OVH | `OVH_APP_KEY`, `OVH_APP_SECRET`, `OVH_CONSUMER_KEY`, `OVH_PROJECT_ID`, `OVH_SERVICE_NAME` | Non |
+| CloudDeployer IONOS | `IONOS_GITHUB_REPO`, `IONOS_GITHUB_TOKEN`, `IONOS_WORKFLOW_FILE`, `IONOS_DEPLOY_BRANCH` | Non |
+| CloudDeployer Hostinger | `HOSTINGER_DEPLOY_WEBHOOK_URL` | Non |
+| Logs SSH post-crash | `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY` | Non |
+| Dependabot | `DEPENDABOT_MIN_SEVERITY` | Non (défaut : `high`) |
+
+> **Sécurité :** `.env` et `storage.sqlite` sont dans `.gitignore`. Ne commite jamais ces fichiers.
 
 ---
 
@@ -879,5 +1322,6 @@ test-end-to-end/
 
 <p align="center">
   Construit avec Claude Sonnet · Ollama Zero-Token Bypass · MCP Protocol · TypeScript 5.4<br>
+  13 agents : Scout · Artisan · Coroner · Ghostwriter · Evolver · Sentinel · ChaosMonkey · ArchPolice · Dependabot · Atlassian · Trello · CloudDeployer · Notifier<br>
   <b>Auteur :</b> <a href="https://github.com/Aronbfrt">Aron Beaufort</a> · Licence MIT
 </p>
