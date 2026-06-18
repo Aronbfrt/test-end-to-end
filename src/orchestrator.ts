@@ -12,7 +12,7 @@
  */
 
 import { execSync, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { writeCliReport } from './utils/report.js';
 import {
@@ -239,6 +239,24 @@ export function getLastHotspots(): typeof _lastHotspots {
 export async function run(config: RunConfig): Promise<void> {
   _config = config;
 
+  // ── CLI log file (active even without the dashboard server) ────────────────
+  const _workDir  = join(config.targetPath, '.e2e-work');
+  const _logPath  = join(_workDir, 'latest.log');
+  try {
+    mkdirSync(_workDir, { recursive: true });
+    appendFileSync(_logPath,
+      `\n${'═'.repeat(60)}\nRun: ${new Date().toISOString()}\n${'═'.repeat(60)}\n`,
+      'utf-8',
+    );
+    // Persist console.log to file (broadcast to WS is handled by app.ts when dashboard runs)
+    const _origLog = console.log.bind(console);
+    console.log = (...args: unknown[]) => {
+      const msg = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+      try { appendFileSync(_logPath, `${new Date().toISOString()} ${msg}\n`, 'utf-8'); } catch { /* non-fatal */ }
+      _origLog(...args);
+    };
+  } catch { /* non-fatal — cannot write to workDir */ }
+
   try {
     // ── Phase 0: bootstrap ──────────────────────────────────────────────────
     setState('SCANNING');
@@ -325,8 +343,10 @@ export async function run(config: RunConfig): Promise<void> {
     let triageResult: import('./agents/coroner.js').TriageResult | null = null;
     if (config.level >= 2 && ['audit', 'diff', 'shadow'].includes(config.command)) {
       setState('TRIAGING');
-      const traceId = `run-${Date.now()}`;
-      const workDir = join(config.targetPath, '.e2e-work');
+      // Use the traceId of the first real failure written by runner, so coroner finds the crash file.
+      const firstFail = testSummary.runs.find((r) => r.verdict === 'FAIL' && r.traceId);
+      const traceId   = firstFail?.traceId ?? `run-${Date.now()}`;
+      const workDir   = join(config.targetPath, '.e2e-work');
       if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
       triageResult = await dispatch<import('./agents/coroner.js').TriageResult>({
         type: 'TRIAGE_CRASH',
