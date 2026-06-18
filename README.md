@@ -307,7 +307,7 @@ Le plugin offre deux types d'interface : les **commandes slash** (pour une utili
 
 ### `/e2e-init` — Initialisation guidée du projet
 
-**Ce que ça fait :** C'est la première commande à lancer sur un nouveau projet. Elle analyse ton code source pour détecter automatiquement ta stack technique (Next.js, Express, Nuxt, Laravel, Django, Rails…), puis génère tous les fichiers de configuration nécessaires pour les tests E2E. Elle installe aussi les dépendances manquantes et crée des exemples de tests pour chaque route détectée.
+**Ce que ça fait :** C'est la première commande à lancer sur un nouveau projet. Elle analyse ton code source pour détecter automatiquement ta stack technique (Next.js, Express, Nuxt, Laravel, Django, Rails…), puis génère tous les fichiers de configuration nécessaires pour les tests E2E et crée des exemples de tests pour chaque route détectée.
 
 **Quand l'utiliser :** Une seule fois, au début, quand tu mets en place les tests sur un projet qui n'en a pas encore.
 
@@ -322,7 +322,7 @@ node dist/index.js init
 node dist/index.js init /chemin/vers/ton/projet
 ```
 
-**Résultat :** Un dossier `tests/` est créé avec une structure Page Object Model (POM), un fichier de configuration Playwright ou Cypress adapté à ton projet, et des tests de base prêts à être exécutés.
+**Résultat :** Un dossier `tests/` est créé avec une structure Page Object Model (POM), un fichier de configuration Playwright adapté à ton projet, et des tests de base prêts à être exécutés.
 
 ---
 
@@ -359,7 +359,7 @@ node dist/index.js audit --level=3 --chaos --predictive
 
 | Niveau | Ce qui est activé | Coût IA | Temps estimé |
 |---|---|---|---|
-| `--level=1` | Analyse AST locale + génération de tests. Aucun appel IA. | 0 token | < 30 sec |
+| `--level=1` | Analyse AST locale + génération de tests + exécution Playwright. Aucun appel IA. | 0 token | 1–3 min |
 | `--level=2` *(défaut)* | Tout le niveau 1 + Vision IA pour diagnostiquer les sélecteurs cassés et suggérer un remplacement + triage intelligent des crashes | Quelques appels | 1–3 min |
 | `--level=3` | Tout le niveau 2 + les 3 Shadow Personas (frustrated_user, impulsive_buyer, malicious_attacker) + création automatique de PR de correction + auto-évolution du plugin sur erreur fatale | Plus d'appels | 3–10 min |
 
@@ -367,7 +367,7 @@ node dist/index.js audit --level=3 --chaos --predictive
 
 ### `/e2e-coverage` — Carte de couverture des tests
 
-**Ce que ça fait :** Analyse ton codebase et compare les routes/endpoints existants dans ton code aux tests E2E actuellement en place. Te donne une carte visuelle précise : "tu as 47 routes, 31 sont couvertes (66%), il manque ces 16-là". Identifie aussi les formulaires non testés et les endpoints API sans couverture.
+**Ce que ça fait :** Analyse ton codebase et compare les routes et formulaires existants dans ton code aux tests E2E actuellement en place. Te donne une carte visuelle précise : "tu as 47 routes, 31 sont couvertes (66%), il manque ces 16-là". Identifie aussi les formulaires non testés.
 
 **Quand l'utiliser :** Quand tu veux savoir où sont tes angles morts en matière de tests, ou pour justifier auprès d'une équipe le niveau de couverture actuel.
 
@@ -517,7 +517,7 @@ flowchart TD
     SCOUT -->|RouteMap JSON| ARTISAN
     ARTISAN -->|tests/ générés| CORONER
     CORONER -->|BACKEND_BUG| GHOST
-    CORONER -->|SELECTOR_DRIFT| EVOLVER
+    CORONER -->|SELECTOR_DRIFT| REPORT
     GHOST --> PR
     CORONER --> REPORT
     GHOST --> REPORT
@@ -526,7 +526,7 @@ flowchart TD
 **Le flux en langage simple :**
 
 1. **Scout** — lit ton projet, identifie toutes les pages, routes et formulaires. C'est la phase de "cartographie".
-2. **Artisan** — prend cette carte et génère les fichiers de tests correspondants. C'est lui qui écrit les scripts Playwright ou Cypress.
+2. **Artisan** — prend cette carte et génère les fichiers de tests correspondants. C'est lui qui écrit les scripts Playwright.
 3. **Coroner** — après exécution des tests, analyse les échecs. Distingue un crash serveur (500) d'un sélecteur HTML qui a changé.
 4. **Ghostwriter** — quand un bug serveur est confirmé, il trouve le code responsable, génère un correctif, et ouvre une PR.
 5. **Evolver** — si un agent échoue de manière répétée, il lit son propre code source et se corrige lui-même (guaranti max 3 tentatives/24h).
