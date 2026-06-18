@@ -265,6 +265,7 @@ Après la première exécution, deux dossiers apparaissent à la racine de ton p
 - `tests/report.html` — rapport de confiance (score IC, verdicts, hotspots)
 
 **`.e2e-work/`** — données internes du moteur (ne pas modifier manuellement)
+- `latest.log` — log complet de ce que l'IA a découvert (visible dans le dashboard → onglet Logs, téléchargeable via le bouton ⬇)
 - `*.triage.json` — résultats de triage Coroner (utilisés par `repair`)
 - `coverage.html` / `coverage.json` — carte de couverture (générée par `coverage`)
 - `last-routes.json` — snapshot routes pour le mode `update`

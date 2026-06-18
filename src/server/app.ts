@@ -18,7 +18,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'node:http';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { diagnostics } from '../orchestrator.js';
 
@@ -61,6 +61,14 @@ export interface RunSummary {
 // ── WebSocket broadcast ────────────────────────────────────────────────────────
 
 let _wss: WebSocketServer | null = null;
+let _logPath: string | null = null;
+
+function persistLine(msg: string): void {
+  if (!_logPath) return;
+  try {
+    appendFileSync(_logPath, `${new Date().toISOString()} ${msg}\n`, 'utf-8');
+  } catch { /* non-fatal */ }
+}
 
 export function broadcast(event: WsEvent): void {
   if (!_wss) return;
@@ -75,8 +83,9 @@ export function broadcast(event: WsEvent): void {
 /** Convenience wrapper — agents call this to stream log lines live. */
 export function streamLog(message: string): void {
   broadcast({ type: 'LOG', payload: message, ts: Date.now() });
+  persistLine(message);
   // Also write to stdout so CI sees it
-  console.log(message);
+  process.stdout.write(message + '\n');
 }
 
 export function streamState(state: string): void {
@@ -648,6 +657,8 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
       <span style="font-size:10px;font-weight:600;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px">Log en direct</span>
       <div style="display:flex;gap:8px;align-items:center">
         <div class="ws-ind"><div class="ws-dot" id="ws-dot2"></div><span id="ws-status2">—</span></div>
+        <a href="/api/log" target="_blank" download="latest.log"
+          style="font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;cursor:pointer;text-decoration:none">⬇ Télécharger</a>
         <button onclick="document.getElementById('log-area').innerHTML='<div class=log-empty>Log vidé.</div>';logCount=0;document.getElementById(\'log-count\').textContent=\'0\'"
           style="font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;cursor:pointer">Vider</button>
       </div>
@@ -849,6 +860,23 @@ export function buildPrComment(summary: RunSummary, reportUrl?: string): string 
 // ── Express + WebSocket server ─────────────────────────────────────────────────
 
 export function createApp(targetPath: string) {
+  // Init log file for this run
+  const workDir = join(targetPath, '.e2e-work');
+  try {
+    mkdirSync(workDir, { recursive: true });
+    _logPath = join(workDir, 'latest.log');
+    appendFileSync(_logPath, `\n${'═'.repeat(60)}\nRun: ${new Date().toISOString()}\n${'═'.repeat(60)}\n`, 'utf-8');
+  } catch { /* non-fatal */ }
+
+  // Intercept console.log so ALL agent + orchestrator output goes to WS + log file
+  const _origLog = console.log.bind(console);
+  console.log = (...args: unknown[]) => {
+    const msg = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+    broadcast({ type: 'LOG', payload: msg, ts: Date.now() });
+    persistLine(msg);
+    _origLog(...args);
+  };
+
   const app    = express();
   const server = createServer(app);
   _wss = new WebSocketServer({ server, path: '/ws' });
@@ -961,6 +989,16 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
       return;
     }
     res.json({ html: readFileSync(reportPath, 'utf-8') });
+  });
+
+  app.get('/api/log', (_req: Request, res: Response) => {
+    const logPath = join(targetPath, '.e2e-work', 'latest.log');
+    if (!existsSync(logPath)) {
+      res.status(404).json({ error: 'No log yet — launch an audit first.' });
+      return;
+    }
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(readFileSync(logPath, 'utf-8'));
   });
 
   app.post('/api/repair', async (req: Request, res: Response) => {
