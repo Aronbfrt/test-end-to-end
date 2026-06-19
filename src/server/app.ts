@@ -1252,6 +1252,8 @@ try {
     'HOSTINGER_DEPLOY_WEBHOOK_URL',
     'SSH_HOST','SSH_PORT','SSH_USER','SSH_PRIVATE_KEY','DEPENDABOT_MIN_SEVERITY',
     'XRAY_CLIENT_ID','XRAY_CLIENT_SECRET',
+    'DISCORD_WEBHOOK_URL_ACTIVE','SLACK_WEBHOOK_URL_ACTIVE','TEAMS_WEBHOOK_URL_ACTIVE',
+    'TRELLO_BOARD_NAME_ACTIVE','TRELLO_TODO_LIST_ID_ACTIVE','TRELLO_DONE_LIST_ID_ACTIVE',
   ];
   // Allow BASE_KEY or BASE_KEY_2, BASE_KEY_3 … BASE_KEY_20
   function isAllowedKey(key: string): boolean {
@@ -1329,8 +1331,17 @@ try {
     const { id, values } = req.body as { id: string; values?: Record<string, string> };
     const env = { ...process.env, ...(values ?? {}) };
 
-    // Collect all URLs for a multi-webhook base key
+    // Collect URLs respecting the ACTIVE selection (checkbox "notif" in dashboard)
     function collectUrls(baseKey: string): string[] {
+      const activeRaw = env[`${baseKey}_ACTIVE`];
+      if (activeRaw) {
+        // Return only the selected URLs in the order they were selected
+        return activeRaw.split(',')
+          .map((k) => k.trim())
+          .filter((k) => !!env[k])
+          .map((k) => env[k]!);
+      }
+      // No selection saved: return all configured URLs
       const urls: string[] = [];
       if (env[baseKey]) urls.push(env[baseKey]!);
       for (let i = 2; i <= 20; i++) {

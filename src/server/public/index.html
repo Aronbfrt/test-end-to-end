@@ -920,8 +920,9 @@ var INTEGRATIONS = [
 var _intEnv = {};
 var _currentIntId = null;
 
+function _activeKey(baseKey) { return baseKey + '_ACTIVE'; }
+
 function renderMultiField(f) {
-  // Collect all existing values: primary key + _2, _3 ...
   var entries = [];
   if (_intEnv[f.key]) entries.push({key: f.key, val: _intEnv[f.key]});
   for (var i = 2; i <= 20; i++) {
@@ -930,29 +931,48 @@ function renderMultiField(f) {
   }
   if (entries.length === 0) entries.push({key: f.key, val: ''});
 
+  // Which keys are marked active for notifications
+  var activeRaw = _intEnv[_activeKey(f.key)] || '';
+  var activeKeys = activeRaw ? activeRaw.split(',').map(function(s){return s.trim();}) : entries.map(function(e){return e.key;});
+
+  var isNotifyField = f.type === 'text' && (f.key.indexOf('WEBHOOK') !== -1 || f.key.indexOf('LIST_ID') !== -1);
+
   var rows = entries.map(function(e, idx) {
     var label = idx === 0 ? esc(f.label) : esc(f.label)+' '+(idx+1);
+    var isActive = activeKeys.indexOf(e.key) !== -1;
+    var notifyToggle = isNotifyField
+      ? '<label title="Activer les notifications pour cette entrée" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-bottom:1px">'
+        +'<input type="checkbox" name="__notify_'+esc(e.key)+'" data-notify-for="'+esc(e.key)+'" data-notify-base="'+esc(f.key)+'"'+(isActive?' checked':'')+' style="width:15px;height:15px;cursor:pointer">'
+        +'<span style="font-size:9px;color:var(--subtle)">notif</span></label>'
+      : '';
     return '<div class="int-form-group" style="display:flex;gap:6px;align-items:flex-end">'
+      +notifyToggle
       +'<div style="flex:1"><label class="int-form-label">'+label+'</label>'
       +'<input class="int-form-input" type="'+f.type+'" name="'+esc(e.key)+'" data-multi-base="'+esc(f.key)+'" placeholder="'+esc(f.placeholder)+'" value="'+esc(e.val)+'" autocomplete="off"></div>'
       +(entries.length > 1 ? '<button type="button" onclick="removeMultiRow(this)" style="margin-bottom:1px;padding:6px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:5px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>' : '')
       +'</div>';
   }).join('');
   return rows
-    +'<button type="button" onclick="addMultiRow(\''+esc(f.key)+'\',\''+esc(f.type)+'\',\''+esc(f.placeholder)+'\')" style="font-size:11px;color:var(--accent2);background:none;border:1px dashed var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;width:100%;margin-bottom:8px">+ Ajouter un autre '+esc(f.label.toLowerCase())+'</button>'
+    +'<button type="button" onclick="addMultiRow(\''+esc(f.key)+'\',\''+esc(f.type)+'\',\''+esc(f.placeholder)+'\','+isNotifyField+')" style="font-size:11px;color:var(--accent2);background:none;border:1px dashed var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;width:100%;margin-bottom:8px">+ Ajouter un autre '+esc(f.label.toLowerCase())+'</button>'
     +(f.hint ? '<div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.4">'+esc(f.hint)+'</div>' : '');
 }
 
-window.addMultiRow = function(baseKey, type, placeholder) {
+window.addMultiRow = function(baseKey, type, placeholder, isNotifyField) {
   var form = document.getElementById('int-form');
   var existing = form.querySelectorAll('[data-multi-base="'+baseKey+'"]');
   var nextIdx = existing.length + 1;
   var newKey = nextIdx === 1 ? baseKey : baseKey+'_'+nextIdx;
-  var addBtn = form.querySelector('[onclick*="addMultiRow(\''+baseKey+'\'"]');
+  var addBtn = form.querySelector('button[onclick*="addMultiRow(\''+baseKey+'\'"]');
   var wrapper = document.createElement('div');
   wrapper.className = 'int-form-group';
   wrapper.style.cssText = 'display:flex;gap:6px;align-items:flex-end';
-  wrapper.innerHTML = '<div style="flex:1"><label class="int-form-label">'+esc(baseKey.split('_').slice(-2).join(' '))+' '+nextIdx+'</label>'
+  var notifyToggle = isNotifyField
+    ? '<label style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-bottom:1px">'
+      +'<input type="checkbox" name="__notify_'+newKey+'" data-notify-for="'+newKey+'" data-notify-base="'+baseKey+'" checked style="width:15px;height:15px;cursor:pointer">'
+      +'<span style="font-size:9px;color:var(--subtle)">notif</span></label>'
+    : '';
+  wrapper.innerHTML = notifyToggle
+    +'<div style="flex:1"><label class="int-form-label">'+baseKey.replace(/_/g,' ').toLowerCase()+' '+nextIdx+'</label>'
     +'<input class="int-form-input" type="'+type+'" name="'+newKey+'" data-multi-base="'+baseKey+'" placeholder="'+placeholder+'" autocomplete="off"></div>'
     +'<button type="button" onclick="removeMultiRow(this)" style="margin-bottom:1px;padding:6px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:5px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>';
   if (addBtn) addBtn.parentNode.insertBefore(wrapper, addBtn);
@@ -1068,17 +1088,31 @@ function _getFormValues(intg) {
         var k = inp.name;
         if (inp.value.trim()) vals[k] = inp.value.trim();
       });
-      // Delete orphaned multi-entries (_2, _3 …) not in current form
+      // Collect notify selection
+      var checkboxes = form.querySelectorAll('[data-notify-base="'+f.key+'"]');
+      if (checkboxes.length) {
+        var activeKeys = [];
+        checkboxes.forEach(function(cb) {
+          if (cb.checked) activeKeys.push(cb.getAttribute('data-notify-for'));
+        });
+        var aKey = _activeKey(f.key);
+        if (activeKeys.length) vals[aKey] = activeKeys.join(',');
+        else toDelete.push(aKey);
+      }
+      // Delete orphaned entries
       for (var i = 2; i <= 20; i++) {
         var orphanKey = f.key+'_'+i;
-        if (_intEnv[orphanKey] && !vals[orphanKey]) toDelete.push(orphanKey);
+        if (_intEnv[orphanKey] && !vals[orphanKey]) {
+          toDelete.push(orphanKey);
+          toDelete.push(_activeKey(f.key)); // will be rebuilt anyway
+        }
       }
     } else {
       var input = form.querySelector('[name="'+f.key+'"]');
       if (input && input.value.trim()) vals[f.key] = input.value.trim();
     }
   });
-  vals.__delete = toDelete;
+  vals.__delete = [...new Set(toDelete)];
   return vals;
 }
 
