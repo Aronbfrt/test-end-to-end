@@ -1475,6 +1475,22 @@ try {
     res.json({ valid: exists, name: basename(sanitized) });
   });
 
+  // ── File browser ────────────────────────────────────────────────────────────
+  app.get('/api/browse', (req: Request, res: Response) => {
+    const raw = (req.query.path as string) || process.env.HOME || '/';
+    let safePath: string;
+    try { safePath = sanitizePath(raw); } catch { res.status(400).json({ error: 'Chemin invalide' }); return; }
+    if (!existsSync(safePath)) { res.status(404).json({ error: 'Introuvable' }); return; }
+    try {
+      const entries = readdirSync(safePath, { withFileTypes: true })
+        .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(e => ({ name: e.name, path: join(safePath, e.name) }));
+      const parent = safePath !== '/' ? dirname(safePath) : null;
+      res.json({ current: safePath, parent, entries });
+    } catch { res.status(403).json({ error: 'Accès refusé' }); }
+  });
+
   // ── Command runner ───────────────────────────────────────────────────────────
   const _activeChilds: Map<string, ReturnType<typeof spawn>> = new Map();
 

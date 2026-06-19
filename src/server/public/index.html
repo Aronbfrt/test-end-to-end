@@ -313,6 +313,19 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 .proj-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
   padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:'SF Mono','Fira Code',monospace}
 .proj-input:focus{border-color:var(--accent)}
+.proj-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg)}
+.proj-tab{flex:1;padding:6px 0;font-size:10px;font-weight:600;text-align:center;cursor:pointer;
+  color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;transition:all .15s}
+.proj-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.browser-path{font-size:9px;color:var(--muted);font-family:'SF Mono','Fira Code',monospace;
+  padding:6px 12px;word-break:break-all;background:var(--surface);border-bottom:1px solid var(--border)}
+.browser-list{max-height:170px;overflow-y:auto}
+.browser-entry{display:flex;align-items:center;gap:6px;padding:5px 12px;cursor:pointer;
+  font-size:11px;color:var(--text);transition:background .12s}
+.browser-entry:hover{background:var(--surface)}
+.browser-entry-icon{font-size:12px;flex-shrink:0;opacity:.7}
+.browser-entry-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.browser-actions{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border);background:var(--bg)}
 /* ── Running counter badge ── */
 .runs-counter{padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;
   background:#fef3c7;color:#b45309;border:1px solid #fcd34d;display:none;
@@ -428,13 +441,30 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--muted);flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="proj-dropdown" id="proj-dropdown">
-      <div style="padding:10px 12px 6px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Projets récents</div>
-      <div id="proj-list"></div>
-      <div class="proj-input-row">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:5px">Ouvrir un chemin absolu</div>
-        <input class="proj-input" id="proj-input" placeholder="/chemin/vers/mon/projet" type="text"
-          onkeydown="if(event.key==='Enter')validateAndSetProject(this.value)">
-        <button class="btn btn-primary" style="width:100%;margin-top:6px;font-size:11px;justify-content:center" onclick="validateAndSetProject(document.getElementById('proj-input').value)">Ouvrir →</button>
+      <div class="proj-tabs">
+        <button class="proj-tab active" id="tab-recent" onclick="switchProjTab('recent')">📋 Récents</button>
+        <button class="proj-tab" id="tab-browse" onclick="switchProjTab('browse')">📁 Parcourir</button>
+        <button class="proj-tab" id="tab-manual" onclick="switchProjTab('manual')">⌨ Saisir</button>
+      </div>
+      <div id="proj-panel-recent">
+        <div style="padding:8px 12px 4px;font-size:10px;color:var(--muted)">Projets ouverts récemment</div>
+        <div id="proj-list"></div>
+      </div>
+      <div id="proj-panel-browse" style="display:none">
+        <div class="browser-path" id="browser-path">/home</div>
+        <div class="browser-list" id="browser-list"><div style="padding:12px;font-size:11px;color:var(--muted)">Chargement…</div></div>
+        <div class="browser-actions">
+          <button class="btn btn-ghost" id="browser-up" style="font-size:10px;flex:0 0 auto" onclick="browserUp()">↑ Parent</button>
+          <button class="btn btn-primary" style="font-size:10px;flex:1;justify-content:center" onclick="browserSelect()">✓ Sélectionner ce dossier</button>
+        </div>
+      </div>
+      <div id="proj-panel-manual" style="display:none">
+        <div class="proj-input-row">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">Chemin absolu vers le projet</div>
+          <input class="proj-input" id="proj-input" placeholder="/chemin/vers/mon/projet" type="text"
+            onkeydown="if(event.key==='Enter')validateAndSetProject(this.value)">
+          <button class="btn btn-primary" style="width:100%;margin-top:6px;font-size:11px;justify-content:center" onclick="validateAndSetProject(document.getElementById('proj-input').value)">Ouvrir →</button>
+        </div>
       </div>
     </div>
   </div>
@@ -891,6 +921,10 @@ window.showTab = showTab;
 window.loadTab = loadTab;
 window.selectProject = selectProject;
 window.toggleFeed = toggleFeed;
+window.switchProjTab = switchProjTab;
+window.browsePath = browsePath;
+window.browserUp = browserUp;
+window.browserSelect = browserSelect;
 
 // ── Global state ────────────────────────────────────────────────────────────
 window.currentProject = null;
@@ -1103,6 +1137,63 @@ async function initProjectSelector() {
   } catch(e) {}
 }
 
+var _browserPath = '';
+
+function switchProjTab(tab) {
+  ['recent','browse','manual'].forEach(function(t) {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('proj-panel-'+t).style.display = t===tab?'block':'none';
+  });
+  if (tab === 'browse' && !_browserPath) browsePath('/home');
+}
+
+function browsePath(path) {
+  _browserPath = path;
+  var pathEl = document.getElementById('browser-path');
+  var listEl = document.getElementById('browser-list');
+  if (pathEl) pathEl.textContent = path;
+  if (listEl) listEl.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--muted)">Chargement…</div>';
+  fetch('/api/browse?path='+encodeURIComponent(path))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _browserPath = d.current;
+      if (pathEl) pathEl.textContent = d.current;
+      document.getElementById('browser-up').disabled = !d.parent;
+      renderBrowserList(d);
+    })
+    .catch(function(){
+      if (listEl) listEl.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--muted)">Accès refusé</div>';
+    });
+}
+
+function renderBrowserList(d) {
+  var listEl = document.getElementById('browser-list');
+  if (!listEl) return;
+  if (!d.entries || !d.entries.length) {
+    listEl.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--muted)">Dossier vide</div>';
+    return;
+  }
+  listEl.innerHTML = d.entries.map(function(e) {
+    return '<div class="browser-entry" onclick="browsePath(\''+esc(e.path)+'\')">'
+      +'<span class="browser-entry-icon">📁</span>'
+      +'<span class="browser-entry-name">'+esc(e.name)+'</span>'
+      +'<span style="font-size:9px;color:var(--subtle)">›</span>'
+      +'</div>';
+  }).join('');
+}
+
+function browserUp() {
+  if (!_browserPath || _browserPath === '/') return;
+  var parts = _browserPath.split('/');
+  parts.pop();
+  browsePath(parts.join('/') || '/');
+}
+
+function browserSelect() {
+  if (!_browserPath) return;
+  validateAndSetProject(_browserPath);
+}
+
 function renderProjectList(projects) {
   var list = document.getElementById('proj-list');
   if (!list) return;
@@ -1170,7 +1261,7 @@ async function validateAndSetProject(inputPath) {
 
 document.addEventListener('click', function(e) {
   var sel = document.getElementById('proj-selector');
-  if (sel && !sel.contains(e.target)) closeProjDropdown();
+  if (sel && !sel.contains(e.target) && document.body.contains(e.target)) closeProjDropdown();
 });
 
 // ── Live feed panel ──────────────────────────────────────────────────────────
