@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * index.ts — Universal CLI + MCP server entry point.
  *
@@ -509,6 +510,18 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
   // Special command: e2e-evolve-apply <file>
   if (parsed.evolveFile !== undefined) {
     await applyEvolution(parsed.evolveFile);
+    return;
+  }
+
+  // Special command: dashboard (shortcut for `node dist/server/start.js`)
+  if (process.argv[2] === 'dashboard') {
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const { spawn } = await import('node:child_process');
+    const __dir = dirname(fileURLToPath(import.meta.url));
+    const startPath = join(__dir, 'server', 'start.js');
+    const child = spawn(process.execPath, [startPath], { stdio: 'inherit' });
+    child.on('exit', (code) => process.exit(code ?? 0));
     return;
   }
 

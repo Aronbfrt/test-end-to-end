@@ -133,6 +133,11 @@ else
   fail "dist/index.js introuvable après build."
 fi
 
+# Rendre la commande `e2e` disponible globalement
+chmod +x dist/index.js
+npm link --silent 2>/dev/null && ok "Commande globale 'e2e' installée — ex: e2e audit /votre/projet" \
+  || warn "npm link échoué — utilise : node dist/index.js <commande> (droits admin requis pour npm link)"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ÉTAPE 4 — Playwright
 # ─────────────────────────────────────────────────────────────────────────────

@@ -4,6 +4,9 @@
   "description": "Autonomous E2E QA engine for Claude Code — 13 specialized agents, MCP server, Zero-Token Bypass",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "e2e": "./dist/index.js"
+  },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"

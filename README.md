@@ -114,17 +114,16 @@ Ajouter dans `.claude/settings.json` :
 
 ```bash
 # 1. Analyser le projet et générer les tests
-node dist/index.js init /votre/projet
-# → Détecte le stack, extrait routes + forms, écrit tests/*.spec.ts
+e2e init /votre/projet
 
 # 2. Lancer l'audit complet
-node dist/index.js audit /votre/projet
-# → Joue Playwright, triage les crashs, ouvre une PR de patch si bug confirmé
+e2e audit /votre/projet
 
 # 3. Ouvrir le dashboard live
-npm run dashboard
-# → http://localhost:4242  (configurable via E2E_PORT dans .env)
+e2e dashboard
 ```
+
+> `bash scripts/setup.sh` installe la commande `e2e` globalement via `npm link`. Disponible depuis n'importe où dans le terminal.
 
 ---
 
@@ -176,7 +175,7 @@ npm run security-fix /votre/projet
 Quand l'Evolver détecte un pattern d'échec, il écrit une proposition dans `.e2e-work/evolutions-pending/` sans toucher au code source. Pour l'appliquer après revue humaine :
 
 ```bash
-node dist/index.js e2e-evolve-apply .e2e-work/evolutions-pending/1234567890-scout.evolution.json
+e2e e2e-evolve-apply .e2e-work/evolutions-pending/1234567890-scout.evolution.json
 # → applique le diff, commit git, archive dans evolutions-applied/
 ```
 
