@@ -40,14 +40,14 @@ body{display:flex;flex-direction:column}
 
 /* ── Nav ── */
 .nav{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
-  background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px}
+  background:var(--surface);border-bottom:1px solid var(--border);padding:0 18px}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{padding:0 16px;height:40px;border:none;background:transparent;color:var(--muted);
-  cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;position:relative;
+.nav-btn{padding:0 14px;height:38px;border:none;background:transparent;color:var(--muted);
+  cursor:pointer;font-size:11px;font-weight:500;white-space:nowrap;position:relative;
   border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
-  display:flex;align-items:center;gap:6px}
-.nav-btn:hover{color:var(--text)}
-.nav-btn.active{color:#fff;border-bottom-color:var(--accent)}
+  display:flex;align-items:center;gap:5px;letter-spacing:.1px}
+.nav-btn:hover{color:var(--subtle)}
+.nav-btn.active{color:#fff;border-bottom-color:var(--accent);font-weight:600}
 .nav-cnt{padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;
   background:#1e293b;color:var(--muted);display:none}
 .nav-cnt.red{background:#2d0e0e;color:var(--fail);display:inline-block}
@@ -93,9 +93,9 @@ tr:hover td{background:#131f33}
 /* ── Metrics hero ── */
 .metrics-row{display:flex;gap:8px;flex-wrap:wrap}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:12px 16px;flex:1;min-width:110px;display:flex;align-items:center;gap:12px}
-.metric-val{font-size:22px;font-weight:800;line-height:1}
-.metric-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  padding:10px 14px;flex:1;min-width:90px;display:flex;align-items:center;gap:10px}
+.metric-val{font-size:18px;font-weight:800;line-height:1}
+.metric-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
 .c-pass{color:var(--pass)}.c-fail{color:var(--fail)}.c-warn{color:var(--warn)}
 .c-blue{color:#60a5fa}.c-purple{color:#a78bfa}.c-pink{color:var(--accent3)}
 
@@ -220,17 +220,18 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   background:#2d1f00;color:var(--warn);border:1px solid #92400e;display:none;
   animation:pulse 1.5s infinite}
 /* ── Command page layout ── */
-.cmd-page{padding:20px 20px 8px}
-.cmd-section{margin-bottom:24px}
-.cmd-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
-  color:var(--muted);margin-bottom:10px;padding-left:2px}
-.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cmd-page{padding:16px 20px 4px}
+.cmd-section{margin-bottom:20px}
+.cmd-section-label{font-size:11px;font-weight:600;color:var(--subtle);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cmd-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
 
 /* ── Command cards ── */
 .cmd-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
   padding:0;display:flex;flex-direction:column;overflow:hidden;
-  transition:border-color .2s,box-shadow .2s;min-height:180px}
-.cmd-card:hover{border-color:rgba(99,102,241,.4);box-shadow:0 0 0 1px rgba(99,102,241,.15)}
+  transition:border-color .2s,box-shadow .2s,transform .15s}
+.cmd-card:hover{border-color:rgba(99,102,241,.5);box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateY(-1px)}
 .cmd-card.running{border-color:var(--warn);box-shadow:0 0 0 2px rgba(245,158,11,.15);animation:card-pulse 2s infinite}
 .cmd-card.done{border-color:var(--pass);box-shadow:0 0 0 2px rgba(34,197,94,.12)}
 .cmd-card.error{border-color:var(--fail);box-shadow:0 0 0 2px rgba(239,68,68,.12)}
@@ -351,27 +352,27 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Tabs ══ -->
 <nav class="nav">
-  <button class="nav-btn" data-tab="commandes">⚡ Commandes</button>
-  <button class="nav-btn active" data-tab="runs">🏃 Runs <span class="nav-cnt" id="cnt-runs">—</span></button>
-  <button class="nav-btn" data-tab="coverage">📊 Coverage <span class="nav-cnt" id="cnt-cov">—</span></button>
-  <button class="nav-btn" data-tab="crashs">💥 Crashs <span class="nav-cnt" id="cnt-crash">—</span></button>
-  <button class="nav-btn" data-tab="evolutions">🧬 Évolutions <span class="nav-cnt" id="cnt-evo">—</span></button>
-  <button class="nav-btn" data-tab="sentinel">🛡 Sentinel <span class="nav-cnt" id="cnt-sent">—</span></button>
-  <button class="nav-btn" data-tab="arch">🏛 Arch <span class="nav-cnt" id="cnt-arch">—</span></button>
-  <button class="nav-btn" data-tab="integrations">🔌 Intégrations</button>
-  <button class="nav-btn" data-tab="finops">💰 FinOps</button>
+  <button class="nav-btn active" data-tab="commandes">Lancer</button>
+  <button class="nav-btn" data-tab="runs">Historique <span class="nav-cnt" id="cnt-runs"></span></button>
+  <button class="nav-btn" data-tab="coverage">Couverture <span class="nav-cnt" id="cnt-cov"></span></button>
+  <button class="nav-btn" data-tab="crashs">Crashs <span class="nav-cnt" id="cnt-crash"></span></button>
+  <button class="nav-btn" data-tab="sentinel">Sécurité <span class="nav-cnt" id="cnt-sent"></span></button>
+  <button class="nav-btn" data-tab="arch">Architecture <span class="nav-cnt" id="cnt-arch"></span></button>
+  <button class="nav-btn" data-tab="integrations">Intégrations</button>
+  <button class="nav-btn" data-tab="finops">FinOps</button>
+  <button class="nav-btn" data-tab="evolutions" style="display:none">Évolutions <span class="nav-cnt" id="cnt-evo"></span></button>
 </nav>
 
 <!-- ══ Pages ══ -->
 <div class="pages">
 
   <!-- Commandes -->
-  <div class="page" id="page-commandes" style="padding:0;overflow-y:auto">
+  <div class="page active" id="page-commandes" style="padding:0;overflow-y:auto">
     <div id="cmd-sections"></div>
   </div>
 
   <!-- Runs -->
-  <div class="page active" id="page-runs">
+  <div class="page" id="page-runs">
     <div class="metrics-row" id="runs-metrics">
       <div class="metric"><div class="metric-val c-blue" id="m-total">—</div><div class="metric-lbl">Runs totaux</div></div>
       <div class="metric"><div class="metric-val c-pass" id="m-passed">—</div><div class="metric-lbl">Tests passés</div></div>
@@ -380,16 +381,11 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Historique</span>
-        <button class="btn btn-ghost" onclick="loadTab('runs')">↺ Actualiser</button>
-      </div>
-      <div class="qactions" id="quick-actions">
-        <span style="font-size:10px;color:var(--muted);align-self:center">Copier :</span>
-        <span class="qa-chip" data-tpl="e2e init {path}" onclick="copyCmd(this)">e2e init .</span>
-        <span class="qa-chip" data-tpl="e2e audit {path}" onclick="copyCmd(this)">e2e audit .</span>
-        <span class="qa-chip" data-tpl="e2e audit {path} --level=3" onclick="copyCmd(this)">e2e audit . --level=3</span>
-        <span class="qa-chip" data-tpl="e2e coverage {path}" onclick="copyCmd(this)">e2e coverage .</span>
-        <span class="qa-chip" data-tpl="e2e fix {path}" onclick="copyCmd(this)">e2e fix .</span>
+        <span class="card-title">Derniers runs</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn btn-ghost" style="font-size:11px" onclick="showTab('commandes')">+ Nouveau run</button>
+          <button class="btn btn-ghost" onclick="loadTab('runs')">↺</button>
+        </div>
       </div>
       <div id="runs-table"><div class="empty">Chargement…</div></div>
     </div>
@@ -537,6 +533,7 @@ var _feedLines = 0;
 var CMD_SECTIONS = [
   {
     label: 'Analyser le projet',
+    accent: '#6366f1',
     cmds: [
       {id:'init',    icon:'🔍', bg:'rgba(99,102,241,.2)',  label:'Scan & Init',
        desc:'Analyse le code source, détecte routes et formulaires, génère les premiers tests Playwright.',
@@ -551,6 +548,7 @@ var CMD_SECTIONS = [
   },
   {
     label: 'Lancer les tests',
+    accent: '#22c55e',
     cmds: [
       {id:'audit',   icon:'▶', bg:'rgba(34,197,94,.2)',   label:'Audit complet',
        desc:'Lance le scan, exécute tous les tests et triage automatique des crashs détectés.',
@@ -566,6 +564,7 @@ var CMD_SECTIONS = [
   },
   {
     label: 'Maintenir & Réparer',
+    accent: '#f59e0b',
     cmds: [
       {id:'update',  icon:'🔄', bg:'rgba(99,102,241,.2)', label:'Sync tests',
        desc:'Met à jour les tests après changements de code. Protège les tests écrits manuellement.',
@@ -587,7 +586,7 @@ var CMD_SECTIONS = [
 var COMMANDS = CMD_SECTIONS.reduce(function(acc, s){ return acc.concat(s.cmds); }, []);
 
 // ── Build command cards ──────────────────────────────────────────────────────
-function buildCmdCard(c) {
+function buildCmdCard(c, accent) {
   var flagsHtml = c.flags.map(function(f) {
     if (f.type === 'select') {
       var opts = f.opts.map(function(o, i) {
@@ -603,7 +602,8 @@ function buildCmdCard(c) {
     }
     return '';
   }).join('');
-  return '<div class="cmd-card" id="card-'+c.id+'">'
+  var borderLeft = accent ? 'border-left:3px solid '+accent+';' : '';
+  return '<div class="cmd-card" id="card-'+c.id+'" style="'+borderLeft+'">'
     +'<div class="cmd-card-header">'
     +'<div class="cmd-icon-wrap" style="background:'+c.bg+'">'+c.icon+'</div>'
     +'<div class="cmd-body">'
@@ -622,9 +622,10 @@ function buildCmdGrid() {
   var container = document.getElementById('cmd-sections');
   if (!container) return;
   container.innerHTML = CMD_SECTIONS.map(function(s) {
+    var dot = s.accent ? '<span style="width:7px;height:7px;border-radius:50%;background:'+s.accent+';display:inline-block;flex-shrink:0"></span>' : '';
     return '<div class="cmd-page"><div class="cmd-section">'
-      +'<div class="cmd-section-label">'+esc(s.label)+'</div>'
-      +'<div class="cmd-grid">'+s.cmds.map(buildCmdCard).join('')+'</div>'
+      +'<div class="cmd-section-label">'+dot+esc(s.label)+'</div>'
+      +'<div class="cmd-grid">'+s.cmds.map(function(c){ return buildCmdCard(c, s.accent); }).join('')+'</div>'
       +'</div></div>';
   }).join('');
 }
