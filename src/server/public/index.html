@@ -793,8 +793,8 @@ var INTEGRATIONS = [
     guide:'https://api.slack.com/apps',
     guideLabel:'Créer une app Slack',
     fields:[
-      {label:'Incoming Webhook URL', key:'SLACK_WEBHOOK_URL', type:'text', placeholder:'https://hooks.slack.com/services/T…/B…/…',
-       hint:'api.slack.com/apps → Create App → Incoming Webhooks → Add New Webhook'}
+      {label:'Webhook URL', key:'SLACK_WEBHOOK_URL', type:'text', placeholder:'https://hooks.slack.com/services/T…/B…/…', multi:true,
+       hint:'api.slack.com/apps → Create App → Incoming Webhooks → Add New Webhook (un par channel)'}
     ]
   },
   {
@@ -802,8 +802,8 @@ var INTEGRATIONS = [
     guide:'https://discord.com/developers/applications',
     guideLabel:'Créer un webhook Discord',
     fields:[
-      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'text', placeholder:'https://discord.com/api/webhooks/…',
-       hint:'Paramètres du serveur → Intégrations → Webhooks → Nouveau webhook'}
+      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'text', placeholder:'https://discord.com/api/webhooks/…', multi:true,
+       hint:'Paramètres du serveur → Intégrations → Webhooks → Nouveau webhook (un par salon)'}
     ]
   },
   {
@@ -811,8 +811,8 @@ var INTEGRATIONS = [
     guide:'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
     guideLabel:'Créer un webhook Teams',
     fields:[
-      {label:'Incoming Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'text', placeholder:'https://xxx.webhook.office.com/…',
-       hint:'Canal Teams → ··· → Connecteurs → Incoming Webhook → Configurer'}
+      {label:'Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'text', placeholder:'https://xxx.webhook.office.com/…', multi:true,
+       hint:'Canal Teams → ··· → Connecteurs → Incoming Webhook → Configurer (un par canal)'}
     ]
   },
   {
@@ -850,10 +850,12 @@ var INTEGRATIONS = [
        hint:'trello.com/app-key → API Key'},
       {label:'Token OAuth', key:'TRELLO_TOKEN', type:'password', placeholder:'64 caractères hex',
        hint:'Sur la même page → cliquer "Token" pour autoriser'},
-      {label:'ID liste À faire', key:'TRELLO_TODO_LIST_ID', type:'text', placeholder:'5f3e…',
-       hint:'Ouvrir la liste Trello → Filtres → URL → extraire l\'ID'},
-      {label:'ID liste Terminé', key:'TRELLO_DONE_LIST_ID', type:'text', placeholder:'5f3e…',
-       hint:'Même méthode pour la liste "Done"'}
+      {label:'Nom du board', key:'TRELLO_BOARD_NAME', type:'text', placeholder:'Mon Projet', multi:true,
+       hint:'Nom affiché — utilisé pour identifier le board dans les rapports'},
+      {label:'ID liste À faire', key:'TRELLO_TODO_LIST_ID', type:'text', placeholder:'5f3e…', multi:true,
+       hint:'Ouvrir la liste Trello → Menu → Plus → Lien → extraire l\'ID 24 caractères'},
+      {label:'ID liste Terminé', key:'TRELLO_DONE_LIST_ID', type:'text', placeholder:'5f3e…', multi:true,
+       hint:'Même méthode pour la liste "Done" du même board'}
     ]
   },
   {
@@ -918,19 +920,77 @@ var INTEGRATIONS = [
 var _intEnv = {};
 var _currentIntId = null;
 
+function renderMultiField(f) {
+  // Collect all existing values: primary key + _2, _3 ...
+  var entries = [];
+  if (_intEnv[f.key]) entries.push({key: f.key, val: _intEnv[f.key]});
+  for (var i = 2; i <= 20; i++) {
+    var k = f.key+'_'+i;
+    if (_intEnv[k]) entries.push({key: k, val: _intEnv[k]});
+  }
+  if (entries.length === 0) entries.push({key: f.key, val: ''});
+
+  var rows = entries.map(function(e, idx) {
+    var label = idx === 0 ? esc(f.label) : esc(f.label)+' '+(idx+1);
+    return '<div class="int-form-group" style="display:flex;gap:6px;align-items:flex-end">'
+      +'<div style="flex:1"><label class="int-form-label">'+label+'</label>'
+      +'<input class="int-form-input" type="'+f.type+'" name="'+esc(e.key)+'" data-multi-base="'+esc(f.key)+'" placeholder="'+esc(f.placeholder)+'" value="'+esc(e.val)+'" autocomplete="off"></div>'
+      +(entries.length > 1 ? '<button type="button" onclick="removeMultiRow(this)" style="margin-bottom:1px;padding:6px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:5px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>' : '')
+      +'</div>';
+  }).join('');
+  return rows
+    +'<button type="button" onclick="addMultiRow(\''+esc(f.key)+'\',\''+esc(f.type)+'\',\''+esc(f.placeholder)+'\')" style="font-size:11px;color:var(--accent2);background:none;border:1px dashed var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;width:100%;margin-bottom:8px">+ Ajouter un autre '+esc(f.label.toLowerCase())+'</button>'
+    +(f.hint ? '<div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.4">'+esc(f.hint)+'</div>' : '');
+}
+
+window.addMultiRow = function(baseKey, type, placeholder) {
+  var form = document.getElementById('int-form');
+  var existing = form.querySelectorAll('[data-multi-base="'+baseKey+'"]');
+  var nextIdx = existing.length + 1;
+  var newKey = nextIdx === 1 ? baseKey : baseKey+'_'+nextIdx;
+  var addBtn = form.querySelector('[onclick*="addMultiRow(\''+baseKey+'\'"]');
+  var wrapper = document.createElement('div');
+  wrapper.className = 'int-form-group';
+  wrapper.style.cssText = 'display:flex;gap:6px;align-items:flex-end';
+  wrapper.innerHTML = '<div style="flex:1"><label class="int-form-label">'+esc(baseKey.split('_').slice(-2).join(' '))+' '+nextIdx+'</label>'
+    +'<input class="int-form-input" type="'+type+'" name="'+newKey+'" data-multi-base="'+baseKey+'" placeholder="'+placeholder+'" autocomplete="off"></div>'
+    +'<button type="button" onclick="removeMultiRow(this)" style="margin-bottom:1px;padding:6px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:5px;color:#ef4444;cursor:pointer;font-size:12px">✕</button>';
+  if (addBtn) addBtn.parentNode.insertBefore(wrapper, addBtn);
+};
+
+window.removeMultiRow = function(btn) {
+  var row = btn.closest('.int-form-group');
+  if (row) row.remove();
+};
+
 function loadIntegrations() {
-  fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
-    _intEnv = d.config || {};
+  fetch('/api/env/read').then(function(r){return r.json();}).then(function(d) {
+    _intEnv = d || {};
     var activeCount = 0;
     var html = INTEGRATIONS.map(function(intg) {
-      var active = intg.fields.some(function(f){ return !!_intEnv[f.key]; });
+      // Check primary fields + any _2, _3 … multi-entries
+      var active = intg.fields.some(function(f) {
+        if (_intEnv[f.key]) return true;
+        if (f.multi) {
+          for (var i = 2; i <= 20; i++) { if (_intEnv[f.key+'_'+i]) return true; }
+        }
+        return false;
+      });
       if (active) activeCount++;
+      // Count configured entries for multi fields
+      var multiInfo = '';
+      var firstMultiField = intg.fields.find(function(f){ return f.multi; });
+      if (active && firstMultiField) {
+        var count = _intEnv[firstMultiField.key] ? 1 : 0;
+        for (var j = 2; j <= 20; j++) { if (_intEnv[firstMultiField.key+'_'+j]) count++; }
+        if (count > 1) multiInfo = ' ('+count+')';
+      }
       var logoStyle = 'background:'+intg.bg+';color:'+intg.color;
       return '<div class="int-card" data-service="'+intg.id+'">'
         +'<div class="int-logo" style="'+logoStyle+'">'+intg.svg+'</div>'
         +'<div style="flex:1;min-width:0">'
         +'<div class="int-name">'+esc(intg.name)+'</div>'
-        +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configur\xe9':'○ Non configur\xe9')+'</div>'
+        +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configur\xe9'+multiInfo:'○ Non configur\xe9')+'</div>'
         +'</div>'
         +'<button class="btn btn-ghost" style="flex-shrink:0" onclick="openIntModal(\''+intg.id+'\')">'+(active?'Modifier':'Connecter')+'</button>'
         +'</div>';
@@ -967,6 +1027,7 @@ window.openIntModal = function(id) {
     ? '<a href="'+esc(intg.guide)+'" target="_blank" style="font-size:11px;color:var(--accent2);text-decoration:none;display:block;margin-bottom:14px;padding:6px 10px;background:rgba(14,165,233,.08);border-radius:5px;border:1px solid rgba(14,165,233,.2)">🔗 '+esc(intg.guideLabel||'Comment obtenir le token')+'</a>'
     : '';
   var fieldsHtml = guideHtml + intg.fields.map(function(f) {
+    if (f.multi) return renderMultiField(f);
     var val = _intEnv[f.key] || '';
     return '<div class="int-form-group">'
       +'<label class="int-form-label">'+esc(f.label)+'</label>'
@@ -976,7 +1037,11 @@ window.openIntModal = function(id) {
   }).join('');
   document.getElementById('modal-fields').innerHTML = fieldsHtml;
 
-  var hasAny = intg.fields.some(function(f){ return !!_intEnv[f.key]; });
+  var hasAny = intg.fields.some(function(f){
+    if (_intEnv[f.key]) return true;
+    if (f.multi) { for (var i=2;i<=20;i++) { if (_intEnv[f.key+'_'+i]) return true; } }
+    return false;
+  });
   document.getElementById('modal-disconnect').style.display = hasAny ? 'inline-flex' : 'none';
 
   // Bouton test visible uniquement pour services supportés
@@ -995,10 +1060,25 @@ window.closeIntModal = function() {
 function _getFormValues(intg) {
   var form = document.getElementById('int-form');
   var vals = {};
+  var toDelete = [];
   intg.fields.forEach(function(f) {
-    var input = form.querySelector('[name="'+f.key+'"]');
-    if (input && input.value.trim()) vals[f.key] = input.value.trim();
+    if (f.multi) {
+      var inputs = form.querySelectorAll('[data-multi-base="'+f.key+'"]');
+      inputs.forEach(function(inp) {
+        var k = inp.name;
+        if (inp.value.trim()) vals[k] = inp.value.trim();
+      });
+      // Delete orphaned multi-entries (_2, _3 …) not in current form
+      for (var i = 2; i <= 20; i++) {
+        var orphanKey = f.key+'_'+i;
+        if (_intEnv[orphanKey] && !vals[orphanKey]) toDelete.push(orphanKey);
+      }
+    } else {
+      var input = form.querySelector('[name="'+f.key+'"]');
+      if (input && input.value.trim()) vals[f.key] = input.value.trim();
+    }
   });
+  vals.__delete = toDelete;
   return vals;
 }
 
@@ -1006,15 +1086,22 @@ window.submitIntModal = function(e) {
   e.preventDefault();
   var intg = INTEGRATIONS.find(function(i){ return i.id === _currentIntId; });
   if (!intg) return;
-  var updates = _getFormValues(intg);
-  if (!Object.keys(updates).length) { closeIntModal(); return; }
+  var raw = _getFormValues(intg);
+  var toDelete = raw.__delete || [];
+  delete raw.__delete;
+  var updates = raw;
+  if (!Object.keys(updates).length && !toDelete.length) { closeIntModal(); return; }
   var btn = document.getElementById('modal-save-btn');
   btn.disabled = true; btn.textContent = 'Enregistrement…';
-  fetch('/api/env/update', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(updates)
-  }).then(function(r){ return r.json(); }).then(function() {
+  var saveOps = [
+    Object.keys(updates).length
+      ? fetch('/api/env/update', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)})
+      : Promise.resolve(),
+    toDelete.length
+      ? fetch('/api/env/delete', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keys:toDelete})})
+      : Promise.resolve()
+  ];
+  Promise.all(saveOps).then(function() {
     btn.disabled = false; btn.textContent = 'Enregistrer';
     _loaded.integrations = false;
     loadIntegrations();

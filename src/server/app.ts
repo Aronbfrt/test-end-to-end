@@ -1239,21 +1239,53 @@ try {
   });
 
   // ── Env update (integration credentials) ───────────────────────────────────
-  const ALLOWED_ENV_KEYS = new Set([
-    'OLLAMA_HOST','E2E_PORT','GITHUB_TOKEN','SLACK_WEBHOOK_URL','DISCORD_WEBHOOK_URL',
-    'TEAMS_WEBHOOK_URL','JIRA_URL','JIRA_TOKEN','JIRA_USER_EMAIL','JIRA_PROJECT_KEY',
-    'TRELLO_API_KEY','TRELLO_TOKEN','TRELLO_TODO_LIST_ID','TRELLO_DONE_LIST_ID',
-    'STRIPE_WEBHOOK_SECRET','OVH_APP_KEY','OVH_APP_SECRET','OVH_CONSUMER_KEY',
-    'OVH_PROJECT_ID','OVH_SERVICE_NAME','IONOS_GITHUB_REPO','IONOS_GITHUB_TOKEN',
-    'IONOS_WORKFLOW_FILE','IONOS_DEPLOY_BRANCH','HOSTINGER_DEPLOY_WEBHOOK_URL',
+  // Pattern-based whitelist: exact keys + dynamic suffixed multi-entries (_2, _3 …)
+  const ALLOWED_KEY_BASES = [
+    'OLLAMA_HOST','E2E_PORT','GITHUB_TOKEN',
+    'SLACK_WEBHOOK_URL','DISCORD_WEBHOOK_URL','TEAMS_WEBHOOK_URL',
+    'JIRA_URL','JIRA_TOKEN','JIRA_USER_EMAIL','JIRA_PROJECT_KEY',
+    'TRELLO_API_KEY','TRELLO_TOKEN',
+    'TRELLO_BOARD_NAME','TRELLO_TODO_LIST_ID','TRELLO_DONE_LIST_ID',
+    'STRIPE_WEBHOOK_SECRET',
+    'OVH_APP_KEY','OVH_APP_SECRET','OVH_CONSUMER_KEY','OVH_PROJECT_ID','OVH_SERVICE_NAME',
+    'IONOS_GITHUB_REPO','IONOS_GITHUB_TOKEN','IONOS_WORKFLOW_FILE','IONOS_DEPLOY_BRANCH',
+    'HOSTINGER_DEPLOY_WEBHOOK_URL',
     'SSH_HOST','SSH_PORT','SSH_USER','SSH_PRIVATE_KEY','DEPENDABOT_MIN_SEVERITY',
     'XRAY_CLIENT_ID','XRAY_CLIENT_SECRET',
-  ]);
+  ];
+  // Allow BASE_KEY or BASE_KEY_2, BASE_KEY_3 … BASE_KEY_20
+  function isAllowedKey(key: string): boolean {
+    for (const base of ALLOWED_KEY_BASES) {
+      if (key === base) return true;
+      if (key.match(new RegExp(`^${base}_(\\d+|[A-Z0-9_]{1,30})$`))) return true;
+    }
+    return false;
+  }
   const pluginEnvPath = join(_serverDir, '../../.env');
+
+  // ── Read env (for integration dashboard) ───────────────────────────────────
+  app.get('/api/env/read', (_req: Request, res: Response) => {
+    try {
+      const result: Record<string, string> = {};
+      if (existsSync(pluginEnvPath)) {
+        const lines = readFileSync(pluginEnvPath, 'utf-8').split('\n');
+        for (const line of lines) {
+          const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+          if (m && isAllowedKey(m[1]!)) {
+            // Return actual value for text/url fields, mask for secrets
+            const key = m[1]!;
+            const val = m[2]!.replace(/^["']|["']$/g, '');
+            result[key] = val;
+          }
+        }
+      }
+      res.json(result);
+    } catch (e) { res.json({}); }
+  });
 
   app.post('/api/env/update', (req: Request, res: Response) => {
     const updates = req.body as Record<string, string>;
-    const badKeys = Object.keys(updates).filter((k) => !ALLOWED_ENV_KEYS.has(k));
+    const badKeys = Object.keys(updates).filter((k) => !isAllowedKey(k));
     if (badKeys.length) { res.status(400).json({ error: `Clé non autorisée: ${badKeys[0]}` }); return; }
     try {
       let content = existsSync(pluginEnvPath) ? readFileSync(pluginEnvPath, 'utf-8') : '';
@@ -1275,7 +1307,7 @@ try {
 
   app.post('/api/env/delete', (req: Request, res: Response) => {
     const { key } = req.body as { key?: string };
-    if (!key || !ALLOWED_ENV_KEYS.has(key)) { res.status(400).json({ error: 'Clé non autorisée' }); return; }
+    if (!key || !isAllowedKey(key)) { res.status(400).json({ error: 'Clé non autorisée' }); return; }
     try {
       if (!existsSync(pluginEnvPath)) { res.json({ status: 'ok' }); return; }
       let content = readFileSync(pluginEnvPath, 'utf-8');
