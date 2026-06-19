@@ -24,6 +24,7 @@
   <a href="#installation">Installation</a> ·
   <a href="#démarrage-rapide">Démarrage rapide</a> ·
   <a href="#commandes">Commandes</a> ·
+  <a href="#outils-mcp">Outils MCP</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#dashboard">Dashboard</a> ·
   <a href="#intégrations">Intégrations</a>
@@ -74,9 +75,11 @@ flowchart TD
 ```bash
 git clone https://github.com/Aronbfrt/test-end-to-end
 cd test-end-to-end
-npm install
-npm run build
+npm install        # installe Playwright + toutes les dépendances
+npm run build      # compile TypeScript → dist/
 ```
+
+> Le script `scripts/setup.sh` fait la même chose et configure aussi l'environnement : `bash scripts/setup.sh`
 
 Ajouter dans `.claude/settings.json` :
 
@@ -101,7 +104,7 @@ node dist/index.js audit /votre/projet
 
 # 3. Ouvrir le dashboard live
 npm run dashboard
-# → http://localhost:4242
+# → http://localhost:4242  (configurable via E2E_PORT dans .env)
 ```
 
 ---
@@ -112,14 +115,14 @@ npm run dashboard
 |---|---|---|
 | `e2e-init` | Scan AST, détecte routes/forms, génère les specs Playwright | `tests/*.spec.ts`, `.e2e-work/last-routes.json` |
 | `e2e-audit` | Pipeline complet : scan → run → triage → patch | Score Confidence Index, rapports de crash |
-| `e2e-coverage` | Carte de couverture routes/forms avec % | Tableau dans le terminal |
+| `e2e-coverage` | Carte de couverture routes/forms avec % | Tableau terminal + `.e2e-work/coverage.html` |
 | `e2e-update` | Sync intelligente des tests après modifications, protège les tests manuels | Specs mises à jour, résumé du diff |
 | `e2e-repair` | Triage un crash + patch dry-run via Ghostwriter | `.e2e-work/patches-pending/` |
 | `e2e-sentinel` | Audit OWASP des PRs ouvertes via GitHub CLI | `APPROVE` / `REJECT` / `COMMENT` avec findings |
 | `e2e-chaos` | Génère des tests réseau chaotiques (LATENCY, OFFLINE, CORRUPT…) | Fichiers `chaos_*.spec.ts` |
-| `e2e-arch` | Analyse statique : complexité, couplage, `any`, longueur de fichiers | `arch-report.md` |
-| `e2e-diff` | Comparaison avant/après routes suite à des modifications | Tableau de diff dans le terminal |
-| `e2e-shadow` | Reverse Testing zéro-prompt — 4 shadow personas (Frustré, Attaquant, Chaos Réseau, Acheteur Impulsif) génèrent des tests E2E inférés sans aucune description de feature | `tests/shadow/<persona>-<route>.spec.ts` |
+| `e2e-arch` | Analyse statique : complexité, couplage, `any`, longueur de fichiers | `arch-report.md`, score 0–100 |
+| `e2e-diff` | Cible le scan sur les fichiers modifiés (git diff HEAD + staged) | Specs pour routes nouvelles/modifiées |
+| `e2e-shadow` | Reverse Testing zéro-prompt — 4 personas (Frustré, Attaquant, Chaos Réseau, Acheteur Impulsif) | `tests/shadow/<persona>-<route>.spec.ts` |
 
 ### Options
 
@@ -129,9 +132,40 @@ npm run dashboard
 --apply             # Ghostwriter : applique les patches sur disque et ouvre la PR
 --unsupervised      # Evolver : auto-commit des auto-patches (dangereux)
 --chaos             # Injecte des fautes réseau en parallèle du run
---predictive        # Priorise les fichiers à fort taux de churn (historique git)
+--predictive        # Priorise les fichiers à fort taux de churn (historique git 12 mois)
 --trace=<id>        # Répare un triage spécifique par son ID
 ```
+
+### Appliquer une évolution supervisée
+
+Quand l'Evolver détecte un pattern d'échec, il écrit une proposition dans `.e2e-work/evolutions-pending/` sans toucher au code source. Pour l'appliquer après revue humaine :
+
+```bash
+node dist/index.js e2e-evolve-apply .e2e-work/evolutions-pending/1234567890-scout.evolution.json
+# → applique le diff, commit git, archive dans evolutions-applied/
+```
+
+---
+
+## Outils MCP
+
+Le plugin expose **11 outils MCP natifs** utilisables par Claude Code et tout agent IA compatible MCP.
+
+| Outil MCP | Paramètres clés | Ce qu'il fait |
+|---|---|---|
+| `e2e_init` | `targetPath`, `level` | Initialise l'écosystème QA : détection stack, amorçage cache, génération tests |
+| `e2e_audit` | `targetPath`, `level`, `chaos`, `predictive` | Audit complet : scan → run → triage → patch |
+| `e2e_coverage` | `targetPath`, `detail` | Carte de couverture routes/forms, génère `coverage.html` |
+| `e2e_update` | `targetPath`, `dryRun`, `level` | Sync tests après changements, protège les tests manuels |
+| `e2e_repair` | `targetPath`, `traceId`, `bugReport` | Ghostwriter : patch chirurgical + PR depuis un triage |
+| `e2e_shadow` | `targetPath`, `level`, `chaos` | Reverse Testing zéro-prompt — 4 shadow personas |
+| `e2e_diff` | `targetPath`, `predictive`, `level` | Cible le run sur le git diff courant |
+| `e2e_sentinel` | `targetPath`, `prNumber`, `repo` | Audit OWASP des PRs GitHub (APPROVE / COMMENT / REJECT) |
+| `e2e_arch` | `targetPath` | Analyse statique : complexité, couplage, score 0–100 grade A–F |
+| `e2e_chaos` | `targetPath`, `scenarios[]` | Génère specs chaos (LATENCY, TIMEOUT, ERROR_50x, OFFLINE, CORRUPT, PARTIAL) |
+| `e2e_diagnostics` | — | Retourne l'état de l'orchestrateur, Ollama et le snapshot du cache |
+
+> Tous les outils MCP acceptent les mêmes paramètres que leurs commandes CLI équivalentes.
 
 ---
 
@@ -261,7 +295,7 @@ flowchart LR
 
 ```bash
 npm run dashboard
-# → http://localhost:4242
+# → http://localhost:4242  (changer le port : E2E_PORT=5000 npm run dashboard)
 ```
 
 ### 8 Onglets
@@ -271,7 +305,7 @@ npm run dashboard
 | **Runs** | Historique complet des runs avec Confidence Index (0–100), durée, compteurs pass/fail |
 | **Coverage** | Carte de couverture routes et forms — vert/rouge par endpoint, % global |
 | **Crashs** | Tous les résultats de triage avec verdict, raisonnement et déclencheur de réparation en un clic |
-| **Évolutions** | Propositions Evolver en attente — revue et application via `e2e-evolve-apply <fichier>` |
+| **Évolutions** | Propositions Evolver en attente — revue et application via `e2e-evolve-apply` |
 | **Sentinel** | Findings OWASP par PR — sévérité, route, recommandation |
 | **ArchPolice** | Violations architecture : scores de complexité, matrice de couplage, heatmap taille de fichiers |
 | **Intégrations** | Statut live des services connectés (Slack, Jira, OVH…) |
@@ -283,29 +317,54 @@ npm run dashboard
 
 ## Intégrations
 
-Toutes les intégrations sont **optionnelles**. Le plugin fonctionne entièrement sans aucune d'elles.
+Toutes les intégrations sont **optionnelles**. Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
+
+### ChatOps
 
 | Intégration | Variables d'environnement | Déclencheur |
 |---|---|---|
 | Slack | `SLACK_WEBHOOK_URL` | Crash détecté, patch appliqué, résultat sentinel |
 | Discord | `DISCORD_WEBHOOK_URL` | Idem |
 | Microsoft Teams | `TEAMS_WEBHOOK_URL` | Idem |
-| Jira + Xray | `JIRA_URL`, `JIRA_TOKEN`, `JIRA_USER_EMAIL`, `JIRA_PROJECT_KEY` | Crash → ouvre un ticket bug / Patch → ferme le ticket |
-| Trello | `TRELLO_KEY`, `TRELLO_TOKEN`, `TRELLO_LIST_ID` | Crash → crée une carte |
-| OVHcloud | `OVH_APP_KEY`, `OVH_APP_SECRET`, `OVH_CONSUMER_KEY`, `OVH_PROJECT_ID` | Déclencheur de déploiement + récupération de logs SSH |
-| IONOS | `IONOS_GITHUB_REPO`, `IONOS_GITHUB_TOKEN`, `IONOS_WORKFLOW_FILE` | CI/CD via `workflow_dispatch` |
-| Hostinger | `HOSTINGER_DEPLOY_WEBHOOK_URL` | Déploiement par webhook HTTP générique |
-| GitHub | `GITHUB_TOKEN` | Audit PR Sentinel, PR Ghostwriter, PR Dependabot |
 
-Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
+### Gestion de projet
+
+| Intégration | Variables d'environnement | Déclencheur |
+|---|---|---|
+| Jira + Xray | `JIRA_URL`, `JIRA_TOKEN`, `JIRA_USER_EMAIL`, `JIRA_PROJECT_KEY` | Crash → ouvre ticket / Patch → ferme ticket |
+| Trello | `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_TODO_LIST_ID`, `TRELLO_DONE_LIST_ID` | Crash → carte TODO / Patch → carte DONE |
+
+### Déploiement & hébergement
+
+| Intégration | Variables d'environnement | Déclencheur |
+|---|---|---|
+| OVHcloud | `OVH_APP_KEY`, `OVH_APP_SECRET`, `OVH_CONSUMER_KEY`, `OVH_PROJECT_ID`, `OVH_SERVICE_NAME` | Déploiement + récupération logs SSH post-crash |
+| IONOS | `IONOS_GITHUB_REPO`, `IONOS_GITHUB_TOKEN`, `IONOS_WORKFLOW_FILE`, `IONOS_DEPLOY_BRANCH` | CI/CD via `workflow_dispatch` |
+| Hostinger | `HOSTINGER_DEPLOY_WEBHOOK_URL` | Déploiement par webhook HTTP |
+| SSH générique | `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY` | Récupération logs serveur post-crash |
+
+### GitHub & Paiement
+
+| Intégration | Variables d'environnement | Déclencheur |
+|---|---|---|
+| GitHub | `GITHUB_TOKEN` | Audit PR Sentinel, PR Ghostwriter, PR Dependabot |
+| Stripe (test) | `STRIPE_WEBHOOK_SECRET` | Simulation webhooks paiement en environnement de test |
+
+### Variables système
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `E2E_PORT` | `4321` | Port du dashboard |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Endpoint Ollama personnalisé |
+| `DEPENDABOT_MIN_SEVERITY` | `high` | Sévérité minimale pour déclencher un fix : `critical` / `high` / `moderate` / `low` |
 
 ---
 
 ## Sécurité
 
 - **Ghostwriter est en dry-run par défaut** — les patches ne sont jamais auto-appliqués sur disque sans `--apply`
-- **Evolver est supervisé par défaut** — les auto-patches nécessitent une approbation humaine via `e2e-evolve-apply <fichier>` avant de toucher `src/`
-- **Whitelist de commandes SSH** — seuls les patterns `tail`, `cat`, `journalctl`, `pm2` sont autorisés en SSH ; tout le reste est rejeté au niveau de l'intégration
+- **Evolver est supervisé par défaut** — les auto-patches nécessitent une approbation humaine via `e2e-evolve-apply` avant de toucher `src/`
+- **Whitelist de commandes SSH** — seuls `tail`, `cat`, `journalctl`, `pm2` sont autorisés ; tout le reste est rejeté au niveau de l'intégration
 - **RGPDGuard masque toutes les PII** avant écriture dans `.e2e-work/` — tokens JWT, clés API, emails, IBAN, numéros de carte
 - **Aucune donnée sensible loggée sur stdout** — clés API et credentials SSH n'apparaissent jamais dans la console
 - **Rate limiter sur tous les appels Anthropic SDK** — 5 requêtes simultanées max, rechargement token-bucket à 1/sec
@@ -316,10 +375,10 @@ Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
 
 ```mermaid
 graph LR
-    IDX["🖥️ index.ts\nCLI · MCP"] --> ORC["⚙️ orchestrator.ts\nMachine d'état · cache"]
+    IDX["🖥️ index.ts\nCLI · MCP · e2e-evolve-apply"] --> ORC["⚙️ orchestrator.ts\nMachine d'état · routing · cache"]
 
     ORC --> AG["🤖 agents/\n14 agents spécialisés"]
-    ORC --> IN["🔌 integrations/\nSlack · Jira · SSH · Trello"]
+    ORC --> IN["🔌 integrations/\nSlack · Jira · SSH · Trello · Stripe"]
     ORC --> SV["📊 server/\nAPI Express · SPA · WebSocket"]
 
     AG --> UT["🛠️ utils/\ncache SHA-256 · métriques · rapports"]
@@ -332,7 +391,7 @@ graph LR
 test-end-to-end/
 ├── src/
 │   ├── orchestrator.ts            # Cerveau central : machine d'état, routage, Zero-Token Bypass
-│   ├── index.ts                   # Point d'entrée CLI, parseur de commandes, e2e-evolve-apply
+│   ├── index.ts                   # CLI · MCP (11 outils) · e2e-evolve-apply
 │   ├── agents/
 │   │   ├── scout.ts               # Extraction AST routes/forms (ts-morph)
 │   │   ├── artisan.ts             # Génération specs Playwright depuis RouteMap
@@ -350,26 +409,25 @@ test-end-to-end/
 │   │   └── dependabot.ts          # npm audit + fix LLM + vérification + PR
 │   ├── integrations/
 │   │   ├── notifier.ts            # Webhooks Slack / Discord / Teams
-│   │   ├── atlassian.ts           # Intégration Jira + Xray
-│   │   ├── trello.ts              # Création de cartes Trello
-│   │   └── cloudDeployer.ts       # Déploiement SSH OVH / IONOS / Hostinger
+│   │   ├── atlassian.ts           # Jira + Xray
+│   │   ├── trello.ts              # Trello (TODO → DONE)
+│   │   └── cloudDeployer.ts       # SSH OVH / IONOS / Hostinger + logs post-crash
 │   ├── server/
 │   │   ├── app.ts                 # API Express dashboard (8 routes)
-│   │   ├── start.ts               # Point d'entrée serveur, setup WebSocket
+│   │   ├── start.ts               # Point d'entrée serveur, WebSocket
 │   │   └── public/
 │   │       └── index.html         # SPA dashboard 8 onglets — zéro CDN
 │   └── utils/
-│       ├── cache.ts               # Cache empreinte SHA-256 (SQLite)
+│       ├── cache.ts               # Cache SHA-256 + SQLite WAL
 │       ├── compressor.ts          # Compression de prompts Byte-State
 │       ├── logDigest.ts           # Parsing et digest de logs
 │       ├── metricsTracker.ts      # Métriques FinOps / Green-IT
+│       ├── stripeMock.ts          # Simulation webhooks Stripe (test)
 │       └── report.ts              # Générateur de rapports CLI
 ├── commands/                      # Définitions des skills Claude Code (10 commandes)
-├── docs/
-│   └── assets/                    # Captures d'écran + logo
-├── scripts/
-│   └── setup.sh
-├── .env.example
+├── docs/assets/                   # Captures d'écran + logo
+├── scripts/setup.sh               # Setup complet en une commande
+├── .env.example                   # Template de configuration (toutes les variables)
 ├── package.json
 ├── tsconfig.json
 └── playwright.config.ts
