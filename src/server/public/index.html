@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,11 +7,16 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  --bg:#f6f8fa;--surface:#ffffff;--surface2:#f0f2f5;--border:#d0d7de;
+  --text:#1f2328;--muted:#8c959f;--subtle:#57606a;
+  --pass:#16a34a;--fail:#dc2626;--warn:#d97706;
+  --accent:#6366f1;--accent2:#0ea5e9;--accent3:#ec4899;
+  --radius:8px;
+}
+[data-theme="dark"]{
   --bg:#0b1120;--surface:#111827;--surface2:#1a2236;--border:#1e2d45;
   --text:#e2e8f0;--muted:#4b6080;--subtle:#7a90ab;
   --pass:#22c55e;--fail:#ef4444;--warn:#f59e0b;
-  --accent:#6366f1;--accent2:#0ea5e9;--accent3:#ec4899;
-  --radius:8px;
 }
 html,body{height:100dvh;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--text);font-size:13px}
@@ -20,14 +25,26 @@ body{display:flex;flex-direction:column}
 /* ── Topbar ── */
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);
   padding:0 20px;height:52px;display:flex;align-items:center;gap:14px;flex-shrink:0}
-.brand{font-size:15px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:-.5px;flex-shrink:0}
+.theme-toggle{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);
+  background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all .15s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--accent)}
+.lang-sel{background:var(--bg);border:1px solid var(--border);border-radius:7px;
+  padding:3px 7px;font-size:11px;color:var(--subtle);cursor:pointer;outline:none;
+  font-family:inherit;font-weight:500;transition:border-color .15s}
+.lang-sel:hover,.lang-sel:focus{border-color:var(--accent);color:var(--text)}
+.brand{font-size:15px;font-weight:800;color:var(--text);white-space:nowrap;letter-spacing:-.5px;flex-shrink:0}
 .brand em{color:var(--accent);font-style:normal}
 .brand-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
 .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
-.b-live{background:#052e16;color:var(--pass);border:1px solid #166534}
-.b-idle{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3;font-size:9px}
-.b-run{background:#2d1f00;color:var(--warn);border:1px solid #92400e;animation:pulse 1.5s infinite}
-.b-err{background:#2d0e0e;color:var(--fail);border:1px solid #7f1d1d}
+.b-live{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.b-idle{background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:9px}
+.b-run{background:#fef3c7;color:#b45309;border:1px solid #fcd34d;animation:pulse 1.5s infinite}
+.b-err{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+[data-theme="dark"] .b-live{background:#052e16;color:#22c55e;border-color:#166534}
+[data-theme="dark"] .b-idle{background:#1e1b4b;color:#818cf8;border-color:#3730a3}
+[data-theme="dark"] .b-run{background:#2d1f00;color:#f59e0b;border-color:#92400e}
+[data-theme="dark"] .b-err{background:#2d0e0e;color:#ef4444;border-color:#7f1d1d}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .ws-ind{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--subtle);
@@ -46,13 +63,17 @@ body{display:flex;flex-direction:column}
   cursor:pointer;font-size:11px;font-weight:500;white-space:nowrap;position:relative;
   border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
   display:flex;align-items:center;gap:5px;letter-spacing:.1px}
-.nav-btn:hover{color:var(--subtle)}
-.nav-btn.active{color:#fff;border-bottom-color:var(--accent);font-weight:600}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+[data-theme="dark"] .nav-btn.active{color:#fff}
 .nav-cnt{padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;
   background:#1e293b;color:var(--muted);display:none}
-.nav-cnt.red{background:#2d0e0e;color:var(--fail);display:inline-block}
-.nav-cnt.grn{background:#0a2d14;color:var(--pass);display:inline-block}
-.nav-cnt.ylw{background:#2d1f00;color:var(--warn);display:inline-block}
+.nav-cnt.red{background:#fee2e2;color:#dc2626;display:inline-block}
+.nav-cnt.grn{background:#dcfce7;color:#16a34a;display:inline-block}
+.nav-cnt.ylw{background:#fef3c7;color:#d97706;display:inline-block}
+[data-theme="dark"] .nav-cnt.red{background:#2d0e0e;color:#ef4444}
+[data-theme="dark"] .nav-cnt.grn{background:#0a2d14;color:#22c55e}
+[data-theme="dark"] .nav-cnt.ylw{background:#2d1f00;color:#f59e0b}
 .nav-cnt.show{display:inline-block}
 
 /* ── Pages ── */
@@ -76,19 +97,28 @@ th{padding:6px 12px;text-align:left;font-size:9px;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#131f33}
+tr:hover td{background:var(--surface2)}
+[data-theme="dark"] tr:hover td{background:#131f33}
 .mono{font-family:'SF Mono','Fira Code',monospace;font-size:11px}
 .dim{color:var(--muted)}
 .pill{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px}
-.p-pass{background:#052e16;color:var(--pass)}
-.p-fail{background:#2d0e0e;color:var(--fail)}
-.p-skip{background:#1e293b;color:var(--muted)}
-.p-warn{background:#2d1f00;color:var(--warn)}
-.p-info{background:#1e1b4b;color:#818cf8}
-.p-audit{background:#1e1b4b;color:#818cf8}
-.p-init{background:#052e16;color:var(--pass)}
-.p-shadow{background:#2a0a3d;color:var(--accent3)}
-.p-diff{background:#0c1f3a;color:var(--accent2)}
+.p-pass{background:#dcfce7;color:#15803d}
+.p-fail{background:#fee2e2;color:#dc2626}
+.p-skip{background:#f1f5f9;color:#64748b}
+.p-warn{background:#fef3c7;color:#b45309}
+.p-info{background:#e0e7ff;color:#4338ca}
+.p-audit{background:#e0e7ff;color:#4338ca}
+.p-init{background:#dcfce7;color:#15803d}
+.p-shadow{background:#f3e8ff;color:#7c3aed}
+.p-diff{background:#e0f2fe;color:#0369a1}
+[data-theme="dark"] .p-pass{background:#052e16;color:#22c55e}
+[data-theme="dark"] .p-fail{background:#2d0e0e;color:#ef4444}
+[data-theme="dark"] .p-skip{background:#1e293b;color:#94a3b8}
+[data-theme="dark"] .p-warn{background:#2d1f00;color:#f59e0b}
+[data-theme="dark"] .p-info,[data-theme="dark"] .p-audit{background:#1e1b4b;color:#818cf8}
+[data-theme="dark"] .p-init{background:#052e16;color:#22c55e}
+[data-theme="dark"] .p-shadow{background:#2a0a3d;color:#ec4899}
+[data-theme="dark"] .p-diff{background:#0c1f3a;color:#0ea5e9}
 
 /* ── Metrics hero ── */
 .metrics-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -135,10 +165,14 @@ tr:hover td{background:#131f33}
 .finding{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
 .finding:last-child{border-bottom:none}
 .finding-sev{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
-.sev-critical{background:#3b0000;color:#fca5a5}
-.sev-high{background:#2d0e0e;color:var(--fail)}
-.sev-medium{background:#2d1f00;color:var(--warn)}
-.sev-low{background:#1e293b;color:var(--muted)}
+.sev-critical{background:#fee2e2;color:#b91c1c}
+.sev-high{background:#fecdd3;color:#be123c}
+.sev-medium{background:#fef3c7;color:#b45309}
+.sev-low{background:#f1f5f9;color:#64748b}
+[data-theme="dark"] .sev-critical{background:#3b0000;color:#fca5a5}
+[data-theme="dark"] .sev-high{background:#2d0e0e;color:#ef4444}
+[data-theme="dark"] .sev-medium{background:#2d1f00;color:#f59e0b}
+[data-theme="dark"] .sev-low{background:#1e293b;color:#94a3b8}
 .finding-body{flex:1;min-width:0}
 .finding-file{font-size:10px;font-family:'SF Mono','Fira Code',monospace;color:var(--subtle);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .finding-msg{font-size:12px;color:var(--text)}
@@ -149,7 +183,7 @@ tr:hover td{background:#131f33}
   padding:12px 14px;display:flex;align-items:center;gap:10px}
 .int-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .int-logo svg{width:22px;height:22px;max-width:100%;max-height:100%;overflow:visible}
-.int-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:2px}
+.int-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
 .int-status{font-size:10px}
 .int-ok{color:var(--pass)}.int-off{color:var(--muted)}
 
@@ -181,7 +215,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 .int-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center}
 .int-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:90vw}
 .int-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.int-modal-title{font-size:14px;font-weight:700;color:#fff}
+.int-modal-title{font-size:14px;font-weight:700;color:var(--text)}
 .int-form-group{margin-bottom:12px}
 .int-form-label{font-size:11px;color:var(--subtle);margin-bottom:4px;display:block;font-weight:500}
 .int-form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit}
@@ -217,8 +251,9 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 .proj-input:focus{border-color:var(--accent)}
 /* ── Running counter badge ── */
 .runs-counter{padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;
-  background:#2d1f00;color:var(--warn);border:1px solid #92400e;display:none;
+  background:#fef3c7;color:#b45309;border:1px solid #fcd34d;display:none;
   animation:pulse 1.5s infinite}
+[data-theme="dark"] .runs-counter{background:#2d1f00;color:#f59e0b;border-color:#92400e}
 /* ── Command page layout ── */
 .cmd-page{padding:16px 20px 4px}
 .cmd-section{margin-bottom:20px}
@@ -241,17 +276,17 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 .cmd-icon-wrap{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;font-size:18px;flex-shrink:0;line-height:1}
 .cmd-body{flex:1;min-width:0}
-.cmd-label{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.2}
+.cmd-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.2}
 .cmd-desc{font-size:11px;color:var(--muted);line-height:1.5}
 
 .cmd-flags{padding:0 14px 8px;display:flex;flex-direction:column;gap:6px}
 .cmd-flag-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--subtle)}
 .cmd-flag-label{flex-shrink:0;color:var(--muted);font-size:10px}
 .cmd-flag-row input[type=text]{flex:1;background:var(--bg);border:1px solid var(--border);
-  border-radius:5px;padding:4px 8px;font-size:11px;color:var(--text);outline:none;min-width:0}
+  border-radius:5px;padding:4px 8px;font-size:11px;color:var(--text);outline:none;min-width:0;font-family:inherit}
 .cmd-flag-row input[type=text]:focus{border-color:var(--accent)}
 .cmd-flag-row select{flex:1;background:var(--bg);border:1px solid var(--border);
-  border-radius:5px;padding:4px 8px;font-size:11px;color:var(--text);outline:none;cursor:pointer}
+  border-radius:5px;padding:4px 8px;font-size:11px;color:var(--text);outline:none;cursor:pointer;font-family:inherit}
 .cmd-flag-row label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--subtle)}
 .cmd-flag-row input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex-shrink:0}
 
@@ -342,6 +377,15 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <span class="badge b-idle" id="state-badge" style="font-size:9px;letter-spacing:.3px">IDLE</span>
   <div class="topbar-right">
     <span class="runs-counter" id="runs-counter">● 0 en cours</span>
+    <select class="lang-sel" id="lang-sel" onchange="changeLang(this.value)">
+      <option value="fr">🇫🇷 FR</option>
+      <option value="en">🇬🇧 EN</option>
+      <option value="es">🇪🇸 ES</option>
+      <option value="de">🇩🇪 DE</option>
+      <option value="pt">🇵🇹 PT</option>
+      <option value="zh">🇨🇳 ZH</option>
+    </select>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Basculer thème">🌙</button>
     <div class="ws-ind">
       <div class="ws-dot" id="ws-dot"></div>
       <span id="ws-label">—</span>
@@ -352,16 +396,18 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Tabs ══ -->
 <nav class="nav">
-  <button class="nav-btn active" data-tab="commandes">Lancer</button>
-  <button class="nav-btn" data-tab="runs">Historique <span class="nav-cnt" id="cnt-runs"></span></button>
-  <button class="nav-btn" data-tab="coverage">Couverture <span class="nav-cnt" id="cnt-cov"></span></button>
-  <button class="nav-btn" data-tab="crashs">Crashs <span class="nav-cnt" id="cnt-crash"></span></button>
-  <button class="nav-btn" data-tab="sentinel">Sécurité <span class="nav-cnt" id="cnt-sent"></span></button>
-  <button class="nav-btn" data-tab="arch">Architecture <span class="nav-cnt" id="cnt-arch"></span></button>
-  <button class="nav-btn" data-tab="integrations">Intégrations</button>
-  <button class="nav-btn" data-tab="finops">FinOps</button>
-  <button class="nav-btn" data-tab="evolutions" style="display:none">Évolutions <span class="nav-cnt" id="cnt-evo"></span></button>
+  <button class="nav-btn active" data-tab="commandes" data-i18n="nav_launch">Lancer</button>
+  <button class="nav-btn" data-tab="runs" data-i18n="nav_history">Historique <span class="nav-cnt" id="cnt-runs"></span></button>
+  <button class="nav-btn" data-tab="resultats" data-i18n="nav_results">Résultats <span class="nav-cnt" id="cnt-results"></span></button>
+  <button class="nav-btn" data-tab="integrations" data-i18n="nav_integrations">Intégrations</button>
+  <button class="nav-btn" data-tab="finops" data-i18n="nav_finops">FinOps</button>
 </nav>
+<!-- ghost tab IDs used by JS only — no nav buttons -->
+<span id="cnt-cov" style="display:none"></span>
+<span id="cnt-crash" style="display:none"></span>
+<span id="cnt-sent" style="display:none"></span>
+<span id="cnt-arch" style="display:none"></span>
+<span id="cnt-evo" style="display:none"></span>
 
 <!-- ══ Pages ══ -->
 <div class="pages">
@@ -374,76 +420,63 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <!-- Runs -->
   <div class="page" id="page-runs">
     <div class="metrics-row" id="runs-metrics">
-      <div class="metric"><div class="metric-val c-blue" id="m-total">—</div><div class="metric-lbl">Runs totaux</div></div>
-      <div class="metric"><div class="metric-val c-pass" id="m-passed">—</div><div class="metric-lbl">Tests passés</div></div>
-      <div class="metric"><div class="metric-val c-fail" id="m-failed">—</div><div class="metric-lbl">Échecs</div></div>
-      <div class="metric"><div class="metric-val c-purple" id="m-saved">—</div><div class="metric-lbl">Tokens écon.</div></div>
+      <div class="metric"><div class="metric-val c-blue" id="m-total">—</div><div class="metric-lbl" data-i18n="metric_runs">Runs</div></div>
+      <div class="metric"><div class="metric-val c-pass" id="m-passed">—</div><div class="metric-lbl" data-i18n="metric_passed">Passés</div></div>
+      <div class="metric"><div class="metric-val c-fail" id="m-failed">—</div><div class="metric-lbl" data-i18n="metric_failed">Échecs</div></div>
+      <div class="metric"><div class="metric-val" style="color:var(--accent)" id="m-avg">—</div><div class="metric-lbl" data-i18n="metric_avg">Score moyen</div></div>
     </div>
     <div class="card">
       <div class="card-head">
         <span class="card-title">Derniers runs</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn btn-ghost" style="font-size:11px" onclick="showTab('commandes')">+ Nouveau run</button>
-          <button class="btn btn-ghost" onclick="loadTab('runs')">↺</button>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="showTab('commandes')" data-i18n="btn_new_run">+ Nouveau run</button>
+          <button class="btn btn-ghost" onclick="loadTab('runs')" data-i18n="btn_refresh">↺</button>
         </div>
       </div>
       <div id="runs-table"><div class="empty">Chargement…</div></div>
     </div>
   </div>
 
-  <!-- Coverage -->
-  <div class="page" id="page-coverage">
+  <!-- Résultats (fusion Coverage + Crashs + Sécurité + Arch) -->
+  <div class="page" id="page-resultats" style="gap:12px">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Couverture routes</span>
+        <span class="card-title" data-i18n="results_coverage">Couverture</span>
         <span class="card-meta" id="cov-pct-label">—</span>
       </div>
-      <div id="cov-body"><div class="empty-cta"><div class="empty-cta-icon">📊</div><div class="empty-cta-title">Pas encore de données de couverture</div><div class="empty-cta-sub">Lance "Scan &amp; Init" depuis l'onglet Commandes pour analyser ton projet.</div><button class="empty-cta-btn" onclick="showTab('commandes')">▶ Aller aux commandes</button></div></div>
+      <div id="cov-body"><div class="empty">Chargement…</div></div>
     </div>
-  </div>
-
-  <!-- Crashs -->
-  <div class="page" id="page-crashs">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Crash Reports</span>
+        <span class="card-title" data-i18n="results_crashs">Crashs</span>
         <span class="card-meta" id="crash-meta">—</span>
       </div>
       <div id="crash-body"><div class="empty">Chargement…</div></div>
     </div>
-  </div>
-
-  <!-- Evolutions -->
-  <div class="page" id="page-evolutions">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Évolutions supervisées</span>
-        <span class="card-meta" id="evo-meta">—</span>
-      </div>
-      <div id="evo-body"><div class="empty">Chargement…</div></div>
-    </div>
-  </div>
-
-  <!-- Sentinel -->
-  <div class="page" id="page-sentinel">
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">Sentinel — Audit PR</span>
+        <span class="card-title" data-i18n="results_security">Sécurité — Audit PR</span>
         <span class="card-meta" id="sent-meta">—</span>
       </div>
       <div id="sent-body"><div class="empty">Chargement…</div></div>
     </div>
-  </div>
-
-  <!-- Arch -->
-  <div class="page" id="page-arch">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">ArchPolice — Analyse statique</span>
+        <span class="card-title" data-i18n="results_arch">Architecture</span>
         <span class="card-meta" id="arch-meta">—</span>
       </div>
-      <div id="arch-body"><div class="empty-cta"><div class="empty-cta-icon">🏛</div><div class="empty-cta-title">Pas encore d'analyse d'architecture</div><div class="empty-cta-sub">Lance "Architecture" depuis l'onglet Commandes.</div><button class="empty-cta-btn" onclick="showTab('commandes')">▶ Aller aux commandes</button></div></div>
+      <div id="arch-body"><div class="empty">Chargement…</div></div>
     </div>
+  </div>
+
+  <!-- Pages fantômes (compatibilité JS, sans nav) -->
+  <div class="page" id="page-coverage" style="display:none!important"></div>
+  <div class="page" id="page-crashs" style="display:none!important"></div>
+  <div class="page" id="page-sentinel" style="display:none!important"></div>
+  <div class="page" id="page-arch" style="display:none!important"></div>
+  <div class="page" id="page-evolutions" style="display:none!important">
+    <div id="evo-body"></div>
+    <span id="evo-meta"></span>
   </div>
 
   <!-- Integrations -->
@@ -521,6 +554,209 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 (function(){
 'use strict';
 
+// ── i18n ────────────────────────────────────────────────────────────────────
+var LANGS = {
+  fr:{nav_launch:'Lancer',nav_history:'Historique',nav_results:'Résultats',nav_integrations:'Intégrations',nav_finops:'FinOps',
+    metric_runs:'Runs',metric_passed:'Passés',metric_failed:'Échecs',metric_avg:'Score moyen',
+    th_cmd:'Commande',th_project:'Projet',th_passed:'Passés',th_failed:'Échecs',th_score:'Score CI',th_ago:'Il y a',
+    btn_launch:'▶ Lancer',btn_stop:'■ Arrêter',btn_done:'✓ Résultats',btn_err:'⚠ Erreur',btn_new_run:'+ Nouveau run',btn_refresh:'↺',
+    empty_runs:'Aucun run pour ce projet',empty_runs_sub:'Lance ton premier audit depuis l\'onglet Lancer',
+    open_project:'Ouvrir un projet…',recent_projects:'Projets récents',no_recent:'Aucun projet récent',open_path:'Chemin absolu',
+    toast_no_project:'Sélectionne un projet d\'abord',toast_net:'Erreur réseau',
+    section_analyze:'Analyser le projet',section_test:'Lancer les tests',section_maintain:'Maintenir & Réparer',
+    card_init:'Scan & Init',card_coverage:'Couverture',card_arch:'Architecture',
+    card_audit:'Audit complet',card_chaos:'Tests chaos',card_diff:'Diff routes',
+    card_update:'Sync tests',card_sentinel:'Audit PR',card_repair:'Auto-repair',card_fix:'Dépendances',
+    desc_init:'Analyse le code source, détecte routes et formulaires, génère les premiers tests Playwright.',
+    desc_coverage:'Carte des routes testées vs non testées avec pourcentage de couverture.',
+    desc_arch:'Détecte complexité, couplage, types any et fonctions trop longues.',
+    desc_audit:'Lance le scan, exécute tous les tests et triage automatique des crashs détectés.',
+    desc_chaos:'Simule pannes réseau, timeouts et erreurs HTTP sur chaque route du projet.',
+    desc_diff:'Compare les routes avant et après modification pour détecter les régressions.',
+    desc_update:'Met à jour les tests après changements de code. Protège les tests écrits manuellement.',
+    desc_sentinel:'Analyse la PR GitHub pour détecter failles OWASP, injections et expositions de données.',
+    desc_repair:'Triage un crash identifié et génère un patch correctif automatique.',
+    desc_fix:'Scanne les vulnérabilités npm et tente de les corriger automatiquement.',
+    flag_level:'Niveau',flag_level_fast:'Rapide',flag_level_std:'Standard',flag_level_deep:'Approfondi',
+    flag_dry:'Simulation seulement (sans modifier les fichiers)',
+    flag_pr:'N° de PR',flag_pr_ph:'123 (optionnel)',flag_trace:'Trace ID',flag_trace_ph:'trace-xxxx',flag_apply:'Appliquer le patch directement',
+    results_coverage:'Couverture',results_crashs:'Crashs',results_security:'Sécurité',results_arch:'Architecture',
+    live_activity:'Activité en direct',no_data_coverage:'Aucune donnée de couverture',no_crash:'Aucun crash enregistré',
+  },
+  en:{nav_launch:'Launch',nav_history:'History',nav_results:'Results',nav_integrations:'Integrations',nav_finops:'FinOps',
+    metric_runs:'Runs',metric_passed:'Passed',metric_failed:'Failures',metric_avg:'Avg score',
+    th_cmd:'Command',th_project:'Project',th_passed:'Passed',th_failed:'Failed',th_score:'CI Score',th_ago:'Ago',
+    btn_launch:'▶ Run',btn_stop:'■ Stop',btn_done:'✓ Results',btn_err:'⚠ Error',btn_new_run:'+ New run',btn_refresh:'↺',
+    empty_runs:'No runs for this project',empty_runs_sub:'Start your first audit from the Launch tab',
+    open_project:'Open a project…',recent_projects:'Recent projects',no_recent:'No recent projects',open_path:'Absolute path',
+    toast_no_project:'Select a project first',toast_net:'Network error',
+    section_analyze:'Analyze project',section_test:'Run tests',section_maintain:'Maintain & Repair',
+    card_init:'Scan & Init',card_coverage:'Coverage',card_arch:'Architecture',
+    card_audit:'Full audit',card_chaos:'Chaos tests',card_diff:'Route diff',
+    card_update:'Sync tests',card_sentinel:'PR Audit',card_repair:'Auto-repair',card_fix:'Dependencies',
+    desc_init:'Analyzes source code, detects routes and forms, generates first Playwright tests.',
+    desc_coverage:'Map of tested vs untested routes with coverage percentage.',
+    desc_arch:'Detects complexity, coupling, any types and overly long functions.',
+    desc_audit:'Runs scan, executes all tests and auto-triages detected crashes.',
+    desc_chaos:'Simulates network failures, timeouts and HTTP errors on each project route.',
+    desc_diff:'Compares routes before and after modification to detect regressions.',
+    desc_update:'Updates tests after code changes. Protects manually written tests.',
+    desc_sentinel:'Analyzes GitHub PR to detect OWASP flaws, injections and data exposures.',
+    desc_repair:'Triages an identified crash and generates an automatic corrective patch.',
+    desc_fix:'Scans npm vulnerabilities and attempts to fix them automatically.',
+    flag_level:'Level',flag_level_fast:'Fast',flag_level_std:'Standard',flag_level_deep:'Deep',
+    flag_dry:'Simulation only (without modifying files)',
+    flag_pr:'PR number',flag_pr_ph:'123 (optional)',flag_trace:'Trace ID',flag_trace_ph:'trace-xxxx',flag_apply:'Apply patch directly',
+    results_coverage:'Coverage',results_crashs:'Crashes',results_security:'Security',results_arch:'Architecture',
+    live_activity:'Live activity',no_data_coverage:'No coverage data',no_crash:'No crashes recorded',
+  },
+  es:{nav_launch:'Lanzar',nav_history:'Historial',nav_results:'Resultados',nav_integrations:'Integraciones',nav_finops:'FinOps',
+    metric_runs:'Runs',metric_passed:'Pasados',metric_failed:'Fallos',metric_avg:'Score medio',
+    th_cmd:'Comando',th_project:'Proyecto',th_passed:'Pasados',th_failed:'Fallos',th_score:'Score CI',th_ago:'Hace',
+    btn_launch:'▶ Ejecutar',btn_stop:'■ Detener',btn_done:'✓ Resultados',btn_err:'⚠ Error',btn_new_run:'+ Nuevo run',btn_refresh:'↺',
+    empty_runs:'Sin runs para este proyecto',empty_runs_sub:'Inicia tu primer audit desde Lanzar',
+    open_project:'Abrir proyecto…',recent_projects:'Proyectos recientes',no_recent:'Sin proyectos recientes',open_path:'Ruta absoluta',
+    toast_no_project:'Selecciona un proyecto primero',toast_net:'Error de red',
+    section_analyze:'Analizar proyecto',section_test:'Ejecutar pruebas',section_maintain:'Mantener & Reparar',
+    card_init:'Scan & Init',card_coverage:'Cobertura',card_arch:'Arquitectura',
+    card_audit:'Auditoría completa',card_chaos:'Pruebas caos',card_diff:'Diff rutas',
+    card_update:'Sync pruebas',card_sentinel:'Audit PR',card_repair:'Auto-reparar',card_fix:'Dependencias',
+    desc_init:'Analiza el código fuente, detecta rutas y formularios, genera primeras pruebas Playwright.',
+    desc_coverage:'Mapa de rutas probadas vs no probadas con porcentaje de cobertura.',
+    desc_arch:'Detecta complejidad, acoplamiento, tipos any y funciones demasiado largas.',
+    desc_audit:'Ejecuta el escaneo, todas las pruebas y triage automático de fallos detectados.',
+    desc_chaos:'Simula fallos de red, timeouts y errores HTTP en cada ruta del proyecto.',
+    desc_diff:'Compara rutas antes y después de modificación para detectar regresiones.',
+    desc_update:'Actualiza pruebas tras cambios de código. Protege pruebas escritas manualmente.',
+    desc_sentinel:'Analiza PR de GitHub para detectar fallos OWASP, inyecciones y exposiciones.',
+    desc_repair:'Triage un fallo identificado y genera un parche correctivo automático.',
+    desc_fix:'Escanea vulnerabilidades npm e intenta corregirlas automáticamente.',
+    flag_level:'Nivel',flag_level_fast:'Rápido',flag_level_std:'Estándar',flag_level_deep:'Profundo',
+    flag_dry:'Solo simulación (sin modificar archivos)',
+    flag_pr:'N° PR',flag_pr_ph:'123 (opcional)',flag_trace:'ID traza',flag_trace_ph:'trace-xxxx',flag_apply:'Aplicar parche directamente',
+    results_coverage:'Cobertura',results_crashs:'Fallos',results_security:'Seguridad',results_arch:'Arquitectura',
+    live_activity:'Actividad en vivo',no_data_coverage:'Sin datos de cobertura',no_crash:'Sin crashes registrados',
+  },
+  de:{nav_launch:'Starten',nav_history:'Verlauf',nav_results:'Ergebnisse',nav_integrations:'Integrationen',nav_finops:'FinOps',
+    metric_runs:'Runs',metric_passed:'Bestanden',metric_failed:'Fehler',metric_avg:'Ø Score',
+    th_cmd:'Befehl',th_project:'Projekt',th_passed:'Bestanden',th_failed:'Fehler',th_score:'CI Score',th_ago:'Vor',
+    btn_launch:'▶ Starten',btn_stop:'■ Stoppen',btn_done:'✓ Ergebnisse',btn_err:'⚠ Fehler',btn_new_run:'+ Neuer Run',btn_refresh:'↺',
+    empty_runs:'Keine Runs für dieses Projekt',empty_runs_sub:'Starte dein erstes Audit im Tab Starten',
+    open_project:'Projekt öffnen…',recent_projects:'Letzte Projekte',no_recent:'Keine letzten Projekte',open_path:'Absoluter Pfad',
+    toast_no_project:'Wähle zuerst ein Projekt',toast_net:'Netzwerkfehler',
+    section_analyze:'Projekt analysieren',section_test:'Tests ausführen',section_maintain:'Pflegen & Reparieren',
+    card_init:'Scan & Init',card_coverage:'Abdeckung',card_arch:'Architektur',
+    card_audit:'Vollständiges Audit',card_chaos:'Chaos-Tests',card_diff:'Routen-Diff',
+    card_update:'Tests synchronisieren',card_sentinel:'PR-Audit',card_repair:'Auto-Reparatur',card_fix:'Abhängigkeiten',
+    desc_init:'Analysiert Quellcode, erkennt Routen und Formulare, generiert erste Playwright-Tests.',
+    desc_coverage:'Karte der getesteten vs. nicht getesteten Routen mit Abdeckungsprozentsatz.',
+    desc_arch:'Erkennt Komplexität, Kopplung, any-Typen und zu lange Funktionen.',
+    desc_audit:'Führt Scan, alle Tests und automatisches Triage von Fehlern durch.',
+    desc_chaos:'Simuliert Netzwerkausfälle, Timeouts und HTTP-Fehler auf jeder Route.',
+    desc_diff:'Vergleicht Routen vor und nach Änderungen, um Regressionen zu erkennen.',
+    desc_update:'Aktualisiert Tests nach Codeänderungen. Schützt manuell geschriebene Tests.',
+    desc_sentinel:'Analysiert GitHub-PR auf OWASP-Schwachstellen, Injektionen und Datenlecks.',
+    desc_repair:'Triagiert einen identifizierten Absturz und generiert automatisch einen Patch.',
+    desc_fix:'Scannt npm-Schwachstellen und versucht sie automatisch zu beheben.',
+    flag_level:'Ebene',flag_level_fast:'Schnell',flag_level_std:'Standard',flag_level_deep:'Gründlich',
+    flag_dry:'Nur Simulation (ohne Dateien zu ändern)',
+    flag_pr:'PR-Nummer',flag_pr_ph:'123 (optional)',flag_trace:'Trace-ID',flag_trace_ph:'trace-xxxx',flag_apply:'Patch direkt anwenden',
+    results_coverage:'Abdeckung',results_crashs:'Abstürze',results_security:'Sicherheit',results_arch:'Architektur',
+    live_activity:'Live-Aktivität',no_data_coverage:'Keine Abdeckungsdaten',no_crash:'Keine Abstürze erfasst',
+  },
+  pt:{nav_launch:'Lançar',nav_history:'Histórico',nav_results:'Resultados',nav_integrations:'Integrações',nav_finops:'FinOps',
+    metric_runs:'Runs',metric_passed:'Passados',metric_failed:'Falhas',metric_avg:'Score médio',
+    th_cmd:'Comando',th_project:'Projeto',th_passed:'Passados',th_failed:'Falhas',th_score:'Score CI',th_ago:'Há',
+    btn_launch:'▶ Lançar',btn_stop:'■ Parar',btn_done:'✓ Resultados',btn_err:'⚠ Erro',btn_new_run:'+ Novo run',btn_refresh:'↺',
+    empty_runs:'Nenhum run neste projeto',empty_runs_sub:'Inicia o teu primeiro audit no separador Lançar',
+    open_project:'Abrir projeto…',recent_projects:'Projetos recentes',no_recent:'Nenhum projeto recente',open_path:'Caminho absoluto',
+    toast_no_project:'Seleciona um projeto primeiro',toast_net:'Erro de rede',
+    section_analyze:'Analisar projeto',section_test:'Executar testes',section_maintain:'Manter & Reparar',
+    card_init:'Scan & Init',card_coverage:'Cobertura',card_arch:'Arquitetura',
+    card_audit:'Audit completo',card_chaos:'Testes caos',card_diff:'Diff rotas',
+    card_update:'Sync testes',card_sentinel:'Audit PR',card_repair:'Auto-reparar',card_fix:'Dependências',
+    desc_init:'Analisa o código fonte, deteta rotas e formulários, gera os primeiros testes Playwright.',
+    desc_coverage:'Mapa das rotas testadas vs não testadas com percentagem de cobertura.',
+    desc_arch:'Deteta complexidade, acoplamento, tipos any e funções demasiado longas.',
+    desc_audit:'Executa o scan, todos os testes e triage automático dos crashes detetados.',
+    desc_chaos:'Simula falhas de rede, timeouts e erros HTTP em cada rota do projeto.',
+    desc_diff:'Compara rotas antes e depois de modificação para detetar regressões.',
+    desc_update:'Atualiza testes após mudanças de código. Protege testes escritos manualmente.',
+    desc_sentinel:'Analisa PR do GitHub para detetar falhas OWASP, injeções e exposições de dados.',
+    desc_repair:'Triage um crash identificado e gera um patch corretivo automático.',
+    desc_fix:'Scans vulnerabilidades npm e tenta corrigi-las automaticamente.',
+    flag_level:'Nível',flag_level_fast:'Rápido',flag_level_std:'Standard',flag_level_deep:'Profundo',
+    flag_dry:'Só simulação (sem modificar ficheiros)',
+    flag_pr:'N° PR',flag_pr_ph:'123 (opcional)',flag_trace:'ID trace',flag_trace_ph:'trace-xxxx',flag_apply:'Aplicar patch diretamente',
+    results_coverage:'Cobertura',results_crashs:'Crashes',results_security:'Segurança',results_arch:'Arquitetura',
+    live_activity:'Atividade em direto',no_data_coverage:'Sem dados de cobertura',no_crash:'Nenhum crash registado',
+  },
+  zh:{nav_launch:'启动',nav_history:'历史',nav_results:'结果',nav_integrations:'集成',nav_finops:'FinOps',
+    metric_runs:'运行数',metric_passed:'通过',metric_failed:'失败',metric_avg:'平均分',
+    th_cmd:'命令',th_project:'项目',th_passed:'通过',th_failed:'失败',th_score:'CI评分',th_ago:'前',
+    btn_launch:'▶ 运行',btn_stop:'■ 停止',btn_done:'✓ 结果',btn_err:'⚠ 错误',btn_new_run:'+ 新运行',btn_refresh:'↺',
+    empty_runs:'此项目暂无运行记录',empty_runs_sub:'从启动选项卡开始您的第一次审计',
+    open_project:'打开项目…',recent_projects:'最近项目',no_recent:'无最近项目',open_path:'绝对路径',
+    toast_no_project:'请先选择项目',toast_net:'网络错误',
+    section_analyze:'分析项目',section_test:'运行测试',section_maintain:'维护与修复',
+    card_init:'扫描初始化',card_coverage:'覆盖率',card_arch:'架构',
+    card_audit:'完整审计',card_chaos:'混沌测试',card_diff:'路由对比',
+    card_update:'同步测试',card_sentinel:'PR审计',card_repair:'自动修复',card_fix:'依赖项',
+    desc_init:'分析源代码，检测路由和表单，生成首批Playwright测试。',
+    desc_coverage:'已测试与未测试路由地图及覆盖率百分比。',
+    desc_arch:'检测复杂度、耦合、any类型和过长函数。',
+    desc_audit:'运行扫描，执行所有测试，自动分类检测到的崩溃。',
+    desc_chaos:'在每个路由上模拟网络故障、超时和HTTP错误。',
+    desc_diff:'比较修改前后的路由以检测回归。',
+    desc_update:'代码更改后更新测试。保护手动编写的测试。',
+    desc_sentinel:'分析GitHub PR以检测OWASP漏洞、注入和数据暴露。',
+    desc_repair:'分类已识别崩溃并自动生成修复补丁。',
+    desc_fix:'扫描npm漏洞并尝试自动修复。',
+    flag_level:'级别',flag_level_fast:'快速',flag_level_std:'标准',flag_level_deep:'深度',
+    flag_dry:'仅模拟（不修改文件）',
+    flag_pr:'PR编号',flag_pr_ph:'123（可选）',flag_trace:'追踪ID',flag_trace_ph:'trace-xxxx',flag_apply:'直接应用补丁',
+    results_coverage:'覆盖率',results_crashs:'崩溃',results_security:'安全',results_arch:'架构',
+    live_activity:'实时活动',no_data_coverage:'无覆盖率数据',no_crash:'无崩溃记录',
+  },
+};
+var _lang = localStorage.getItem('lang') || 'fr';
+function t(k){ return (LANGS[_lang]||LANGS.fr)[k] || k; }
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var k = el.dataset.i18n;
+    var nav = el.closest('.nav-btn');
+    if (nav) {
+      // preserve badge span
+      var badge = nav.querySelector('.nav-cnt');
+      nav.childNodes[0].textContent = t(k);
+      return;
+    }
+    el.textContent = t(k);
+  });
+  document.getElementById('lang-sel').value = _lang;
+  buildCmdGrid();
+}
+function changeLang(val) {
+  _lang = val;
+  localStorage.setItem('lang', val);
+  document.documentElement.lang = {fr:'fr',en:'en',es:'es',de:'de',pt:'pt',zh:'zh'}[val]||'fr';
+  applyLang();
+}
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+var _theme = localStorage.getItem('theme') || 'light';
+function applyTheme(th) {
+  document.documentElement.setAttribute('data-theme', th);
+  document.getElementById('theme-toggle').textContent = th === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', th);
+}
+function toggleTheme() {
+  _theme = _theme === 'dark' ? 'light' : 'dark';
+  applyTheme(_theme);
+}
+window.toggleTheme = toggleTheme;
+window.changeLang = changeLang;
+
 // ── Global state ────────────────────────────────────────────────────────────
 window.currentProject = null;
 window.activeRuns = {};
@@ -529,61 +765,31 @@ var _runningCount = 0;
 var _feedLines = 0;
 
 // ── Command definitions ──────────────────────────────────────────────────────
-// ── Command definitions (grouped by section) ─────────────────────────────────
-var CMD_SECTIONS = [
-  {
-    label: 'Analyser le projet',
-    accent: '#6366f1',
-    cmds: [
-      {id:'init',    icon:'🔍', bg:'rgba(99,102,241,.2)',  label:'Scan & Init',
-       desc:'Analyse le code source, détecte routes et formulaires, génère les premiers tests Playwright.',
-       flags:[], nav:'coverage'},
-      {id:'coverage',icon:'📊', bg:'rgba(14,165,233,.2)',  label:'Couverture',
-       desc:'Carte des routes testées vs non testées avec pourcentage de couverture.',
-       flags:[], nav:'coverage'},
-      {id:'arch',    icon:'🏛', bg:'rgba(168,85,247,.2)',  label:'Architecture',
-       desc:'Détecte complexité, couplage, types any et fonctions trop longues.',
-       flags:[], nav:'arch'},
-    ]
-  },
-  {
-    label: 'Lancer les tests',
-    accent: '#22c55e',
-    cmds: [
-      {id:'audit',   icon:'▶', bg:'rgba(34,197,94,.2)',   label:'Audit complet',
-       desc:'Lance le scan, exécute tous les tests et triage automatique des crashs détectés.',
-       flags:[{type:'select',key:'level',label:'Niveau',opts:['Rapide','Standard','Approfondi'],vals:['1','2','3']}],
-       nav:'runs'},
-      {id:'chaos',   icon:'🌀', bg:'rgba(245,158,11,.2)', label:'Tests chaos',
-       desc:'Simule pannes réseau, timeouts et erreurs HTTP sur chaque route du projet.',
-       flags:[], nav:'runs'},
-      {id:'diff',    icon:'🔀', bg:'rgba(14,165,233,.2)', label:'Diff routes',
-       desc:'Compare les routes avant et après modification pour détecter les régressions.',
-       flags:[], nav:null},
-    ]
-  },
-  {
-    label: 'Maintenir & Réparer',
-    accent: '#f59e0b',
-    cmds: [
-      {id:'update',  icon:'🔄', bg:'rgba(99,102,241,.2)', label:'Sync tests',
-       desc:'Met à jour les tests après changements de code. Protège les tests écrits manuellement.',
-       flags:[{type:'toggle',key:'dry-run',label:'Simulation seulement (sans modifier les fichiers)'}], nav:null},
-      {id:'sentinel',icon:'🛡', bg:'rgba(239,68,68,.2)',   label:'Audit PR',
-       desc:'Analyse la PR GitHub pour détecter failles OWASP, injections et expositions de données.',
-       flags:[{type:'text',key:'pr',label:'N° de PR',placeholder:'123 (optionnel)'}], nav:'sentinel'},
-      {id:'repair',  icon:'🔧', bg:'rgba(245,158,11,.2)', label:'Auto-repair',
-       desc:'Triage un crash identifié et génère un patch correctif automatique.',
-       flags:[{type:'text',key:'trace',label:'Trace ID',placeholder:'trace-xxxx'},{type:'toggle',key:'apply',label:'Appliquer le patch directement'}], nav:null},
-      {id:'fix',     icon:'📦', bg:'rgba(34,197,94,.2)',  label:'Dépendances',
-       desc:'Scanne les vulnérabilités npm et tente de les corriger automatiquement.',
-       flags:[], nav:null},
-    ]
-  },
-];
-
-// Flat lookup list
-var COMMANDS = CMD_SECTIONS.reduce(function(acc, s){ return acc.concat(s.cmds); }, []);
+function getCmdSections() {
+  return [
+    { label:t('section_analyze'), accent:'#6366f1', cmds:[
+      {id:'init',    icon:'🔍', bg:'rgba(99,102,241,.2)', label:t('card_init'),     desc:t('desc_init'),     flags:[], nav:'resultats'},
+      {id:'coverage',icon:'📊', bg:'rgba(14,165,233,.2)', label:t('card_coverage'), desc:t('desc_coverage'), flags:[], nav:'resultats'},
+      {id:'arch',    icon:'🏛', bg:'rgba(168,85,247,.2)', label:t('card_arch'),     desc:t('desc_arch'),     flags:[], nav:'resultats'},
+    ]},
+    { label:t('section_test'), accent:'#22c55e', cmds:[
+      {id:'audit', icon:'▶', bg:'rgba(34,197,94,.2)', label:t('card_audit'), desc:t('desc_audit'),
+       flags:[{type:'select',key:'level',label:t('flag_level'),opts:[t('flag_level_fast'),t('flag_level_std'),t('flag_level_deep')],vals:['1','2','3']}], nav:'runs'},
+      {id:'chaos', icon:'🌀', bg:'rgba(245,158,11,.2)', label:t('card_chaos'), desc:t('desc_chaos'), flags:[], nav:'runs'},
+      {id:'diff',  icon:'🔀', bg:'rgba(14,165,233,.2)', label:t('card_diff'),  desc:t('desc_diff'),  flags:[], nav:null},
+    ]},
+    { label:t('section_maintain'), accent:'#f59e0b', cmds:[
+      {id:'update',  icon:'🔄', bg:'rgba(99,102,241,.2)', label:t('card_update'),  desc:t('desc_update'),
+       flags:[{type:'toggle',key:'dry-run',label:t('flag_dry')}], nav:null},
+      {id:'sentinel',icon:'🛡', bg:'rgba(239,68,68,.2)',   label:t('card_sentinel'),desc:t('desc_sentinel'),
+       flags:[{type:'text',key:'pr',label:t('flag_pr'),placeholder:t('flag_pr_ph')}], nav:'resultats'},
+      {id:'repair',  icon:'🔧', bg:'rgba(245,158,11,.2)', label:t('card_repair'),  desc:t('desc_repair'),
+       flags:[{type:'text',key:'trace',label:t('flag_trace'),placeholder:t('flag_trace_ph')},{type:'toggle',key:'apply',label:t('flag_apply')}], nav:null},
+      {id:'fix',     icon:'📦', bg:'rgba(34,197,94,.2)',  label:t('card_fix'),     desc:t('desc_fix'),      flags:[], nav:null},
+    ]},
+  ];
+}
+var COMMANDS = getCmdSections().reduce(function(acc,s){return acc.concat(s.cmds);}, []);
 
 // ── Build command cards ──────────────────────────────────────────────────────
 function buildCmdCard(c, accent) {
@@ -621,7 +827,8 @@ function buildCmdCard(c, accent) {
 function buildCmdGrid() {
   var container = document.getElementById('cmd-sections');
   if (!container) return;
-  container.innerHTML = CMD_SECTIONS.map(function(s) {
+  COMMANDS = getCmdSections().reduce(function(acc,s){return acc.concat(s.cmds);}, []);
+  container.innerHTML = getCmdSections().map(function(s) {
     var dot = s.accent ? '<span style="width:7px;height:7px;border-radius:50%;background:'+s.accent+';display:inline-block;flex-shrink:0"></span>' : '';
     return '<div class="cmd-page"><div class="cmd-section">'
       +'<div class="cmd-section-label">'+dot+esc(s.label)+'</div>'
@@ -689,23 +896,25 @@ function setCardState(cmdId, state, runId) {
   btn.className = 'btn-launch';
   btn.disabled = false;
   if (state === 'idle') {
-    btn.textContent = '▶ Lancer';
+    btn.textContent = t('btn_launch');
+    btn.onclick = function(){ handleCmdBtn(cmdId); };
     if (minilog) minilog.style.display = 'none';
   } else if (state === 'running') {
     card.classList.add('running');
     btn.classList.add('stop');
-    btn.textContent = '■ Arrêter';
+    btn.textContent = t('btn_stop');
     if (minilog) { minilog.style.display = 'block'; minilog.innerHTML = ''; }
+    expandFeed();
   } else if (state === 'done') {
     card.classList.add('done');
     btn.classList.add('done');
     var cmd = COMMANDS.find(function(c){return c.id===cmdId;});
-    btn.textContent = '✅ Résultats';
+    btn.textContent = t('btn_done');
     btn.onclick = cmd && cmd.nav ? function(){ showTab(cmd.nav); } : function(){ setCardState(cmdId,'idle'); };
   } else if (state === 'error') {
     card.classList.add('error');
     btn.classList.add('err');
-    btn.textContent = '⚠️ Voir erreur';
+    btn.textContent = t('btn_err');
     btn.onclick = function(){ expandFeed(); };
   }
 }
@@ -865,7 +1074,7 @@ function showToast(message, type) {
 }
 
 // ── Tab routing ─────────────────────────────────────────────────────────────
-var TABS = ['commandes','runs','coverage','crashs','evolutions','sentinel','arch','integrations','finops'];
+var TABS = ['commandes','runs','resultats','integrations','finops','coverage','crashs','evolutions','sentinel','arch'];
 var _loaded = {};
 
 function showTab(id) {
@@ -882,8 +1091,12 @@ function showTab(id) {
 document.querySelectorAll('.nav-btn').forEach(function(btn) {
   btn.addEventListener('click', function() { showTab(btn.dataset.tab); });
 });
+// Init thème + langue
+applyTheme(_theme);
+document.getElementById('lang-sel').value = _lang;
+
 var _h = location.hash.replace('#','');
-if (TABS.includes(_h)) showTab(_h); else loadTab('runs');
+if (TABS.includes(_h)) showTab(_h); else { buildCmdGrid(); }
 
 // ── Auto-refresh (30s) ───────────────────────────────────────────────────────
 var _arTimer = setInterval(function() {
@@ -934,7 +1147,8 @@ window.copyCmd = function(el) {
 
 // ── Clock ────────────────────────────────────────────────────────────────────
 function tick() {
-  var s = new Date().toLocaleTimeString('fr-FR');
+  var locales = {fr:'fr-FR',en:'en-US',es:'es-ES',de:'de-DE',pt:'pt-PT',zh:'zh-CN'};
+  var s = new Date().toLocaleTimeString(locales[_lang]||'fr-FR');
   document.getElementById('topbar-ts').textContent = s;
   document.getElementById('footer-ts').textContent = s;
 }
@@ -960,6 +1174,7 @@ fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
 function loadTab(tab) {
   switch(tab) {
     case 'runs':         loadRuns();         break;
+    case 'resultats':    loadResultats();    break;
     case 'coverage':     loadCoverage();     break;
     case 'crashs':       loadCrashs();       break;
     case 'evolutions':   loadEvolutions();   break;
@@ -970,40 +1185,55 @@ function loadTab(tab) {
   }
 }
 
+function loadResultats() {
+  loadCoverage();
+  loadCrashs();
+  loadSentinel();
+  loadArch();
+  var cnt = document.getElementById('cnt-results');
+  if (cnt) { cnt.textContent = ''; cnt.className = 'nav-cnt'; }
+}
+
 // ── Runs ─────────────────────────────────────────────────────────────────────
 function loadRuns() {
   fetch('/api/runs?limit=50').then(function(r){return r.json();}).then(function(rows) {
     var total  = rows.length;
     var passed = rows.reduce(function(a,r){return a+(r.passed||0);},0);
     var failed = rows.reduce(function(a,r){return a+(r.failed||0);},0);
-    var saved  = rows.reduce(function(a,r){return a+(r.tokens_saved||r.tokensSaved||0);},0);
-    document.getElementById('m-total').textContent  = total;
-    document.getElementById('m-passed').textContent = passed;
-    document.getElementById('m-failed').textContent = failed;
-    document.getElementById('m-saved').textContent  = saved.toLocaleString();
+    var ciScores = rows.map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
+    var avgScore = ciScores.length ? Math.round(ciScores.reduce(function(a,b){return a+b;},0)/ciScores.length) : null;
+    document.getElementById('m-total').textContent  = total || '—';
+    document.getElementById('m-passed').textContent = passed || '—';
+    document.getElementById('m-failed').textContent = failed || '—';
+    document.getElementById('m-avg').textContent    = avgScore!=null ? avgScore+'/100' : '—';
     var cnt = document.getElementById('cnt-runs');
     cnt.textContent = total;
     cnt.className = 'nav-cnt'+(failed>0?' red':total>0?' grn':'');
     if (!rows.length) {
       document.getElementById('runs-table').innerHTML =
-        '<div class="empty">Aucun run — lance ton premier audit'
-        +'<div class="empty-cmd">e2e audit /votre/projet</div></div>';
+        '<div style="padding:40px 20px;text-align:center">'
+        +'<div style="font-size:32px;margin-bottom:12px">🚀</div>'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">'+t('empty_runs')+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+t('empty_runs_sub')+'</div>'
+        +'<button class="btn btn-primary" onclick="showTab(\'commandes\')">'+t('btn_launch')+'</button>'
+        +'</div>';
       return;
     }
     var html = '<table><thead><tr>'
-      +'<th>Commande</th><th>Projet</th>'
-      +'<th style="text-align:center">Passés</th><th style="text-align:center">Échecs</th>'
-      +'<th style="text-align:center">Score CI</th><th>Il y a</th>'
+      +'<th>'+t('th_cmd')+'</th><th>'+t('th_project')+'</th>'
+      +'<th style="text-align:center">'+t('th_passed')+'</th><th style="text-align:center">'+t('th_failed')+'</th>'
+      +'<th style="text-align:center">'+t('th_score')+'</th><th>'+t('th_ago')+'</th>'
       +'</tr></thead><tbody>';
     rows.forEach(function(r) {
-      var ciScore = r.ci_score ?? r.ciScore ?? null;
+      var ciScore = r.ci_score??r.ciScore??null;
+      var hasTests = (r.passed||0)+(r.failed||0) > 0;
       var target = (r.target||'').split('/').pop() || '—';
       html += '<tr>'
         +'<td>'+cmdPill(r.command||'audit')+'</td>'
         +'<td class="mono" style="font-size:11px;color:var(--subtle)" title="'+esc(r.target||'')+'">'+esc(target)+'</td>'
-        +'<td style="text-align:center"><span class="'+(r.passed>0?'c-pass dim':'dim')+'" style="font-weight:700">'+esc(r.passed||0)+'</span></td>'
+        +'<td style="text-align:center"><span class="'+(r.passed>0?'c-pass':'dim')+'" style="font-weight:700">'+esc(r.passed||0)+'</span></td>'
         +'<td style="text-align:center"><span class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</span></td>'
-        +'<td style="text-align:center">'+(ciScore!=null
+        +'<td style="text-align:center">'+(ciScore!=null && hasTests
           ?'<span class="pill '+(ciScore>=80?'p-pass':ciScore>=60?'p-warn':'p-fail')+'">'+ciScore+'/100</span>'
           :'<span class="dim" style="font-size:11px">—</span>')+'</td>'
         +'<td class="dim" style="font-size:11px">'+relTime(r.ts)+'</td>'
