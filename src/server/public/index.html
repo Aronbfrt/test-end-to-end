@@ -242,6 +242,34 @@ tr:hover td{background:var(--surface2)}
 .cov-route{font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cov-bar-wrap{width:120px;flex-shrink:0}
 
+/* ── Card subtitle ── */
+.card-sub{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4;font-weight:400}
+.card-head-col{display:flex;flex-direction:column;gap:0}
+/* ── Page header (tab intro) ── */
+.page-hdr{padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.page-hdr-title{font-size:13px;font-weight:700;color:var(--text)}
+.page-hdr-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+/* ── Onboarding welcome ── */
+.onboard-wrap{padding:32px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;height:100%;justify-content:center}
+.onboard-logo{font-size:40px;line-height:1}
+.onboard-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.onboard-sub{font-size:13px;color:var(--muted);max-width:400px;line-height:1.6}
+.onboard-features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:600px}
+.onboard-feat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 14px;text-align:left}
+.onboard-feat-icon{font-size:20px;margin-bottom:8px}
+.onboard-feat-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.onboard-feat-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.onboard-cta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+/* ── FinOps metric ── */
+.fcard-desc{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.4}
+/* ── Cmd section desc ── */
+.cmd-section-desc{font-size:11px;color:var(--muted);padding:0 0 10px;line-height:1.5}
+/* ── Empty state improved ── */
+.empty-rich{padding:32px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty-rich-icon{font-size:28px;opacity:.6}
+.empty-rich-title{font-size:13px;font-weight:600;color:var(--subtle)}
+.empty-rich-sub{font-size:11px;color:var(--muted);max-width:320px;line-height:1.5}
+
 /* ── Footer ── */
 footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:5px 16px;font-size:10px;color:var(--muted);
@@ -410,7 +438,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
       </div>
     </div>
   </div>
-  <span class="badge b-idle" id="state-badge" style="font-size:9px;letter-spacing:.3px">IDLE</span>
+  <span class="badge b-idle" id="state-badge" style="font-size:9px;letter-spacing:.3px" title="Statut de l'agent — IDLE = en attente, RUNNING = exécution en cours">IDLE</span>
   <div class="topbar-right">
     <span class="runs-counter" id="runs-counter">● 0 en cours</span>
     <select class="lang-sel" id="lang-sel" onchange="changeLang(this.value)">
@@ -469,10 +497,13 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Derniers runs</span>
+        <div class="card-head-col">
+          <span class="card-title">Derniers runs</span>
+          <span class="card-sub">Historique des 50 dernières exécutions pour ce projet</span>
+        </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn btn-ghost" style="font-size:11px" onclick="showTab('commandes')" data-i18n="btn_new_run">+ Nouveau run</button>
-          <button class="btn btn-ghost" onclick="loadTab('runs')" data-i18n="btn_refresh">↺</button>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="loadTab('runs')">↺ Actualiser</button>
         </div>
       </div>
       <div id="runs-table"><div class="empty">Chargement…</div></div>
@@ -483,28 +514,40 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <div class="page" id="page-resultats" style="gap:12px">
     <div class="card">
       <div class="card-head">
-        <span class="card-title" data-i18n="results_coverage">Couverture</span>
+        <div class="card-head-col">
+          <span class="card-title" data-i18n="results_coverage">Couverture</span>
+          <span class="card-sub">Routes testées vs non testées — lancez <code style="font-size:9px;background:var(--bg);padding:1px 4px;border-radius:3px">Couverture</code> pour analyser</span>
+        </div>
         <span class="card-meta" id="cov-pct-label">—</span>
       </div>
       <div id="cov-body"><div class="empty">Chargement…</div></div>
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title" data-i18n="results_crashs">Crashs</span>
+        <div class="card-head-col">
+          <span class="card-title" data-i18n="results_crashs">Crashs détectés</span>
+          <span class="card-sub">Bugs identifiés par l'IA — classifiés par sévérité, auto-patchables</span>
+        </div>
         <span class="card-meta" id="crash-meta">—</span>
       </div>
       <div id="crash-body"><div class="empty">Chargement…</div></div>
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title" data-i18n="results_security">Sécurité — Audit PR</span>
+        <div class="card-head-col">
+          <span class="card-title" data-i18n="results_security">Sécurité — Sentinel</span>
+          <span class="card-sub">Analyse OWASP de vos PR GitHub — injections, expositions de données, failles</span>
+        </div>
         <span class="card-meta" id="sent-meta">—</span>
       </div>
       <div id="sent-body"><div class="empty">Chargement…</div></div>
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title" data-i18n="results_arch">Architecture</span>
+        <div class="card-head-col">
+          <span class="card-title" data-i18n="results_arch">Architecture</span>
+          <span class="card-sub">Complexité cyclomatique, couplage, types <code style="font-size:9px;background:var(--bg);padding:1px 4px;border-radius:3px">any</code>, fonctions trop longues</span>
+        </div>
         <span class="card-meta" id="arch-meta">—</span>
       </div>
       <div id="arch-body"><div class="empty">Chargement…</div></div>
@@ -524,17 +567,27 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <!-- Integrations -->
   <div class="page" id="page-integrations">
     <div class="card">
-      <div class="card-head"><span class="card-title">Intégrations (.env)</span></div>
+      <div class="card-head">
+        <div class="card-head-col">
+          <span class="card-title">Connecteurs externes</span>
+          <span class="card-sub">Les clés sont stockées dans votre fichier <code style="font-size:9px;background:var(--bg);padding:1px 4px;border-radius:3px">.env</code> — jamais envoyées en dehors de votre machine</span>
+        </div>
+      </div>
       <div class="int-grid" id="int-grid">
         <div class="empty" style="grid-column:1/-1">Chargement…</div>
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="card-title">Log en direct</span></div>
+      <div class="card-head">
+        <div class="card-head-col">
+          <span class="card-title">Flux WebSocket temps réel</span>
+          <span class="card-sub">Tous les messages reçus du serveur pendant l'exécution des agents</span>
+        </div>
+      </div>
       <div id="live-log" style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;
         color:var(--subtle);padding:12px 14px;max-height:240px;overflow-y:auto;
         scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-        <div style="color:var(--muted)">En attente de messages WebSocket…</div>
+        <div style="color:var(--muted);font-style:italic">En attente de messages — les logs apparaissent ici pendant un run actif.</div>
       </div>
     </div>
   </div>
@@ -542,13 +595,23 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <!-- FinOps -->
   <div class="page" id="page-finops">
     <div class="card">
-      <div class="card-head"><span class="card-title">FinOps &amp; Green-IT</span></div>
+      <div class="card-head">
+        <div class="card-head-col">
+          <span class="card-title">FinOps &amp; Green-IT</span>
+          <span class="card-sub">Impact économique et environnemental des tests automatisés — comparé à un run manuel équivalent</span>
+        </div>
+      </div>
       <div class="finops-grid" id="finops-grid">
         <div class="empty" style="grid-column:1/-1">Chargement…</div>
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="card-title">10 derniers runs</span></div>
+      <div class="card-head">
+        <div class="card-head-col">
+          <span class="card-title">Derniers runs</span>
+          <span class="card-sub">Détail des runs récents avec leur coût en tokens et tests</span>
+        </div>
+      </div>
       <div id="finops-table"><div class="empty">Chargement…</div></div>
     </div>
   </div>
@@ -890,14 +953,22 @@ function buildCmdCard(c, accent) {
     +'</div>';
 }
 
+var CMD_SECTION_DESCS = {
+  section_analyze: 'Cartographiez votre code source avant de lancer vos premiers tests — détection de routes, formulaires et complexité.',
+  section_test:    'Exécutez des audits complets, tests de résilience réseau et détection de régressions entre versions.',
+  section_maintain:'Synchronisez les tests après vos changements de code, auditez la sécurité de vos PRs et réparez les crashs.',
+};
 function buildCmdGrid() {
   var container = document.getElementById('cmd-sections');
   if (!container) return;
   COMMANDS = getCmdSections().reduce(function(acc,s){return acc.concat(s.cmds);}, []);
   container.innerHTML = getCmdSections().map(function(s) {
-    var dot = s.accent ? '<span style="width:7px;height:7px;border-radius:50%;background:'+s.accent+';display:inline-block;flex-shrink:0"></span>' : '';
+    var bar = s.accent ? '<span style="width:3px;height:16px;border-radius:2px;background:'+s.accent+';display:inline-block;flex-shrink:0;margin-right:2px"></span>' : '';
+    var descKey = Object.keys(CMD_SECTION_DESCS).find(function(k){ return t(k) === s.label; }) || '';
+    var desc = CMD_SECTION_DESCS[descKey] || '';
     return '<div class="cmd-page"><div class="cmd-section">'
-      +'<div class="cmd-section-label">'+dot+esc(s.label)+'</div>'
+      +'<div class="cmd-section-label">'+bar+esc(s.label)+'</div>'
+      +(desc?'<div class="cmd-section-desc">'+esc(desc)+'</div>':'')
       +'<div class="cmd-grid">'+s.cmds.map(function(c){ return buildCmdCard(c, s.accent); }).join('')+'</div>'
       +'</div></div>';
   }).join('');
@@ -1269,11 +1340,19 @@ function loadAccueil() {
 
   if (!window.currentProject) {
     wrap.innerHTML =
-      '<div class="home-empty">'
-      +'<div class="home-empty-icon">📂</div>'
-      +'<div class="home-empty-title">'+t('home_no_project')+'</div>'
-      +'<div class="home-empty-sub">'+t('home_no_project_sub')+'</div>'
-      +'<button class="btn btn-primary" style="margin-top:8px" onclick="toggleProjDropdown()">'+t('open_project')+'</button>'
+      '<div class="onboard-wrap">'
+      +'<div class="onboard-logo">🧪</div>'
+      +'<div class="onboard-title">e2e V∞ — Test automatisé pour le web</div>'
+      +'<div class="onboard-sub">Scannez votre code source, détectez les routes, lancez des audits Playwright et réparez les crashs automatiquement — sans écrire un seul test manuellement.</div>'
+      +'<div class="onboard-features">'
+      +'<div class="onboard-feat"><div class="onboard-feat-icon">🔍</div><div class="onboard-feat-title">Scan & Init</div><div class="onboard-feat-sub">Détecte routes, formulaires et APIs. Génère les premiers tests Playwright.</div></div>'
+      +'<div class="onboard-feat"><div class="onboard-feat-icon">▶</div><div class="onboard-feat-title">Audit complet</div><div class="onboard-feat-sub">Lance tous les tests, détecte les crashs et calcule un score CI /100.</div></div>'
+      +'<div class="onboard-feat"><div class="onboard-feat-icon">🔧</div><div class="onboard-feat-title">Auto-repair</div><div class="onboard-feat-sub">Identifie la cause racine d\'un crash et génère un patch correctif.</div></div>'
+      +'</div>'
+      +'<div class="onboard-cta">'
+      +'<button class="btn btn-primary" style="padding:9px 20px;font-size:13px" onclick="toggleProjDropdown()">📂 Ouvrir un projet →</button>'
+      +'<span style="font-size:11px;color:var(--muted)">ou sélectionnez un projet récent dans le menu</span>'
+      +'</div>'
       +'</div>';
     return;
   }
@@ -1293,8 +1372,7 @@ function loadAccueil() {
     var passed = runs.reduce(function(a,r){return a+(r.passed||0);},0);
     var failed = runs.reduce(function(a,r){return a+(r.failed||0);},0);
     var ciScores = runs.filter(function(r){return (r.passed||0)+(r.failed||0)>0;}).map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
-    var allScores = runs.map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
-    var avgScore = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : null;
+    var avgScore = ciScores.length ? Math.round(ciScores.reduce(function(a,b){return a+b;},0)/ciScores.length) : null;
     var grade = avgScore==null?'—':avgScore>=90?'A':avgScore>=80?'B':avgScore>=60?'C':'D';
     var scoreColor = avgScore==null?'var(--border)':avgScore>=80?'var(--pass)':avgScore>=60?'var(--warn)':'var(--fail)';
     var covPct = cov ? (cov.coveragePercent??cov.percent??0) : null;
@@ -1310,7 +1388,7 @@ function loadAccueil() {
       +'</div>'
       +'<div class="home-hero-info">'
       +'<div class="home-hero-title">'+esc(projName)+'</div>'
-      +'<div class="home-hero-sub">'+t('home_health')+' · '+(lastRun?relTime(lastRun.ts):t('home_never'))+'</div>'
+      +'<div class="home-hero-sub">'+t('home_health')+' · '+(lastRun?'Dernier run '+relTime(lastRun.ts):t('home_never'))+(total?(' · '+total+' run'+(total>1?'s':'')):'')+'</div>'
       +'<div class="home-hero-tags">'
       +(avgScore!=null?'<span class="pill '+(avgScore>=80?'p-pass':avgScore>=60?'p-warn':'p-fail')+'">Score CI '+avgScore+'/100</span>':'')
       +(covPct!=null?'<span class="pill '+(covPct>=80?'p-pass':covPct>=50?'p-warn':'p-fail')+'">Couv. '+covPct+'%</span>':'')
@@ -1333,9 +1411,9 @@ function loadAccueil() {
 
     // ── Grid: Quick actions + Recent activity ──
     var quickCmds = [
-      {id:'audit', icon:'▶', bg:'rgba(34,197,94,.15)', label:t('card_audit'), sub:t('desc_audit').slice(0,50)+'…'},
-      {id:'init',  icon:'🔍', bg:'rgba(99,102,241,.15)', label:t('card_init'),  sub:t('desc_init').slice(0,50)+'…'},
-      {id:'repair',icon:'🔧', bg:'rgba(245,158,11,.15)', label:t('card_repair'),sub:t('desc_repair').slice(0,50)+'…'},
+      {id:'audit', icon:'▶', bg:'rgba(34,197,94,.15)', label:t('card_audit'), sub:t('desc_audit')},
+      {id:'init',  icon:'🔍', bg:'rgba(99,102,241,.15)', label:t('card_init'),  sub:t('desc_init')},
+      {id:'repair',icon:'🔧', bg:'rgba(245,158,11,.15)', label:t('card_repair'),sub:t('desc_repair')},
     ];
     var quickHtml = '<div class="card"><div class="card-head"><span class="card-title">'+t('home_quick')+'</span></div>'
       +'<div class="home-quick">'
@@ -1379,12 +1457,14 @@ function loadRuns() {
     var total  = rows.length;
     var passed = rows.reduce(function(a,r){return a+(r.passed||0);},0);
     var failed = rows.reduce(function(a,r){return a+(r.failed||0);},0);
-    var ciScores = rows.map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
+    var ciScores = rows.filter(function(r){return (r.passed||0)+(r.failed||0)>0;}).map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
     var avgScore = ciScores.length ? Math.round(ciScores.reduce(function(a,b){return a+b;},0)/ciScores.length) : null;
     document.getElementById('m-total').textContent  = total || '—';
     document.getElementById('m-passed').textContent = passed || '—';
     document.getElementById('m-failed').textContent = failed || '—';
-    document.getElementById('m-avg').textContent    = avgScore!=null ? avgScore+'/100' : '—';
+    var avgEl = document.getElementById('m-avg');
+    avgEl.textContent = avgScore!=null ? avgScore+'/100' : '—';
+    avgEl.style.color = avgScore!=null ? scoreColor(avgScore) : 'var(--muted)';
     var cnt = document.getElementById('cnt-runs');
     cnt.textContent = total;
     cnt.className = 'nav-cnt'+(failed>0?' red':total>0?' grn':'');
@@ -1463,8 +1543,11 @@ function loadCoverage() {
     document.getElementById('cov-body').innerHTML = html;
   }).catch(function() {
     document.getElementById('cov-body').innerHTML =
-      '<div class="empty">Aucune donnée de couverture'
-      +'<div class="empty-cmd">e2e coverage /votre/projet</div></div>';
+      '<div class="empty-rich"><div class="empty-rich-icon">📊</div>'
+      +'<div class="empty-rich-title">Aucune carte de couverture</div>'
+      +'<div class="empty-rich-sub">Lancez d\'abord <strong>Scan & Init</strong> pour détecter vos routes, puis <strong>Couverture</strong> pour analyser lesquelles sont testées.</div>'
+      +'<button class="btn btn-ghost" onclick="showTab(\'commandes\')" style="margin-top:4px">→ Aller sur Lancer</button>'
+      +'</div>';
     var cnt = document.getElementById('cnt-cov');
     cnt.textContent = '—'; cnt.className = 'nav-cnt';
   });
@@ -1484,7 +1567,10 @@ function loadCrashs() {
     cnt.className = 'nav-cnt'+(list.length>0?' red':'');
     document.getElementById('crash-meta').textContent = list.length+' rapport(s)';
     if (!list.length) {
-      document.getElementById('crash-body').innerHTML = '<div class="empty">✅ Aucun crash enregistré</div>';
+      document.getElementById('crash-body').innerHTML =
+        '<div class="empty-rich"><div class="empty-rich-icon" style="color:var(--pass)">✓</div>'
+        +'<div class="empty-rich-title" style="color:var(--pass)">Aucun crash enregistré</div>'
+        +'<div class="empty-rich-sub">Lancez un <strong>Audit complet</strong> pour détecter les crashs — ils apparaîtront ici avec leur cause racine et un bouton de patch automatique.</div></div>';
       return;
     }
 
@@ -1603,8 +1689,11 @@ function loadSentinel() {
     document.getElementById('sent-body').innerHTML = html;
   }).catch(function() {
     document.getElementById('sent-body').innerHTML =
-      '<div class="empty">Aucun rapport Sentinel'
-      +'<div class="empty-cmd">e2e sentinel --pr=42</div></div>';
+      '<div class="empty-rich"><div class="empty-rich-icon">🛡</div>'
+      +'<div class="empty-rich-title">Aucun rapport Sentinel</div>'
+      +'<div class="empty-rich-sub">Sentinel analyse vos PRs GitHub pour détecter injections SQL, XSS et expositions de données. Lancez-le depuis l\'onglet <strong>Lancer → Audit PR</strong> en renseignant un numéro de PR.</div>'
+      +'<button class="btn btn-ghost" onclick="showTab(\'commandes\')" style="margin-top:4px">→ Lancer Sentinel</button>'
+      +'</div>';
   });
 }
 
@@ -1629,7 +1718,7 @@ function loadArch() {
       +'<div style="font-size:10px;font-weight:600">Grade '+grade+'</div>'
       +'</div>'
       +'<div>'
-      +'<div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px">Qualité architecturale</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Qualité architecturale</div>'
       +'<div style="font-size:11px;color:var(--muted)">'+issues.length+' violation(s) détectée(s)</div>'
       +'<div class="progress" style="margin-top:8px;width:200px"><div class="progress-fill '+(score>=80?'pf-pass':score>=60?'pf-warn':'pf-fail')+'" style="width:'+score+'%"></div></div>'
       +'</div></div></div>';
@@ -1648,8 +1737,11 @@ function loadArch() {
     document.getElementById('arch-body').innerHTML = html;
   }).catch(function() {
     document.getElementById('arch-body').innerHTML =
-      '<div class="empty">Aucun rapport d\'architecture'
-      +'<div class="empty-cmd">e2e arch /votre/projet</div></div>';
+      '<div class="empty-rich"><div class="empty-rich-icon">🏛</div>'
+      +'<div class="empty-rich-title">Aucun rapport d\'architecture</div>'
+      +'<div class="empty-rich-sub">L\'analyse architecture détecte la complexité cyclomatique, le couplage entre modules, les types <code style="font-size:10px">any</code> et les fonctions trop longues.</div>'
+      +'<button class="btn btn-ghost" onclick="showTab(\'commandes\')" style="margin-top:4px">→ Lancer Architecture</button>'
+      +'</div>';
   });
 }
 
@@ -2109,24 +2201,30 @@ document.getElementById('int-modal').addEventListener('click', function(e) {
 
 // ── FinOps ────────────────────────────────────────────────────────────────────
 function loadFinOps() {
-  fetch('/api/finops').then(function(r){
-    if (!r.ok) throw new Error('no-data');
-    return r.json();
-  }).then(function(d) {
+  Promise.all([
+    fetch('/api/finops').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('/api/runs?limit=10').then(function(r){return r.json();}).catch(function(){return [];})
+  ]).then(function(results) {
+    var d = results[0] || {};
+    var fallbackRuns = results[1] || [];
     var tokensSaved = d.tokensSaved ?? d.totalTokensSaved ?? 0;
-    var html = [
-      {val: d.totalRuns||0,                       lbl:'Runs totaux',        cls:'c-blue'},
-      {val: d.totalPassed||0,                     lbl:'Tests pass\xe9s',       cls:'c-pass'},
-      {val: d.totalFailed||0,                     lbl:'Tests \xe9chou\xe9s',      cls:'c-fail'},
-      {val: Number(tokensSaved).toLocaleString(), lbl:'Tokens \xe9conomis\xe9s',  cls:'c-purple'},
-      {val: '$'+Number(d.costSaved||0).toFixed(3),lbl:'Co\xfbt API \xe9vit\xe9',     cls:'c-warn'},
-      {val: Number(d.co2Saved||0).toFixed(4)+'g',lbl:'CO₂ \xe9vit\xe9',          cls:'c-pink'},
-    ].map(function(m){
-      return '<div class="fcard"><div class="fcard-val '+m.cls+'">'+esc(m.val)+'</div><div class="fcard-lbl">'+esc(m.lbl)+'</div></div>';
+    var metrics = [
+      {val: d.totalRuns||fallbackRuns.length||0, lbl:'Runs totaux', desc:'Nombre total d\'exécutions depuis la création du projet', cls:'c-blue'},
+      {val: d.totalPassed||0,                    lbl:'Tests passés', desc:'Tests ayant réussi sur l\'ensemble des runs', cls:'c-pass'},
+      {val: d.totalFailed||0,                    lbl:'Tests échoués', desc:'Tests ayant échoué — à investiguer dans Résultats', cls:(d.totalFailed>0?'c-fail':'c-pass')},
+      {val: Number(tokensSaved).toLocaleString(),lbl:'Tokens économisés', desc:'Tokens LLM économisés vs un workflow manuel équivalent', cls:'c-purple'},
+      {val: '$'+Number(d.costSaved||0).toFixed(3),lbl:'Coût API évité', desc:'Économies estimées sur les appels API OpenAI/Anthropic', cls:'c-warn'},
+      {val: Number(d.co2Saved||0).toFixed(4)+'g',lbl:'CO₂ évité', desc:'Émissions carbone évitées (estimé via l\'impact des tokens économisés)', cls:'c-pink'},
+    ];
+    document.getElementById('finops-grid').innerHTML = metrics.map(function(m){
+      return '<div class="fcard">'
+        +'<div class="fcard-val '+m.cls+'">'+esc(m.val)+'</div>'
+        +'<div class="fcard-lbl">'+esc(m.lbl)+'</div>'
+        +'<div class="fcard-desc">'+esc(m.desc)+'</div>'
+        +'</div>';
     }).join('');
-    document.getElementById('finops-grid').innerHTML = html;
-    var rows = d.recentRuns || [];
-    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Pass\xe9s</th><th>\xc9checs</th><th>Il y a</th></tr></thead><tbody>';
+    var rows = (d.recentRuns && d.recentRuns.length) ? d.recentRuns : fallbackRuns;
+    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Passés</th><th>Échecs</th><th>Il y a</th></tr></thead><tbody>';
     if (rows.length) {
       rows.slice(0,10).forEach(function(r){
         table += '<tr><td>'+cmdPill(r.command||'audit')+'</td>'
@@ -2135,13 +2233,15 @@ function loadFinOps() {
           +'<td class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</td>'
           +'<td class="dim">'+relTime(r.ts)+'</td></tr>';
       });
-    } else { table += '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Aucun run</td></tr>'; }
+    } else {
+      table += '<tr><td colspan="5"><div class="empty-rich"><div class="empty-rich-icon">🚀</div>'
+        +'<div class="empty-rich-title">Aucun run pour l\'instant</div>'
+        +'<div class="empty-rich-sub">Lancez votre premier audit depuis l\'onglet Lancer — les métriques FinOps se calculent automatiquement.</div>'
+        +'<button class="btn btn-ghost" onclick="showTab(\'commandes\')" style="margin-top:4px">→ Lancer un audit</button>'
+        +'</div></td></tr>';
+    }
     table += '</tbody></table>';
     document.getElementById('finops-table').innerHTML = table;
-  }).catch(function() {
-    document.getElementById('finops-grid').innerHTML =
-      '<div class="empty" style="grid-column:1/-1">Aucune donn\xe9e FinOps'
-      +'<div class="empty-cmd">e2e audit /votre/projet</div></div>';
   });
 }
 
