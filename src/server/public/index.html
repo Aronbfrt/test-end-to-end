@@ -188,6 +188,107 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 .int-modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .int-disconnect{font-size:10px;color:var(--fail);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;align-self:center;margin-right:auto}
 .int-disconnect:hover{color:#fca5a5}
+/* ── Project selector ── */
+.proj-selector{position:relative;flex-shrink:0}
+.proj-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);
+  max-width:200px;overflow:hidden;white-space:nowrap;transition:all .15s}
+.proj-btn:hover{border-color:var(--accent)}
+.proj-btn .proj-name{overflow:hidden;text-overflow:ellipsis;flex:1;text-align:left}
+.proj-dropdown{position:absolute;top:calc(100% + 4px);left:0;min-width:280px;z-index:200;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;display:none}
+.proj-dropdown.open{display:block}
+.proj-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.proj-item:last-child{border-bottom:none}
+.proj-item:hover{background:var(--surface2)}
+.proj-item-name{font-size:12px;font-weight:600;color:var(--text)}
+.proj-item-path{font-size:10px;color:var(--muted);font-family:'SF Mono','Fira Code',monospace;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.proj-item-meta{font-size:9px;color:var(--subtle);margin-top:1px}
+.proj-input-row{padding:8px 12px;border-top:1px solid var(--border)}
+.proj-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;
+  padding:5px 8px;font-size:11px;color:var(--text);outline:none;font-family:'SF Mono','Fira Code',monospace}
+.proj-input:focus{border-color:var(--accent)}
+/* ── Running counter badge ── */
+.runs-counter{padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;
+  background:#2d1f00;color:var(--warn);border:1px solid #92400e;display:none;
+  animation:pulse 1.5s infinite}
+/* ── Command cards ── */
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:4px}
+.cmd-card{background:var(--surface);border:2px solid var(--border);border-radius:10px;
+  padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
+.cmd-card.running{border-color:var(--warn);animation:card-pulse 2s infinite}
+.cmd-card.done{border-color:var(--pass)}
+.cmd-card.error{border-color:var(--fail)}
+@keyframes card-pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.3)}50%{box-shadow:0 0 0 4px rgba(245,158,11,.1)}}
+.cmd-icon{font-size:22px;line-height:1}
+.cmd-label{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.cmd-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.cmd-flags{display:flex;flex-direction:column;gap:6px}
+.cmd-flag-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--subtle)}
+.cmd-flag-row input[type=text]{flex:1;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;padding:3px 7px;font-size:11px;color:var(--text);outline:none}
+.cmd-flag-row input[type=text]:focus{border-color:var(--accent)}
+.cmd-flag-row select{flex:1;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;padding:3px 7px;font-size:11px;color:var(--text);outline:none;cursor:pointer}
+.cmd-flag-row label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.cmd-mini-log{font-family:'SF Mono','Fira Code',monospace;font-size:10px;color:var(--subtle);
+  background:var(--bg);border-radius:5px;padding:6px 8px;max-height:60px;overflow:hidden;
+  line-height:1.4;border:1px solid var(--border)}
+.cmd-mini-log div{white-space:pre-wrap;word-break:break-all}
+.cmd-actions{display:flex;gap:6px;margin-top:4px}
+.btn-launch{flex:1;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;background:linear-gradient(135deg,var(--accent),#7c3aed);
+  color:#fff;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-launch:hover{filter:brightness(1.15)}
+.btn-launch.stop{background:linear-gradient(135deg,#991b1b,#dc2626)}
+.btn-launch.done{background:linear-gradient(135deg,#065f46,#059669)}
+.btn-launch.err{background:linear-gradient(135deg,#7f1d1d,#b91c1c)}
+.btn-launch:disabled{opacity:.45;cursor:not-allowed}
+/* ── Live feed panel ── */
+.feed-panel{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  transition:height .25s ease;overflow:hidden}
+.feed-panel.collapsed{height:32px}
+.feed-panel.expanded{height:220px}
+.feed-bar{height:32px;padding:0 14px;display:flex;align-items:center;gap:8px;cursor:pointer;
+  user-select:none;border-bottom:1px solid var(--border);flex-shrink:0}
+.feed-bar:hover{background:var(--surface2)}
+.feed-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.feed-dot.active{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:pulse 1.5s infinite}
+.feed-label{font-size:11px;font-weight:600;color:var(--subtle);flex:1}
+.feed-clear{font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px}
+.feed-clear:hover{color:var(--text);background:var(--surface2)}
+.feed-body{height:188px;overflow-y:auto;padding:6px 10px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.feed-line{padding:2px 6px;border-radius:3px;font-size:11px;font-family:'SF Mono','Fira Code',monospace;
+  display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+.feed-line.green{color:#4ade80}
+.feed-line.red{color:#f87171}
+.feed-line.yellow{color:#fbbf24}
+.feed-line.blue{color:#60a5fa}
+.feed-line.dim{color:var(--subtle)}
+.feed-tag{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--border);
+  color:var(--muted);white-space:nowrap;flex-shrink:0;margin-top:2px}
+/* ── Empty state with CTA ── */
+.empty-cta{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;text-align:center}
+.empty-cta-icon{font-size:32px;opacity:.6}
+.empty-cta-title{font-size:14px;color:var(--subtle);font-weight:500}
+.empty-cta-sub{font-size:12px;color:var(--muted);max-width:300px;line-height:1.5}
+.empty-cta-btn{padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;
+  background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;
+  border:none;cursor:pointer;transition:all .15s}
+.empty-cta-btn:hover{filter:brightness(1.15)}
+/* ── Toast ── */
+.toast-container{position:fixed;bottom:50px;right:16px;display:flex;flex-direction:column;
+  gap:6px;z-index:500;pointer-events:none}
+.toast{padding:8px 14px;border-radius:7px;font-size:12px;font-weight:500;
+  pointer-events:auto;animation:toast-in .2s ease;max-width:280px}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.toast-info{background:#1e3a5f;color:#93c5fd;border:1px solid #1d4ed8}
+.toast-success{background:#052e16;color:#4ade80;border:1px solid #166534}
+.toast-warn{background:#2d1f00;color:#fbbf24;border:1px solid #92400e}
+.toast-error{background:#2d0e0e;color:#f87171;border:1px solid #7f1d1d}
 </style>
 </head>
 <body>
@@ -196,8 +297,25 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 <div class="topbar">
   <span class="brand">e2e <em>V∞</em></span>
   <span class="badge b-idle" id="state-badge">IDLE</span>
-  <span class="target-path" id="target-path" title="">—</span>
+  <div class="proj-selector" id="proj-selector">
+    <button class="proj-btn" id="proj-btn" onclick="toggleProjDropdown()">
+      <span>📁</span>
+      <span class="proj-name" id="proj-name">Aucun projet</span>
+      <span>▾</span>
+    </button>
+    <div class="proj-dropdown" id="proj-dropdown">
+      <div id="proj-list"></div>
+      <div class="proj-input-row">
+        <input class="proj-input" id="proj-input" placeholder="/chemin/absolu/vers/projet" type="text"
+          onkeydown="if(event.key==='Enter')validateAndSetProject(this.value)">
+        <div style="margin-top:5px;display:flex;gap:6px">
+          <button class="btn btn-ghost" style="flex:1;font-size:11px" onclick="validateAndSetProject(document.getElementById('proj-input').value)">Valider</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="topbar-right">
+    <span class="runs-counter" id="runs-counter">0 en cours</span>
     <label class="refresh-toggle">
       <input type="checkbox" id="auto-refresh" checked> Auto ↺
     </label>
@@ -211,6 +329,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Tabs ══ -->
 <nav class="nav">
+  <button class="nav-btn" data-tab="commandes">⚡ Commandes</button>
   <button class="nav-btn active" data-tab="runs">🏃 Runs <span class="nav-cnt" id="cnt-runs">—</span></button>
   <button class="nav-btn" data-tab="coverage">📊 Coverage <span class="nav-cnt" id="cnt-cov">—</span></button>
   <button class="nav-btn" data-tab="crashs">💥 Crashs <span class="nav-cnt" id="cnt-crash">—</span></button>
@@ -223,6 +342,13 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Pages ══ -->
 <div class="pages">
+
+  <!-- Commandes -->
+  <div class="page" id="page-commandes">
+    <div id="cmd-grid-wrapper">
+      <div class="cmd-grid" id="cmd-grid"></div>
+    </div>
+  </div>
 
   <!-- Runs -->
   <div class="page active" id="page-runs">
@@ -256,7 +382,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
         <span class="card-title">Couverture routes</span>
         <span class="card-meta" id="cov-pct-label">—</span>
       </div>
-      <div id="cov-body"><div class="empty">Chargement…</div></div>
+      <div id="cov-body"><div class="empty-cta"><div class="empty-cta-icon">📊</div><div class="empty-cta-title">Pas encore de données de couverture</div><div class="empty-cta-sub">Lance "Scan &amp; Init" depuis l'onglet Commandes pour analyser ton projet.</div><button class="empty-cta-btn" onclick="showTab('commandes')">▶ Aller aux commandes</button></div></div>
     </div>
   </div>
 
@@ -300,7 +426,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
         <span class="card-title">ArchPolice — Analyse statique</span>
         <span class="card-meta" id="arch-meta">—</span>
       </div>
-      <div id="arch-body"><div class="empty">Chargement…</div></div>
+      <div id="arch-body"><div class="empty-cta"><div class="empty-cta-icon">🏛</div><div class="empty-cta-title">Pas encore d'analyse d'architecture</div><div class="empty-cta-sub">Lance "Architecture" depuis l'onglet Commandes.</div><button class="empty-cta-btn" onclick="showTab('commandes')">▶ Aller aux commandes</button></div></div>
     </div>
   </div>
 
@@ -338,6 +464,17 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 </div>
 
+<div class="feed-panel collapsed" id="feed-panel">
+  <div class="feed-bar" onclick="toggleFeed()">
+    <div class="feed-dot" id="feed-dot"></div>
+    <span class="feed-label">● Activité en direct</span>
+    <span id="feed-count" style="font-size:10px;color:var(--muted)"></span>
+    <button class="feed-clear" onclick="event.stopPropagation();clearFeed()">Effacer</button>
+    <span style="font-size:10px;color:var(--muted)" id="feed-chevron">▴</span>
+  </div>
+  <div class="feed-body" id="feed-body"></div>
+</div>
+
 <footer>
   <span>test-end-to-end V-Infinite 2.0.0 — <a href="https://github.com/Aronbfrt/test-end-to-end" target="_blank" style="color:var(--accent);text-decoration:none">GitHub</a></span>
   <span id="footer-ts">—</span>
@@ -368,8 +505,294 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 (function(){
 'use strict';
 
+// ── Global state ────────────────────────────────────────────────────────────
+window.currentProject = null;
+window.activeRuns = {};
+var _feedExpanded = false;
+var _runningCount = 0;
+var _feedLines = 0;
+
+// ── Command definitions ──────────────────────────────────────────────────────
+var COMMANDS = [
+  {id:'init',   icon:'🔍', label:'Scan & Init',   desc:'Analyse le code source, détecte routes et formulaires, génère les premiers tests Playwright.', flags:[], nav:'coverage'},
+  {id:'audit',  icon:'▶',  label:'Audit complet', desc:'Lance le scan + exécute les tests + triage automatique des crashs.', flags:[{type:'select',key:'level',label:'Niveau',opts:['Rapide (1)','Standard (2)','Approfondi (3)'],vals:['1','2','3']}], nav:'runs'},
+  {id:'coverage',icon:'📊',label:'Couverture',    desc:'Carte des routes testées vs non testées avec pourcentage.', flags:[], nav:'coverage'},
+  {id:'chaos',  icon:'🌀', label:'Tests chaos',   desc:'Simule pannes réseau, timeouts, erreurs HTTP sur chaque route.', flags:[], nav:'runs'},
+  {id:'arch',   icon:'🏛', label:'Architecture',  desc:'Détecte complexité, couplage, types any, fonctions trop longues.', flags:[], nav:'arch'},
+  {id:'update', icon:'🔄', label:'Sync tests',    desc:'Met à jour les tests après changements de code (protège les tests manuels).', flags:[{type:'toggle',key:'dry-run',label:'Simulation seulement'}], nav:null},
+  {id:'diff',   icon:'🔀', label:'Diff routes',   desc:'Compare les routes avant/après modification.', flags:[], nav:null},
+  {id:'sentinel',icon:'🛡', label:'Audit PR',     desc:'Analyse la PR GitHub ouverte pour failles OWASP.', flags:[{type:'text',key:'pr',label:'N° de PR (optionnel)',placeholder:'123'}], nav:'sentinel'},
+  {id:'repair', icon:'🔧', label:'Auto-repair',   desc:'Triage un crash et génère un patch correctif.', flags:[{type:'text',key:'trace',label:'Trace ID',placeholder:'trace-xxxx'},{type:'toggle',key:'apply',label:'Appliquer le patch'}], nav:null},
+  {id:'fix',    icon:'📦', label:'Dépendances',   desc:'Scanne les vulnérabilités npm et tente les correctifs.', flags:[], nav:null},
+];
+
+// ── Build command cards ──────────────────────────────────────────────────────
+function buildCmdGrid() {
+  var grid = document.getElementById('cmd-grid');
+  if (!grid) return;
+  grid.innerHTML = COMMANDS.map(function(c) {
+    var flagsHtml = c.flags.map(function(f) {
+      if (f.type === 'select') {
+        var opts = f.opts.map(function(o, i) {
+          return '<option value="'+esc(f.vals[i])+'">'+esc(o)+'</option>';
+        }).join('');
+        return '<div class="cmd-flag-row"><span>'+esc(f.label)+'</span><select id="flag-'+c.id+'-'+f.key+'">'+opts+'</select></div>';
+      }
+      if (f.type === 'text') {
+        return '<div class="cmd-flag-row"><span>'+esc(f.label)+'</span><input type="text" id="flag-'+c.id+'-'+f.key+'" placeholder="'+esc(f.placeholder||'')+'"></div>';
+      }
+      if (f.type === 'toggle') {
+        return '<div class="cmd-flag-row"><label><input type="checkbox" id="flag-'+c.id+'-'+f.key+'"> '+esc(f.label)+'</label></div>';
+      }
+      return '';
+    }).join('');
+    return '<div class="cmd-card" id="card-'+c.id+'">'
+      +'<div style="display:flex;gap:10px;align-items:flex-start">'
+      +'<div class="cmd-icon">'+c.icon+'</div>'
+      +'<div><div class="cmd-label">'+esc(c.label)+'</div><div class="cmd-desc">'+esc(c.desc)+'</div></div>'
+      +'</div>'
+      +(flagsHtml ? '<div class="cmd-flags">'+flagsHtml+'</div>' : '')
+      +'<div class="cmd-mini-log" id="minilog-'+c.id+'" style="display:none"></div>'
+      +'<div class="cmd-actions">'
+      +'<button class="btn-launch" id="btn-'+c.id+'" onclick="handleCmdBtn(\''+c.id+'\')">▶ Lancer</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function getCardFlags(cmdId) {
+  var cmd = COMMANDS.find(function(c){return c.id===cmdId;});
+  if (!cmd) return {};
+  var flags = {};
+  cmd.flags.forEach(function(f) {
+    var el = document.getElementById('flag-'+cmdId+'-'+f.key);
+    if (!el) return;
+    if (f.type === 'toggle') { if (el.checked) flags[f.key] = true; }
+    else if (el.value && el.value.trim()) flags[f.key] = el.value.trim();
+  });
+  return flags;
+}
+
+function handleCmdBtn(cmdId) {
+  var runId = null;
+  Object.keys(window.activeRuns).forEach(function(rid) {
+    if (window.activeRuns[rid].command === cmdId) runId = rid;
+  });
+  if (runId) {
+    stopRun(runId, cmdId);
+  } else {
+    launchCommand(cmdId, getCardFlags(cmdId));
+  }
+}
+
+async function launchCommand(command, flags) {
+  if (!window.currentProject) {
+    showToast('Sélectionne un projet d\'abord', 'warn'); return;
+  }
+  var res = await fetch('/api/run', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({command:command, targetPath:window.currentProject, flags:flags||{}})
+  });
+  if (!res.ok) {
+    var err = await res.json();
+    showToast(err.error||'Erreur', 'error'); return;
+  }
+  var data = await res.json();
+  window.activeRuns[data.runId] = {command:command, cardId:'card-'+command};
+  setCardState(command, 'running', data.runId);
+  updateRunsCounter(1);
+}
+
+async function stopRun(runId, cmdId) {
+  await fetch('/api/run/'+runId+'/stop', {method:'POST'});
+  delete window.activeRuns[runId];
+  setCardState(cmdId, 'idle');
+  updateRunsCounter(-1);
+}
+
+function setCardState(cmdId, state, runId) {
+  var card = document.getElementById('card-'+cmdId);
+  var btn = document.getElementById('btn-'+cmdId);
+  var minilog = document.getElementById('minilog-'+cmdId);
+  if (!card || !btn) return;
+  card.className = 'cmd-card';
+  btn.className = 'btn-launch';
+  btn.disabled = false;
+  if (state === 'idle') {
+    btn.textContent = '▶ Lancer';
+    if (minilog) minilog.style.display = 'none';
+  } else if (state === 'running') {
+    card.classList.add('running');
+    btn.classList.add('stop');
+    btn.textContent = '■ Arrêter';
+    if (minilog) { minilog.style.display = 'block'; minilog.innerHTML = ''; }
+  } else if (state === 'done') {
+    card.classList.add('done');
+    btn.classList.add('done');
+    var cmd = COMMANDS.find(function(c){return c.id===cmdId;});
+    btn.textContent = '✅ Résultats';
+    btn.onclick = cmd && cmd.nav ? function(){ showTab(cmd.nav); } : function(){ setCardState(cmdId,'idle'); };
+  } else if (state === 'error') {
+    card.classList.add('error');
+    btn.classList.add('err');
+    btn.textContent = '⚠️ Voir erreur';
+    btn.onclick = function(){ expandFeed(); };
+  }
+}
+
+function appendMiniLog(cmdId, line) {
+  var minilog = document.getElementById('minilog-'+cmdId);
+  if (!minilog || minilog.style.display === 'none') return;
+  var d = document.createElement('div');
+  d.textContent = line.replace(/^\[.*?\]\s*/,'').slice(0,120);
+  minilog.appendChild(d);
+  while (minilog.children.length > 3) minilog.removeChild(minilog.firstChild);
+}
+
+function updateRunsCounter(delta) {
+  _runningCount = Math.max(0, _runningCount + delta);
+  var el = document.getElementById('runs-counter');
+  if (!el) return;
+  if (_runningCount > 0) {
+    el.textContent = _runningCount+' en cours';
+    el.style.display = 'inline-block';
+    document.getElementById('feed-dot').className = 'feed-dot active';
+  } else {
+    el.style.display = 'none';
+    document.getElementById('feed-dot').className = 'feed-dot';
+  }
+}
+
+// ── Project selector ─────────────────────────────────────────────────────────
+async function initProjectSelector() {
+  try {
+    var projects = await fetch('/api/projects').then(function(r){return r.json();});
+    if (projects.length > 0) {
+      window.currentProject = projects[0].path;
+      document.getElementById('proj-name').textContent = projects[0].name;
+    }
+    renderProjectList(projects);
+  } catch(e) {}
+}
+
+function renderProjectList(projects) {
+  var list = document.getElementById('proj-list');
+  if (!list) return;
+  if (!projects.length) {
+    list.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--muted)">Aucun projet récent</div>';
+    return;
+  }
+  list.innerHTML = projects.map(function(p) {
+    return '<div class="proj-item" onclick="selectProject(\''+esc(p.path)+'\',\''+esc(p.name)+'\')">'
+      +'<div class="proj-item-name">'+esc(p.name)+'</div>'
+      +'<div class="proj-item-path">'+esc(p.path)+'</div>'
+      +'<div class="proj-item-meta">'+p.run_count+' run'+(p.run_count!==1?'s':'')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function selectProject(path, name) {
+  window.currentProject = path;
+  document.getElementById('proj-name').textContent = name;
+  closeProjDropdown();
+  showToast('Projet "'+name+'" sélectionné', 'success');
+}
+
+function toggleProjDropdown() {
+  var dd = document.getElementById('proj-dropdown');
+  if (dd.classList.contains('open')) { closeProjDropdown(); }
+  else {
+    dd.classList.add('open');
+    document.getElementById('proj-input').value = '';
+    setTimeout(function(){ document.getElementById('proj-input').focus(); }, 50);
+  }
+}
+
+function closeProjDropdown() {
+  document.getElementById('proj-dropdown').classList.remove('open');
+}
+
+async function validateAndSetProject(inputPath) {
+  if (!inputPath || !inputPath.trim()) return;
+  try {
+    var res = await fetch('/api/projects/validate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path:inputPath.trim()})
+    });
+    var data = await res.json();
+    if (data.valid) {
+      window.currentProject = inputPath.trim();
+      document.getElementById('proj-name').textContent = data.name;
+      closeProjDropdown();
+      showToast('Projet "'+data.name+'" sélectionné', 'success');
+      var projects = await fetch('/api/projects').then(function(r){return r.json();});
+      renderProjectList(projects);
+    } else {
+      showToast('Chemin introuvable : '+inputPath, 'error');
+    }
+  } catch(e) { showToast('Erreur réseau', 'error'); }
+}
+
+document.addEventListener('click', function(e) {
+  var sel = document.getElementById('proj-selector');
+  if (sel && !sel.contains(e.target)) closeProjDropdown();
+});
+
+// ── Live feed panel ──────────────────────────────────────────────────────────
+function toggleFeed() {
+  _feedExpanded = !_feedExpanded;
+  var panel = document.getElementById('feed-panel');
+  panel.className = 'feed-panel '+(_feedExpanded?'expanded':'collapsed');
+  document.getElementById('feed-chevron').textContent = _feedExpanded ? '▾' : '▴';
+}
+
+function expandFeed() {
+  if (!_feedExpanded) toggleFeed();
+}
+
+function clearFeed() {
+  document.getElementById('feed-body').innerHTML = '';
+  _feedLines = 0;
+}
+
+function addFeedLine(tag, line) {
+  var body = document.getElementById('feed-body');
+  if (!body) return;
+  var cls = 'dim';
+  if (/✅|pass|done|ok|success|configuré/i.test(line)) cls = 'green';
+  else if (/❌|fail|error|crash|erreur|err/i.test(line)) cls = 'red';
+  else if (/⚠️|warn|attention/i.test(line)) cls = 'yellow';
+  else if (/🔍|scan|info|détect|analys/i.test(line)) cls = 'blue';
+  var d = document.createElement('div');
+  d.className = 'feed-line '+cls;
+  if (tag) {
+    var t = document.createElement('span');
+    t.className = 'feed-tag';
+    t.textContent = tag;
+    d.appendChild(t);
+  }
+  var txt = document.createElement('span');
+  txt.textContent = line.replace(/\n$/, '');
+  d.appendChild(txt);
+  body.appendChild(d);
+  _feedLines++;
+  if (_feedLines > 500) body.removeChild(body.firstChild);
+  if (_feedExpanded) body.scrollTop = body.scrollHeight;
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(message, type) {
+  type = type || 'info';
+  var container = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast toast-'+type;
+  t.textContent = message;
+  container.appendChild(t);
+  setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 2500);
+}
+
 // ── Tab routing ─────────────────────────────────────────────────────────────
-var TABS = ['runs','coverage','crashs','evolutions','sentinel','arch','integrations','finops'];
+var TABS = ['commandes','runs','coverage','crashs','evolutions','sentinel','arch','integrations','finops'];
 var _loaded = {};
 
 function showTab(id) {
@@ -1266,25 +1689,57 @@ function wsConnect() {
     var ws = new WebSocket(proto+'//'+location.host+'/ws');
     ws.onopen = function() {
       document.getElementById('ws-dot').className = 'ws-dot live';
-      document.getElementById('ws-label').textContent = 'Connect\xe9';
+      document.getElementById('ws-label').textContent = 'Connecté';
     };
     ws.onclose = function() {
       document.getElementById('ws-dot').className = 'ws-dot';
-      document.getElementById('ws-label').textContent = 'D\xe9connect\xe9';
+      document.getElementById('ws-label').textContent = 'Déconnecté';
+      addFeedLine(null, '⚡ Connexion perdue — reconnexion...');
       setTimeout(wsConnect, 3000);
     };
     ws.onmessage = function(e) {
       try {
         var ev = JSON.parse(e.data);
-        if (ev.type === 'STATE') { setStateBadge(ev.payload); }
+        if (ev.type === 'STATE') {
+          if (ev.payload && typeof ev.payload === 'object' && ev.payload.runId) {
+            var p = ev.payload;
+            var isFinished = p.status === 'done' || p.status === 'error' || p.status === 'stopped';
+            if (isFinished && window.activeRuns[p.runId]) {
+              setCardState(p.command, p.status === 'done' ? 'done' : 'error', p.runId);
+              delete window.activeRuns[p.runId];
+              updateRunsCounter(-1);
+              if (p.status === 'done') {
+                var cmd = COMMANDS.find(function(c){return c.id===p.command;});
+                if (cmd && cmd.nav) {
+                  _loaded[cmd.nav] = false;
+                  setTimeout(function(){ showTab(cmd.nav); }, 800);
+                }
+              }
+              if (p.status === 'done') { _loaded.runs = false; _loaded.finops = false; }
+            }
+          } else {
+            setStateBadge(ev.payload);
+          }
+        }
         if (ev.type === 'LOG') {
+          var payload = ev.payload;
+          var line, tag;
+          if (typeof payload === 'object' && payload.line) {
+            line = payload.line;
+            tag = '['+esc(payload.project||'')+'] '+esc(payload.command||'');
+            appendMiniLog(payload.command, line);
+          } else {
+            line = String(payload);
+            tag = null;
+          }
+          addFeedLine(tag, line);
           var feed = document.getElementById('live-log');
-          if (feed) {
-            var line = document.createElement('div');
-            line.style.cssText = 'border-bottom:1px solid var(--border);padding:3px 0;white-space:pre-wrap;word-break:break-all';
-            line.textContent = ev.payload;
+          if (feed && typeof payload === 'string') {
+            var lline = document.createElement('div');
+            lline.style.cssText = 'border-bottom:1px solid var(--border);padding:3px 0;white-space:pre-wrap;word-break:break-all';
+            lline.textContent = payload;
             if (feed.children.length > 200) feed.removeChild(feed.firstChild);
-            feed.appendChild(line);
+            feed.appendChild(lline);
             feed.scrollTop = feed.scrollHeight;
           }
         }
@@ -1297,9 +1752,12 @@ function wsConnect() {
     ws.onerror = function(){};
   } catch(err){}
 }
+buildCmdGrid();
+initProjectSelector();
 wsConnect();
 
 })();
 </script>
+<div class="toast-container" id="toast-container"></div>
 </body>
 </html>

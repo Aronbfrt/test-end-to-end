@@ -90,6 +90,25 @@ function initSchema(db: DB): void {
       value REAL    NOT NULL,
       target TEXT   NOT NULL DEFAULT ''
     );
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      last_used INTEGER NOT NULL,
+      run_count INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS active_runs (
+      run_id TEXT PRIMARY KEY,
+      pid INTEGER,
+      command TEXT NOT NULL,
+      target_path TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER,
+      exit_code INTEGER
+    );
   `);
 }
 
@@ -249,5 +268,66 @@ export function getRecentTriages(limit = 20, target?: string): unknown[] {
     return db.prepare(`SELECT * FROM triages ${where} ORDER BY ts DESC LIMIT ?`).all(...args);
   } catch {
     return [];
+  }
+}
+
+export function upsertProject(path: string): void {
+  const db = getDb();
+  if (!db) return;
+  try {
+    const name = path.split('/').filter(Boolean).pop() ?? path;
+    db.prepare(`
+      INSERT INTO projects (path, name, last_used, run_count) VALUES (?, ?, ?, 1)
+      ON CONFLICT(path) DO UPDATE SET last_used = excluded.last_used, run_count = run_count + 1
+    `).run(path, name, Date.now());
+  } catch (e) {
+    console.warn(`[metricsTracker] upsertProject: ${(e as Error).message}`);
+  }
+}
+
+export function listRecentProjects(limit = 10): Array<{ id: number; path: string; name: string; last_used: number; run_count: number }> {
+  const db = getDb();
+  if (!db) return [];
+  try {
+    return db.prepare('SELECT * FROM projects ORDER BY last_used DESC LIMIT ?').all(limit) as Array<{ id: number; path: string; name: string; last_used: number; run_count: number }>;
+  } catch { return []; }
+}
+
+export function insertActiveRun(runId: string, pid: number, command: string, targetPath: string): void {
+  const db = getDb();
+  if (!db) return;
+  try {
+    db.prepare('INSERT OR REPLACE INTO active_runs (run_id, pid, command, target_path, status, started_at) VALUES (?, ?, ?, ?, ?, ?)').run(runId, pid, command, targetPath, 'running', Date.now());
+  } catch (e) {
+    console.warn(`[metricsTracker] insertActiveRun: ${(e as Error).message}`);
+  }
+}
+
+export function updateActiveRun(runId: string, status: 'done' | 'error' | 'stopped', exitCode: number): void {
+  const db = getDb();
+  if (!db) return;
+  try {
+    db.prepare('UPDATE active_runs SET status = ?, ended_at = ?, exit_code = ? WHERE run_id = ?').run(status, Date.now(), exitCode, runId);
+  } catch (e) {
+    console.warn(`[metricsTracker] updateActiveRun: ${(e as Error).message}`);
+  }
+}
+
+export function listActiveRuns(): Array<{ run_id: string; pid: number; command: string; target_path: string; status: string; started_at: number }> {
+  const db = getDb();
+  if (!db) return [];
+  try {
+    return db.prepare('SELECT * FROM active_runs ORDER BY started_at DESC').all() as Array<{ run_id: string; pid: number; command: string; target_path: string; status: string; started_at: number }>;
+  } catch { return []; }
+}
+
+export function cleanStaleRuns(): void {
+  const db = getDb();
+  if (!db) return;
+  try {
+    const staleThreshold = Date.now() - 3600000;
+    db.prepare("UPDATE active_runs SET status='error' WHERE status='running' AND started_at < ?").run(staleThreshold);
+  } catch (e) {
+    console.warn(`[metricsTracker] cleanStaleRuns: ${(e as Error).message}`);
   }
 }

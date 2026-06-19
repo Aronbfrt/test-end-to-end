@@ -19,11 +19,22 @@ import express, { Request, Response, NextFunction } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'node:http';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { diagnostics } from '../orchestrator.js';
+import { upsertProject, listRecentProjects, insertActiveRun, updateActiveRun, listActiveRuns, cleanStaleRuns } from '../utils/metricsTracker.js';
 
 const _serverDir = dirname(fileURLToPath(import.meta.url));
+
+function sanitizePath(p: string): string {
+  const resolved = resolve(p);
+  if (resolved.includes('\0') || /[;&|`$<>]/.test(p)) {
+    throw new Error('Invalid path');
+  }
+  return resolved;
+}
 import type { TestRun, RunSummary, HotspotEntry } from '../utils/report.js';
 import { computeConfidenceIndex } from '../utils/report.js';
 
@@ -1447,6 +1458,104 @@ try {
     } catch (e) {
       res.json({ ok: false, message: (e as Error).message });
     }
+  });
+
+  // ── Projects ────────────────────────────────────────────────────────────────
+  app.get('/api/projects', (_req: Request, res: Response) => {
+    res.json(listRecentProjects(10));
+  });
+
+  app.post('/api/projects/validate', (req: Request, res: Response) => {
+    const { path: p } = req.body as { path?: string };
+    if (!p || typeof p !== 'string') { res.status(400).json({ valid: false, error: 'path required' }); return; }
+    let sanitized: string;
+    try { sanitized = sanitizePath(p); } catch { res.status(400).json({ valid: false, error: 'Chemin invalide' }); return; }
+    const exists = existsSync(sanitized);
+    if (exists) upsertProject(sanitized);
+    res.json({ valid: exists, name: basename(sanitized) });
+  });
+
+  // ── Command runner ───────────────────────────────────────────────────────────
+  const _activeChilds: Map<string, ReturnType<typeof spawn>> = new Map();
+
+  app.post('/api/run', (req: Request, res: Response) => {
+    const { command, targetPath: tp, flags = {} } = req.body as {
+      command: string;
+      targetPath: string;
+      flags?: Record<string, string | boolean | number>;
+    };
+
+    const validCommands = ['init', 'audit', 'shadow', 'diff', 'repair', 'coverage', 'update', 'sentinel', 'arch', 'chaos', 'fix'];
+    if (!validCommands.includes(command)) {
+      res.status(400).json({ error: `Commande inconnue: ${command}` }); return;
+    }
+
+    let safePath: string;
+    try { safePath = sanitizePath(tp); } catch {
+      res.status(400).json({ error: 'Chemin invalide' }); return;
+    }
+    if (!existsSync(safePath)) {
+      res.status(400).json({ error: `Chemin introuvable: ${safePath}` }); return;
+    }
+
+    const runId = randomUUID();
+    const scriptPath = join(resolve('.'), 'dist', 'index.js');
+
+    const args: string[] = [scriptPath, command, safePath];
+    if (flags['level']) args.push(`--level=${flags['level']}`);
+    if (flags['chaos']) args.push('--chaos');
+    if (flags['predictive']) args.push('--predictive');
+    if (flags['dry-run']) args.push('--dry-run');
+    if (flags['pr']) args.push(`--pr=${flags['pr']}`);
+    if (flags['trace']) args.push(`--trace=${flags['trace']}`);
+    if (flags['apply']) args.push('--apply');
+
+    const child = spawn(process.execPath, args, {
+      cwd: safePath,
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    _activeChilds.set(runId, child);
+    insertActiveRun(runId, child.pid ?? 0, command, safePath);
+    upsertProject(safePath);
+
+    const projectName = basename(safePath);
+
+    child.stdout!.on('data', (d: Buffer) => {
+      broadcast({ type: 'LOG', payload: { runId, project: projectName, command, line: d.toString() }, ts: Date.now() });
+    });
+    child.stderr!.on('data', (d: Buffer) => {
+      broadcast({ type: 'LOG', payload: { runId, project: projectName, command, line: d.toString(), isError: true }, ts: Date.now() });
+    });
+
+    child.on('close', (code) => {
+      _activeChilds.delete(runId);
+      const status = code === 0 ? 'done' : 'error';
+      updateActiveRun(runId, status as 'done' | 'error', code ?? -1);
+      broadcast({ type: 'STATE', payload: { runId, project: projectName, command, status, exitCode: code }, ts: Date.now() });
+    });
+
+    res.json({ runId, pid: child.pid });
+  });
+
+  app.post('/api/run/:runId/stop', (req: Request, res: Response) => {
+    const { runId } = req.params as { runId: string };
+    const child = _activeChilds.get(runId);
+    if (!child) { res.status(404).json({ error: 'Run introuvable ou déjà arrêté' }); return; }
+    try {
+      child.kill('SIGTERM');
+      _activeChilds.delete(runId);
+      updateActiveRun(runId, 'stopped', -1);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  });
+
+  app.get('/api/runs/active', (_req: Request, res: Response) => {
+    cleanStaleRuns();
+    res.json(listActiveRuns().filter((r) => r.status === 'running'));
   });
 
   // Global error handler
