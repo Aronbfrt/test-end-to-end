@@ -1321,42 +1321,58 @@ try {
   // ── Integration connection test ─────────────────────────────────────────────
   app.post('/api/integration/test', async (req: Request, res: Response) => {
     const { id, values } = req.body as { id: string; values?: Record<string, string> };
-    // Form values take priority over process.env (allows testing before saving)
     const env = { ...process.env, ...(values ?? {}) };
 
+    // Collect all URLs for a multi-webhook base key
+    function collectUrls(baseKey: string): string[] {
+      const urls: string[] = [];
+      if (env[baseKey]) urls.push(env[baseKey]!);
+      for (let i = 2; i <= 20; i++) {
+        const v = env[`${baseKey}_${i}`];
+        if (v) urls.push(v);
+      }
+      return urls;
+    }
+
+    async function testWebhook(
+      url: string,
+      body: object,
+    ): Promise<{ url: string; ok: boolean; status: number; error?: string }> {
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (r.ok) return { url, ok: true, status: r.status };
+        const text = await r.text();
+        return { url, ok: false, status: r.status, error: text.slice(0, 200) };
+      } catch (e) {
+        return { url, ok: false, status: 0, error: (e as Error).message };
+      }
+    }
+
     try {
-      if (id === 'discord') {
-        const url = env['DISCORD_WEBHOOK_URL'];
-        if (!url) { res.json({ ok: false, message: 'DISCORD_WEBHOOK_URL non configuré' }); return; }
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
-        });
-        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Discord !' }); }
-        else { res.json({ ok: false, message: `Discord a répondu ${r.status}: ${await r.text()}` }); }
-
-      } else if (id === 'slack') {
-        const url = env['SLACK_WEBHOOK_URL'];
-        if (!url) { res.json({ ok: false, message: 'SLACK_WEBHOOK_URL non configuré' }); return; }
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
-        });
-        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Slack !' }); }
-        else { res.json({ ok: false, message: `Slack a répondu ${r.status}: ${await r.text()}` }); }
-
-      } else if (id === 'teams') {
-        const url = env['TEAMS_WEBHOOK_URL'];
-        if (!url) { res.json({ ok: false, message: 'TEAMS_WEBHOOK_URL non configuré' }); return; }
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
-        });
-        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Teams !' }); }
-        else { res.json({ ok: false, message: `Teams a répondu ${r.status}: ${await r.text()}` }); }
+      if (id === 'discord' || id === 'slack' || id === 'teams') {
+        const baseKey = id === 'discord' ? 'DISCORD_WEBHOOK_URL'
+          : id === 'slack' ? 'SLACK_WEBHOOK_URL' : 'TEAMS_WEBHOOK_URL';
+        const urls = collectUrls(baseKey);
+        if (!urls.length) {
+          res.json({ ok: false, message: `${baseKey} non configuré — saisis au moins une URL` });
+          return;
+        }
+        const msgBody = id === 'discord'
+          ? { content: '✅ Test E2E dashboard — connexion confirmée !' }
+          : { text: '✅ Test E2E dashboard — connexion confirmée !' };
+        const results = await Promise.all(urls.map((u) => testWebhook(u, msgBody)));
+        const failed = results.filter((r) => !r.ok);
+        if (!failed.length) {
+          const label = id.charAt(0).toUpperCase() + id.slice(1);
+          res.json({ ok: true, message: `✅ ${results.length} webhook${results.length > 1 ? 's' : ''} ${label} OK` });
+        } else {
+          const details = failed.map((f) => `• ${f.url.slice(0, 60)}… → ${f.status} ${f.error ?? ''}`).join('\n');
+          res.json({ ok: false, message: `${failed.length}/${results.length} webhook(s) en erreur :\n${details}` });
+        }
 
       } else if (id === 'github') {
         const token = env['GITHUB_TOKEN'];
@@ -1366,22 +1382,24 @@ try {
         });
         if (r.ok) {
           const data = await r.json() as { login?: string };
-          res.json({ ok: true, message: `Connecté en tant que @${data.login}` });
-        } else { res.json({ ok: false, message: `GitHub a répondu ${r.status}` }); }
+          res.json({ ok: true, message: `Connecté GitHub en tant que @${data.login}` });
+        } else { res.json({ ok: false, message: `GitHub ${r.status} — token invalide ou expiré` }); }
 
       } else if (id === 'jira') {
         const url = env['JIRA_URL'];
         const email = env['JIRA_USER_EMAIL'];
         const token = env['JIRA_TOKEN'];
-        if (!url || !email || !token) { res.json({ ok: false, message: 'JIRA_URL / JIRA_USER_EMAIL / JIRA_TOKEN requis' }); return; }
+        if (!url || !email || !token) {
+          res.json({ ok: false, message: 'JIRA_URL + JIRA_USER_EMAIL + JIRA_TOKEN requis' }); return;
+        }
         const creds = Buffer.from(`${email}:${token}`).toString('base64');
-        const r = await fetch(`${url}/rest/api/3/myself`, {
+        const r = await fetch(`${url.replace(/\/$/, '')}/rest/api/3/myself`, {
           headers: { Authorization: `Basic ${creds}`, Accept: 'application/json' },
         });
         if (r.ok) {
-          const data = await r.json() as { displayName?: string };
-          res.json({ ok: true, message: `Connecté sur Jira en tant que ${data.displayName}` });
-        } else { res.json({ ok: false, message: `Jira a répondu ${r.status}` }); }
+          const data = await r.json() as { displayName?: string; emailAddress?: string };
+          res.json({ ok: true, message: `Connecté Jira : ${data.displayName} (${data.emailAddress})` });
+        } else { res.json({ ok: false, message: `Jira ${r.status} — URL, email ou token incorrect` }); }
 
       } else {
         res.json({ ok: false, message: `Test non supporté pour "${id}"` });
