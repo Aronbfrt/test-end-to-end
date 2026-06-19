@@ -1306,15 +1306,21 @@ try {
   });
 
   app.post('/api/env/delete', (req: Request, res: Response) => {
-    const { key } = req.body as { key?: string };
-    if (!key || !isAllowedKey(key)) { res.status(400).json({ error: 'Clé non autorisée' }); return; }
+    const body = req.body as { key?: string; keys?: string[] };
+    const keys = body.keys ?? (body.key ? [body.key] : []);
+    const bad = keys.filter((k) => !isAllowedKey(k));
+    if (!keys.length || bad.length) {
+      res.status(400).json({ error: `Clé(s) non autorisée(s): ${bad.join(', ')}` }); return;
+    }
     try {
       if (!existsSync(pluginEnvPath)) { res.json({ status: 'ok' }); return; }
       let content = readFileSync(pluginEnvPath, 'utf-8');
-      content = content.replace(new RegExp(`^${key}=.*\\n?`, 'm'), '');
+      for (const k of keys) {
+        content = content.replace(new RegExp(`^${k}=.*\\n?`, 'm'), '');
+        delete process.env[k];
+      }
       writeFileSync(pluginEnvPath, content, 'utf-8');
-      delete process.env[key];
-      res.json({ status: 'ok' });
+      res.json({ status: 'ok', deleted: keys.length });
     } catch (e) { res.status(500).json({ error: (e as Error).message }); }
   });
 
@@ -1359,6 +1365,29 @@ try {
         const urls = collectUrls(baseKey);
         if (!urls.length) {
           res.json({ ok: false, message: `${baseKey} non configuré — saisis au moins une URL` });
+          return;
+        }
+        // Validate URL format before hitting the API
+        const invalidUrls: string[] = [];
+        if (id === 'discord') {
+          urls.forEach((u) => {
+            if (!/^https:\/\/discord\.com\/api\/webhooks\/\d+\/.+$/.test(u)) invalidUrls.push(u);
+          });
+        } else if (id === 'slack') {
+          urls.forEach((u) => {
+            if (!/^https:\/\/hooks\.slack\.com\/services\//.test(u)) invalidUrls.push(u);
+          });
+        } else if (id === 'teams') {
+          urls.forEach((u) => {
+            if (!/^https:\/\/.+\.webhook\.office\.com\//.test(u)) invalidUrls.push(u);
+          });
+        }
+        if (invalidUrls.length) {
+          const hint = id === 'discord'
+            ? 'Format attendu : https://discord.com/api/webhooks/{ID_numérique}/{token}'
+            : id === 'slack' ? 'Format attendu : https://hooks.slack.com/services/T…/B…/…'
+            : 'Format attendu : https://xxx.webhook.office.com/…';
+          res.json({ ok: false, message: `URL invalide :\n${invalidUrls.map((u) => `• ${u}`).join('\n')}\n\n${hint}` });
           return;
         }
         const msgBody = id === 'discord'
