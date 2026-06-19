@@ -113,6 +113,9 @@ Ajouter dans `.claude/settings.json` :
 ## Démarrage rapide
 
 ```bash
+# Aide complète
+e2e --help
+
 # 1. Analyser le projet et générer les tests
 e2e init /votre/projet
 
