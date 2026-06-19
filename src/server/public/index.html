@@ -353,8 +353,10 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     <form id="int-form" onsubmit="submitIntModal(event)">
       <div id="modal-fields"></div>
     </form>
+    <div id="modal-test-result" style="display:none;margin:8px 0;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:500"></div>
     <div class="int-modal-actions">
       <button type="button" class="int-disconnect" id="modal-disconnect" onclick="disconnectInt()" style="display:none">Déconnecter</button>
+      <button type="button" class="btn btn-ghost" id="modal-test-btn" onclick="testIntConnection()" style="display:none">⚡ Tester</button>
       <button type="button" class="btn btn-ghost" onclick="closeIntModal()">Annuler</button>
       <button type="submit" form="int-form" class="btn btn-primary">Enregistrer</button>
     </div>
@@ -790,7 +792,7 @@ var INTEGRATIONS = [
     guide:'https://api.slack.com/apps',
     guideLabel:'Créer une app Slack',
     fields:[
-      {label:'Incoming Webhook URL', key:'SLACK_WEBHOOK_URL', type:'password', placeholder:'https://hooks.slack.com/services/T…/B…/…',
+      {label:'Incoming Webhook URL', key:'SLACK_WEBHOOK_URL', type:'text', placeholder:'https://hooks.slack.com/services/T…/B…/…',
        hint:'api.slack.com/apps → Create App → Incoming Webhooks → Add New Webhook'}
     ]
   },
@@ -799,7 +801,7 @@ var INTEGRATIONS = [
     guide:'https://discord.com/developers/applications',
     guideLabel:'Créer un webhook Discord',
     fields:[
-      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'password', placeholder:'https://discord.com/api/webhooks/…',
+      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'text', placeholder:'https://discord.com/api/webhooks/…',
        hint:'Paramètres du serveur → Intégrations → Webhooks → Nouveau webhook'}
     ]
   },
@@ -808,7 +810,7 @@ var INTEGRATIONS = [
     guide:'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
     guideLabel:'Créer un webhook Teams',
     fields:[
-      {label:'Incoming Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'password', placeholder:'https://xxx.webhook.office.com/…',
+      {label:'Incoming Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'text', placeholder:'https://xxx.webhook.office.com/…',
        hint:'Canal Teams → ··· → Connecteurs → Incoming Webhook → Configurer'}
     ]
   },
@@ -894,7 +896,7 @@ var INTEGRATIONS = [
     guide:'https://hpanel.hostinger.com',
     guideLabel:'Configurer sur hPanel',
     fields:[
-      {label:'Deploy Webhook URL', key:'HOSTINGER_DEPLOY_WEBHOOK_URL', type:'password', placeholder:'https://…',
+      {label:'Deploy Webhook URL', key:'HOSTINGER_DEPLOY_WEBHOOK_URL', type:'text', placeholder:'https://…',
        hint:'hPanel → Hébergement → Git → Deploy webhook URL'}
     ]
   },
@@ -976,6 +978,11 @@ window.openIntModal = function(id) {
   var hasAny = intg.fields.some(function(f){ return !!_intEnv[f.key]; });
   document.getElementById('modal-disconnect').style.display = hasAny ? 'inline-flex' : 'none';
 
+  // Bouton test visible uniquement pour services supportés
+  var testable = ['discord','slack','teams','github','jira'].indexOf(intg.id) !== -1;
+  document.getElementById('modal-test-btn').style.display = testable ? 'inline-flex' : 'none';
+  document.getElementById('modal-test-result').style.display = 'none';
+
   document.getElementById('int-modal').style.display = 'flex';
 };
 
@@ -995,16 +1002,59 @@ window.submitIntModal = function(e) {
     if (input && input.value.trim()) updates[f.key] = input.value.trim();
   });
   if (!Object.keys(updates).length) { closeIntModal(); return; }
+  var btn = form.closest('.int-modal-body').querySelector('[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
   fetch('/api/env/update', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(updates)
   }).then(function(r){ return r.json(); }).then(function() {
-    closeIntModal();
+    btn.disabled = false; btn.textContent = 'Enregistrer';
     _loaded.integrations = false;
     loadIntegrations();
+    var testable = ['discord','slack','teams','github','jira'].indexOf(intg.id) !== -1;
+    if (testable) {
+      setTimeout(function(){ testIntConnection(true); }, 300);
+    } else {
+      closeIntModal();
+    }
   }).catch(function(err) {
+    btn.disabled = false; btn.textContent = 'Enregistrer';
     alert('Erreur: '+err.message);
+  });
+};
+
+window.testIntConnection = function(autoAfterSave) {
+  var intg = INTEGRATIONS.find(function(i){ return i.id === _currentIntId; });
+  if (!intg) return;
+  var resEl = document.getElementById('modal-test-result');
+  var testBtn = document.getElementById('modal-test-btn');
+  resEl.style.display = 'block';
+  resEl.style.background = 'rgba(99,102,241,.1)';
+  resEl.style.color = 'var(--fg)';
+  resEl.textContent = '⏳ Test en cours…';
+  testBtn.disabled = true;
+  fetch('/api/integration/test', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: intg.id})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    testBtn.disabled = false;
+    if (d.ok) {
+      resEl.style.background = 'rgba(16,185,129,.12)';
+      resEl.style.color = '#10b981';
+      resEl.textContent = '✅ '+d.message;
+      if (autoAfterSave) setTimeout(closeIntModal, 2000);
+    } else {
+      resEl.style.background = 'rgba(239,68,68,.1)';
+      resEl.style.color = '#ef4444';
+      resEl.textContent = '❌ '+d.message;
+    }
+  }).catch(function(err) {
+    testBtn.disabled = false;
+    resEl.style.background = 'rgba(239,68,68,.1)';
+    resEl.style.color = '#ef4444';
+    resEl.textContent = '❌ Erreur réseau: '+err.message;
   });
 };
 

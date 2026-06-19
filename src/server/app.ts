@@ -1286,6 +1286,78 @@ try {
     } catch (e) { res.status(500).json({ error: (e as Error).message }); }
   });
 
+  // ── Integration connection test ─────────────────────────────────────────────
+  app.post('/api/integration/test', async (req: Request, res: Response) => {
+    const { id } = req.body as { id: string };
+    const env = process.env;
+
+    try {
+      if (id === 'discord') {
+        const url = env['DISCORD_WEBHOOK_URL'];
+        if (!url) { res.json({ ok: false, message: 'DISCORD_WEBHOOK_URL non configuré' }); return; }
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
+        });
+        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Discord !' }); }
+        else { res.json({ ok: false, message: `Discord a répondu ${r.status}: ${await r.text()}` }); }
+
+      } else if (id === 'slack') {
+        const url = env['SLACK_WEBHOOK_URL'];
+        if (!url) { res.json({ ok: false, message: 'SLACK_WEBHOOK_URL non configuré' }); return; }
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
+        });
+        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Slack !' }); }
+        else { res.json({ ok: false, message: `Slack a répondu ${r.status}: ${await r.text()}` }); }
+
+      } else if (id === 'teams') {
+        const url = env['TEAMS_WEBHOOK_URL'];
+        if (!url) { res.json({ ok: false, message: 'TEAMS_WEBHOOK_URL non configuré' }); return; }
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: '✅ Test de connexion depuis le dashboard E2E — tout fonctionne !' }),
+        });
+        if (r.ok) { res.json({ ok: true, message: 'Message envoyé sur Teams !' }); }
+        else { res.json({ ok: false, message: `Teams a répondu ${r.status}: ${await r.text()}` }); }
+
+      } else if (id === 'github') {
+        const token = env['GITHUB_TOKEN'];
+        if (!token) { res.json({ ok: false, message: 'GITHUB_TOKEN non configuré' }); return; }
+        const r = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'e2e-dashboard' },
+        });
+        if (r.ok) {
+          const data = await r.json() as { login?: string };
+          res.json({ ok: true, message: `Connecté en tant que @${data.login}` });
+        } else { res.json({ ok: false, message: `GitHub a répondu ${r.status}` }); }
+
+      } else if (id === 'jira') {
+        const url = env['JIRA_URL'];
+        const email = env['JIRA_USER_EMAIL'];
+        const token = env['JIRA_TOKEN'];
+        if (!url || !email || !token) { res.json({ ok: false, message: 'JIRA_URL / JIRA_USER_EMAIL / JIRA_TOKEN requis' }); return; }
+        const creds = Buffer.from(`${email}:${token}`).toString('base64');
+        const r = await fetch(`${url}/rest/api/3/myself`, {
+          headers: { Authorization: `Basic ${creds}`, Accept: 'application/json' },
+        });
+        if (r.ok) {
+          const data = await r.json() as { displayName?: string };
+          res.json({ ok: true, message: `Connecté sur Jira en tant que ${data.displayName}` });
+        } else { res.json({ ok: false, message: `Jira a répondu ${r.status}` }); }
+
+      } else {
+        res.json({ ok: false, message: `Test non supporté pour "${id}"` });
+      }
+    } catch (e) {
+      res.json({ ok: false, message: (e as Error).message });
+    }
+  });
+
   // Global error handler
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('[server] unhandled error:', err.message);
