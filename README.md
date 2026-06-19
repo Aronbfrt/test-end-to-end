@@ -87,8 +87,9 @@ Le script `setup.sh` gère automatiquement les 7 étapes suivantes :
 | 3 — Build | `npm install` + `tsc` → `dist/` |
 | 4 — Playwright | Installe les navigateurs Chromium |
 | 5 — Ollama | Pull le modèle adapté à la RAM → active le Zero-Token Bypass |
-| 6 — Config | Crée `.env` depuis `.env.example`, initialise `.e2e-work/`, met à jour `.gitignore` |
-| 7 — Vérification | Vérifie chaque outil installé et sa version, confirme que le moteur démarre |
+| 6 — Claude Code | Ajoute le plugin dans `~/.claude/settings.json` automatiquement |
+| 7 — Config | Crée `.env` depuis `.env.example`, initialise `.e2e-work/`, met à jour `.gitignore` |
+| 8 — Vérification | Vérifie chaque outil installé et sa version, confirme que le moteur démarre |
 
 Pour une installation manuelle étape par étape :
 

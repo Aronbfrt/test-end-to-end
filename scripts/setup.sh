@@ -162,9 +162,43 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ÉTAPE 6 — Configuration .env + .e2e-work/ + .gitignore
+# ÉTAPE 6 — Enregistrement du plugin dans Claude Code (.claude/settings.json)
 # ─────────────────────────────────────────────────────────────────────────────
-step "[ 6/7 ] Configuration de l'environnement"
+step "[ 6/8 ] Enregistrement dans Claude Code"
+
+PLUGIN_ABS="$(pwd)"
+CLAUDE_SETTINGS="${HOME}/.claude/settings.json"
+
+mkdir -p "${HOME}/.claude"
+
+if [ ! -f "$CLAUDE_SETTINGS" ]; then
+  echo '{"plugins":[]}' > "$CLAUDE_SETTINGS"
+  ok "settings.json créé : ${CLAUDE_SETTINGS}"
+fi
+
+# Ajouter le plugin si absent (manipulation JSON via node)
+node -e "
+const fs = require('fs');
+const path = '${CLAUDE_SETTINGS}';
+const pluginPath = '${PLUGIN_ABS}';
+let cfg = {};
+try { cfg = JSON.parse(fs.readFileSync(path, 'utf8')); } catch(e) { cfg = {}; }
+if (!Array.isArray(cfg.plugins)) cfg.plugins = [];
+if (!cfg.plugins.includes(pluginPath)) {
+  cfg.plugins.push(pluginPath);
+  fs.writeFileSync(path, JSON.stringify(cfg, null, 2));
+  console.log('ajouté');
+} else {
+  console.log('déjà présent');
+}
+" 2>/dev/null | grep -q "ajouté" \
+  && ok "Plugin enregistré dans ${CLAUDE_SETTINGS}" \
+  || ok "Plugin déjà présent dans ${CLAUDE_SETTINGS}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ÉTAPE 7 — Configuration .env + .e2e-work/ + .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+step "[ 7/8 ] Configuration de l'environnement"
 
 if [ ! -f .env ]; then
   cp .env.example .env 2>/dev/null || cat > .env << 'ENVEOF'
@@ -214,9 +248,9 @@ if [ -f .gitignore ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ÉTAPE 7 — Vérification finale : tout est-il bien installé ?
+# ÉTAPE 8 — Vérification finale : tout est-il bien installé ?
 # ─────────────────────────────────────────────────────────────────────────────
-step "[ 7/7 ] Vérification finale"
+step "[ 8/8 ] Vérification finale"
 
 ERRORS=0
 
