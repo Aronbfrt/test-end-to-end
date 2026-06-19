@@ -168,8 +168,7 @@ e2e dashboard
 ### Script de sécurité rapide
 
 ```bash
-npm run security-fix /votre/projet
-# équivalent à : node dist/agents/dependabot.js /votre/projet
+e2e fix /votre/projet
 # → npm audit, fix LLM, vérification tsc, PR GitHub si GITHUB_TOKEN défini
 ```
 
@@ -178,7 +177,7 @@ npm run security-fix /votre/projet
 Quand l'Evolver détecte un pattern d'échec, il écrit une proposition dans `.e2e-work/evolutions-pending/` sans toucher au code source. Pour l'appliquer après revue humaine :
 
 ```bash
-e2e e2e-evolve-apply .e2e-work/evolutions-pending/1234567890-scout.evolution.json
+e2e evolve-apply .e2e-work/evolutions-pending/1234567890-scout.evolution.json
 # → applique le diff, commit git, archive dans evolutions-applied/
 ```
 
@@ -342,7 +341,7 @@ npm run dashboard
 | **Runs** | Historique complet des runs avec Confidence Index (0–100), durée, compteurs pass/fail |
 | **Coverage** | Carte de couverture routes et forms — vert/rouge par endpoint, % global |
 | **Crashs** | Tous les résultats de triage avec verdict, raisonnement et déclencheur de réparation en un clic |
-| **Évolutions** | Propositions Evolver en attente — revue et application via `e2e-evolve-apply` |
+| **Évolutions** | Propositions Evolver en attente — revue et application via `evolve-apply` |
 | **Sentinel** | Findings OWASP par PR — sévérité, route, recommandation |
 | **ArchPolice** | Violations architecture : scores de complexité, matrice de couplage, heatmap taille de fichiers |
 | **Intégrations** | Statut live des services connectés (Slack, Jira, OVH…) |
@@ -400,7 +399,7 @@ Toutes les intégrations sont **optionnelles**. Copier `.env.example` vers `.env
 ## Sécurité
 
 - **Ghostwriter est en dry-run par défaut** — les patches ne sont jamais auto-appliqués sur disque sans `--apply`
-- **Evolver est supervisé par défaut** — les auto-patches nécessitent une approbation humaine via `e2e-evolve-apply` avant de toucher `src/`
+- **Evolver est supervisé par défaut** — les auto-patches nécessitent une approbation humaine via `evolve-apply` avant de toucher `src/`
 - **Whitelist de commandes SSH** — seuls `tail`, `cat`, `journalctl`, `pm2` sont autorisés ; tout le reste est rejeté au niveau de l'intégration
 - **RGPDGuard masque toutes les PII** avant écriture dans `.e2e-work/` — tokens JWT, clés API, emails, IBAN, numéros de carte
 - **Aucune donnée sensible loggée sur stdout** — clés API et credentials SSH n'apparaissent jamais dans la console
@@ -425,7 +424,7 @@ Tous les artefacts générés sont isolés dans `.e2e-work/` à la racine du pro
 | `latest.log` | Log complet du dernier run |
 | `patches-pending/` | Patches Ghostwriter en attente d'application (`--apply`) |
 | `evolutions-pending/` | Propositions Evolver en attente de revue humaine |
-| `evolutions-applied/` | Archive des évolutions appliquées via `e2e-evolve-apply` |
+| `evolutions-applied/` | Archive des évolutions appliquées via `evolve-apply` |
 | `*.triage.json` | Résultats de triage Coroner par trace ID |
 
 > `.e2e-work/` doit être ajouté à `.gitignore` si vous ne souhaitez pas versionner les artefacts.
@@ -436,7 +435,7 @@ Tous les artefacts générés sont isolés dans `.e2e-work/` à la racine du pro
 
 ```mermaid
 graph LR
-    IDX["🖥️ index.ts\nCLI · MCP · e2e-evolve-apply"] --> ORC["⚙️ orchestrator.ts\nMachine d'état · routing · cache"]
+    IDX["🖥️ index.ts\nCLI · MCP · evolve-apply"] --> ORC["⚙️ orchestrator.ts\nMachine d'état · routing · cache"]
 
     ORC --> AG["🤖 agents/\n14 agents spécialisés"]
     ORC --> IN["🔌 integrations/\nSlack · Jira · SSH · Trello · Stripe"]
@@ -452,7 +451,7 @@ graph LR
 test-end-to-end/
 ├── src/
 │   ├── orchestrator.ts            # Cerveau central : machine d'état, routage, Zero-Token Bypass
-│   ├── index.ts                   # CLI · MCP (11 outils) · e2e-evolve-apply
+│   ├── index.ts                   # CLI · MCP (11 outils) · evolve-apply
 │   ├── agents/
 │   │   ├── scout.ts               # Extraction AST routes/forms (ts-morph)
 │   │   ├── artisan.ts             # Génération specs Playwright depuis RouteMap

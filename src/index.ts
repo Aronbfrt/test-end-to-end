@@ -65,7 +65,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     'init', 'audit', 'shadow', 'diff', 'repair', 'coverage', 'update',
     'sentinel', 'arch', 'chaos',
   ];
-  const specialCommands = ['e2e-evolve-apply'];
+  const specialCommands = ['evolve-apply', 'fix'];
   const command = (args.find((a) => validCommands.includes(a as RunConfig['command'])) ?? null) as RunConfig['command'] | null;
 
   const prArg = args.find((a) => a.startsWith('--pr='));
@@ -75,8 +75,8 @@ function parseArgs(argv: string[]): ParsedArgs {
   const portArg = args.find((a) => a.startsWith('--port='));
   const port = portArg ? parseInt(portArg.split('=')[1] ?? '3000', 10) : undefined;
 
-  // e2e-evolve-apply <file>
-  const evolveIdx = args.indexOf('e2e-evolve-apply');
+  // evolve-apply <file>
+  const evolveIdx = args.indexOf('evolve-apply');
   const evolveFile = evolveIdx >= 0 ? args[evolveIdx + 1] : undefined;
 
   // First non-flag, non-command positional arg = targetPath override
@@ -425,12 +425,10 @@ FLAGS
   --version         Affiche la version
 
 COMMANDES SPÉCIALES
-  e2e-evolve-apply <file>   Applique une évolution en attente et l'archive
-                            Ex: node dist/index.js e2e-evolve-apply .e2e-work/evolutions-pending/123-scout.evolution.json
-
-DASHBOARD
-  node dist/server/start.js          → http://127.0.0.1:4321
-  E2E_PORT=4444 node dist/server/start.js
+  e2e fix [targetPath]        Audit sécurité npm + patches LLM + PR GitHub si GITHUB_TOKEN
+  e2e evolve-apply <file>     Applique une évolution en attente et l'archive
+                              Ex: e2e evolve-apply .e2e-work/evolutions-pending/123-scout.evolution.json
+  e2e dashboard               Dashboard live → http://127.0.0.1:4321
 
 MCP (.mcp.json)
   { "mcpServers": { "e2e": { "command": "node",
@@ -510,9 +508,22 @@ async function runCli(parsed: ParsedArgs): Promise<void> {
     process.exit(0);
   }
 
-  // Special command: e2e-evolve-apply <file>
+  // Special command: evolve-apply <file>
   if (parsed.evolveFile !== undefined) {
     await applyEvolution(parsed.evolveFile);
+    return;
+  }
+
+  // Special command: fix (security audit + dependabot)
+  if (process.argv[2] === 'fix') {
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const { spawn } = await import('node:child_process');
+    const __dir = dirname(fileURLToPath(import.meta.url));
+    const fixPath = join(__dir, 'agents', 'dependabot.js');
+    const fixArgs = process.argv[3] ? [fixPath, process.argv[3]] : [fixPath];
+    const child = spawn(process.execPath, fixArgs, { stdio: 'inherit' });
+    child.on('exit', (code) => process.exit(code ?? 0));
     return;
   }
 
