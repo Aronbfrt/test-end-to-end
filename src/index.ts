@@ -364,44 +364,47 @@ test-end-to-end V-Infinite 2.0.0 — Autonomous QA Engine
 13 agents · 11 MCP tools · Zero-Token Bypass via SHA-256 + Ollama
 
 USAGE
-  node dist/index.js <command> [targetPath] [flags]
+  e2e <command> [targetPath] [flags]
 
 COMMANDS
   init        Initialise le projet cible : détecte le stack, amorce le cache,
               génère la config Playwright.
-              Ex: node dist/index.js init /mon/projet
+              Ex: e2e init /mon/projet
 
   audit       Audit E2E complet : scan AST → génération tests → triage → rapport.
-              Ex: node dist/index.js audit --level=2 --predictive
+              Ex: e2e audit --level=2 --predictive
 
   shadow      Zero-prompt Reverse Testing + Shadow Personas (Frustrated / Attacker /
               Impulsive). Fonctionne sans qu'on décrive une seule fonctionnalité.
-              Ex: node dist/index.js shadow --level=3 --chaos
+              Ex: e2e shadow --level=3 --chaos
 
   diff        Cible le scan sur les fichiers modifiés (git diff HEAD + staged).
-              Ex: node dist/index.js diff --predictive --level=2
+              Ex: e2e diff --predictive --level=2
 
   repair      Active Ghostwriter pour patcher un bug confirmé par le Coroner.
-              Ex: node dist/index.js repair --trace=run-1718542800000
+              Ex: e2e repair --trace=run-1718542800000
 
   coverage    Carte de couverture : routes + forms vs fichiers de test existants.
-              Ex: node dist/index.js coverage --detail
+              Ex: e2e coverage --detail
 
   update      Sync intelligent après changements de code. Protège les tests manuels.
-              Ex: node dist/index.js update --dry-run
+              Ex: e2e update --dry-run
 
   sentinel    Audit sécurité OWASP sur une Pull Request GitHub.
               Détecte secrets, SQLi, SSRF, eval, XSS, IDOR, RCE.
               Utilise Ollama (local, 0 token) ou regex OWASP en fallback.
-              Ex: node dist/index.js sentinel --pr=42
-                  node dist/index.js sentinel --pr=42 --repo=owner/repo
+              Ex: e2e sentinel --pr=42
+                  e2e sentinel --pr=42 --repo=owner/repo
 
   arch        Analyse l'architecture du code (complexité cyclomatique, couplage).
               Score 0-100. Génère .e2e-work/arch-report.md
-              Ex: node dist/index.js arch /mon/projet
+              Ex: e2e arch /mon/projet
 
   chaos       Génère des specs Playwright de chaos réseau (6 scénarios par route).
-              Ex: node dist/index.js chaos --port=8080
+              Ex: e2e chaos --port=8080
+
+  dashboard   Ouvre le dashboard live (8 onglets, WebSocket).
+              Ex: e2e dashboard
 
 FLAGS
   --level=1         Déterministe local — AST pur, sans LLM
