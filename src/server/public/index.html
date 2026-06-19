@@ -143,10 +143,11 @@ tr:hover td{background:#131f33}
 .finding-msg{font-size:12px;color:var(--text)}
 
 /* ── Integrations ── */
-.int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px}
+.int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px}
 .int-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
   padding:12px 14px;display:flex;align-items:center;gap:10px}
-.int-icon{font-size:20px;flex-shrink:0}
+.int-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.int-logo svg{width:20px;height:20px}
 .int-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:2px}
 .int-status{font-size:10px}
 .int-ok{color:var(--pass)}.int-off{color:var(--muted)}
@@ -174,6 +175,19 @@ tr:hover td{background:#131f33}
 footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:5px 16px;font-size:10px;color:var(--muted);
   display:flex;justify-content:space-between;align-items:center}
+
+/* ── Integration Modal ── */
+.int-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center}
+.int-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:90vw}
+.int-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.int-modal-title{font-size:14px;font-weight:700;color:#fff}
+.int-form-group{margin-bottom:12px}
+.int-form-label{font-size:11px;color:var(--subtle);margin-bottom:4px;display:block;font-weight:500}
+.int-form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit}
+.int-form-input:focus{border-color:var(--accent)}
+.int-modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.int-disconnect{font-size:10px;color:var(--fail);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;align-self:center;margin-right:auto}
+.int-disconnect:hover{color:#fca5a5}
 </style>
 </head>
 <body>
@@ -225,11 +239,11 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
       </div>
       <div class="qactions" id="quick-actions">
         <span style="font-size:10px;color:var(--muted);align-self:center">Copier :</span>
-        <span class="qa-chip" onclick="copyCmd(this)">e2e init .</span>
-        <span class="qa-chip" onclick="copyCmd(this)">e2e audit .</span>
-        <span class="qa-chip" onclick="copyCmd(this)">e2e audit . --level=3</span>
-        <span class="qa-chip" onclick="copyCmd(this)">e2e coverage .</span>
-        <span class="qa-chip" onclick="copyCmd(this)">e2e fix .</span>
+        <span class="qa-chip" data-tpl="e2e init {path}" onclick="copyCmd(this)">e2e init .</span>
+        <span class="qa-chip" data-tpl="e2e audit {path}" onclick="copyCmd(this)">e2e audit .</span>
+        <span class="qa-chip" data-tpl="e2e audit {path} --level=3" onclick="copyCmd(this)">e2e audit . --level=3</span>
+        <span class="qa-chip" data-tpl="e2e coverage {path}" onclick="copyCmd(this)">e2e coverage .</span>
+        <span class="qa-chip" data-tpl="e2e fix {path}" onclick="copyCmd(this)">e2e fix .</span>
       </div>
       <div id="runs-table"><div class="empty">Chargement…</div></div>
     </div>
@@ -329,6 +343,24 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
   <span id="footer-ts">—</span>
 </footer>
 
+<!-- ══ Integration Modal ══ -->
+<div id="int-modal" style="display:none" class="int-modal-overlay">
+  <div class="int-modal-box" id="int-modal-box">
+    <div class="int-modal-header" id="modal-header">
+      <div class="int-logo" id="modal-logo"></div>
+      <div class="int-modal-title" id="modal-title">Intégration</div>
+    </div>
+    <form id="int-form" onsubmit="submitIntModal(event)">
+      <div id="modal-fields"></div>
+    </form>
+    <div class="int-modal-actions">
+      <button type="button" class="int-disconnect" id="modal-disconnect" onclick="disconnectInt()" style="display:none">Déconnecter</button>
+      <button type="button" class="btn btn-ghost" onclick="closeIntModal()">Annuler</button>
+      <button type="submit" form="int-form" class="btn btn-primary">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 'use strict';
@@ -398,7 +430,10 @@ function scoreGrade(s) {
   return s >= 90 ? 'A' : s >= 80 ? 'B' : s >= 60 ? 'C' : 'D';
 }
 window.copyCmd = function(el) {
-  navigator.clipboard.writeText(el.textContent.trim()).then(function() {
+  var tpl = el.dataset.tpl || el.textContent.trim();
+  var path = window._targetPath || '.';
+  var text = tpl.replace(/\{path\}/g, path);
+  navigator.clipboard.writeText(text).then(function() {
     var orig = el.textContent;
     el.textContent = '✓ Copié !';
     el.style.color = 'var(--pass)';
@@ -417,10 +452,16 @@ tick(); setInterval(tick, 1000);
 // ── Load target path from status ─────────────────────────────────────────────
 fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
   var t = d.targetPath || d.config?.targetPath || '';
+  window._targetPath = t || '.';
   if (t) {
     var el = document.getElementById('target-path');
     el.textContent = t.length > 40 ? '…'+t.slice(-40) : t;
     el.title = t;
+    // Update quick action chips display text
+    document.querySelectorAll('.qa-chip[data-tpl]').forEach(function(chip) {
+      var tpl = chip.dataset.tpl;
+      chip.textContent = tpl.replace(/\{path\}/g, t.length > 30 ? '…'+t.slice(-25) : t);
+    });
   }
 }).catch(function(){});
 
@@ -532,7 +573,13 @@ function loadCoverage() {
 
 // ── Crashs ───────────────────────────────────────────────────────────────────
 function loadCrashs() {
-  fetch('/api/crashs').then(function(r){return r.json();}).then(function(list) {
+  var crashPromise = fetch('/api/crashs').then(function(r){return r.json();});
+  var screenshotsPromise = fetch('/api/screenshots').then(function(r){return r.ok ? r.json() : [];}).catch(function(){return [];});
+
+  Promise.all([crashPromise, screenshotsPromise]).then(function(results) {
+    var list = results[0];
+    var screenshots = results[1] || [];
+
     var cnt = document.getElementById('cnt-crash');
     cnt.textContent = list.length;
     cnt.className = 'nav-cnt'+(list.length>0?' red':'');
@@ -541,18 +588,47 @@ function loadCrashs() {
       document.getElementById('crash-body').innerHTML = '<div class="empty">✅ Aucun crash enregistré</div>';
       return;
     }
+
+    // Build slug → screenshot URL map
+    var screenshotMap = {};
+    screenshots.forEach(function(s) {
+      var filename = typeof s === 'string' ? s : (s.filename || s.name || s.file || '');
+      var url = typeof s === 'string' ? ('/api/screenshots/'+encodeURIComponent(s)) : (s.url || '/api/screenshots/'+encodeURIComponent(filename));
+      var slug = filename.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      screenshotMap[slug] = url;
+      screenshotMap[filename.toLowerCase()] = url;
+    });
+
+    function findScreenshot(crash) {
+      var route = crash.bugReport?.route || crash.route || '';
+      var routeSlug = route.replace(/^\//, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (!routeSlug) return null;
+      for (var key in screenshotMap) {
+        if (key.indexOf(routeSlug) !== -1 || routeSlug.indexOf(key.replace(/\.[^-]+$/, '')) !== -1) {
+          return screenshotMap[key];
+        }
+      }
+      return null;
+    }
+
     var html = '';
     list.forEach(function(c) {
       var sev = c.verdict==='BACKEND_BUG'?'high':c.verdict==='SELECTOR_DRIFT'?'medium':'low';
+      var screenshotUrl = findScreenshot(c);
       html += '<div class="finding">'
         +'<div class="finding-sev sev-'+sev+'">'+esc(c.verdict||'?')+'</div>'
         +'<div class="finding-body">'
         +'<div class="finding-file">'+esc(c.bugReport?.route||c.route||'—')+'</div>'
         +'<div class="finding-msg">'+esc(c.reasoning||c.bugReport?.assertion||'—')+'</div>'
-        +'<div style="margin-top:6px;display:flex;gap:6px;align-items:center">'
+        +'<div style="margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
         +'<span class="dim" style="font-size:10px">Confiance: '+(Math.round((c.confidence||0)*100))+'%</span>'
         +(c.verdict==='BACKEND_BUG'
           ?'<button class="btn btn-primary" onclick="triggerRepair(\''+esc(c.traceId||'')+'\',this)">👻 Auto-Patch</button>'
+          :'')
+        +(screenshotUrl
+          ?'<a href="'+esc(screenshotUrl)+'" target="_blank" rel="noopener" style="display:inline-block;flex-shrink:0">'
+          +'<img src="'+esc(screenshotUrl)+'" alt="screenshot" style="width:120px;height:68px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;vertical-align:middle" onerror="this.parentNode.style.display=\'none\'">'
+          +'</a>'
           :'')
         +'</div></div></div>';
     });
@@ -679,42 +755,217 @@ function loadArch() {
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────
+var SVG_GITHUB = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
+var SVG_SLACK = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.27 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.833 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zm2.521-10.123a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.833 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.833zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.311zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>';
+var SVG_DISCORD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>';
+var SVG_TEAMS = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 4h-4.125A3.375 3.375 0 0 0 12 5.625 3.375 3.375 0 0 0 8.625 4H4.5A1.5 1.5 0 0 0 3 5.5v9A1.5 1.5 0 0 0 4.5 16h3.375c.281 0 .545.08.773.21L12 18l3.352-1.79c.228-.13.492-.21.773-.21H19.5A1.5 1.5 0 0 0 21 14.5v-9A1.5 1.5 0 0 0 19.5 4zm-11.25 9H5.25V7.5h3v1.5H6.75v1.5H8.25V12zm8.25-1.5c0 .828-.672 1.5-1.5 1.5H14.25v1.5h-1.5V7.5h2.25c.828 0 1.5.672 1.5 1.5v2.5zm-1.5-2h-.75v2h.75v-2z"/></svg>';
+var SVG_JIRA = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.004-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.762a1.005 1.005 0 0 0-1.001-1.005zm5.701-5.757H11.457a5.215 5.215 0 0 0 5.215 5.215h2.129V7.272A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 22.995 0z"/></svg>';
+var SVG_TRELLO = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 0H3C1.343 0 0 1.343 0 3v18c0 1.657 1.343 3 3 3h18c1.657 0 3-1.343 3-3V3c0-1.657-1.343-3-3-3zM10.44 18.18c0 .795-.645 1.44-1.44 1.44H4.56c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v12.36zm10.44-6c0 .795-.645 1.44-1.44 1.44h-4.44c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v6.36z"/></svg>';
+var SVG_STRIPE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>';
+var SVG_OVH = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.997 0C5.37 0 0 5.373 0 12s5.37 12 11.997 12C18.629 24 24 18.627 24 12S18.629 0 11.997 0zm-.001 4.5c4.143 0 7.5 3.357 7.5 7.5s-3.357 7.5-7.5 7.5-7.5-3.357-7.5-7.5 3.357-7.5 7.5-7.5zm0 2.5c-2.762 0-5 2.238-5 5s2.238 5 5 5 5-2.238 5-5-2.238-5-5-5z"/></svg>';
+var SVG_IONOS = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2h4v2h-4V2zm0 18h4v2h-4v-2zm-2-2V6h8v12H8zm2-10v8h4V8h-4z"/></svg>';
+var SVG_HOSTINGER = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2h3v8h10V2h3v20h-3v-9H7v9H4V2z"/></svg>';
+var SVG_SSH = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h20a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm5.293 5.293L4.586 11l2.707 2.707 1.414-1.414L7.414 11l1.293-1.293-1.414-1.414zM11 13h5v-2h-5v2z"/></svg>';
+
+var INTEGRATIONS = [
+  {
+    id:'github', name:'GitHub', bg:'#24292F', color:'#fff', svg:SVG_GITHUB,
+    fields:[
+      {label:'Token GitHub', key:'GITHUB_TOKEN', type:'password', placeholder:'ghp_…'},
+      {label:'Repo (owner/repo)', key:'GITHUB_REPO', type:'text', placeholder:'mon-org/mon-repo'}
+    ]
+  },
+  {
+    id:'slack', name:'Slack', bg:'#4A154B', color:'#fff', svg:SVG_SLACK,
+    fields:[
+      {label:'Webhook URL', key:'SLACK_WEBHOOK_URL', type:'password', placeholder:'https://hooks.slack.com/…'}
+    ]
+  },
+  {
+    id:'discord', name:'Discord', bg:'#5865F2', color:'#fff', svg:SVG_DISCORD,
+    fields:[
+      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'password', placeholder:'https://discord.com/api/webhooks/…'}
+    ]
+  },
+  {
+    id:'teams', name:'Teams', bg:'#6264A7', color:'#fff', svg:SVG_TEAMS,
+    fields:[
+      {label:'Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'password', placeholder:'https://…webhook.office.com/…'}
+    ]
+  },
+  {
+    id:'jira', name:'Jira', bg:'#0052CC', color:'#fff', svg:SVG_JIRA,
+    fields:[
+      {label:'URL Jira', key:'JIRA_URL', type:'text', placeholder:'https://monprojet.atlassian.net'},
+      {label:'Email', key:'JIRA_EMAIL', type:'text', placeholder:'user@example.com'},
+      {label:'Token API', key:'JIRA_API_TOKEN', type:'password', placeholder:'token Jira'}
+    ]
+  },
+  {
+    id:'trello', name:'Trello', bg:'#0052CC', color:'#fff', svg:SVG_TRELLO,
+    fields:[
+      {label:'API Key', key:'TRELLO_API_KEY', type:'password', placeholder:'cl\xe9 API Trello'},
+      {label:'Token', key:'TRELLO_TOKEN', type:'password', placeholder:'token OAuth Trello'}
+    ]
+  },
+  {
+    id:'stripe', name:'Stripe', bg:'#635BFF', color:'#fff', svg:SVG_STRIPE,
+    fields:[
+      {label:'Secret Key', key:'STRIPE_SECRET_KEY', type:'password', placeholder:'sk_live_…'},
+      {label:'Webhook Secret', key:'STRIPE_WEBHOOK_SECRET', type:'password', placeholder:'whsec_…'}
+    ]
+  },
+  {
+    id:'ovh', name:'OVHcloud', bg:'#123F92', color:'#fff', svg:SVG_OVH,
+    fields:[
+      {label:'App Key', key:'OVH_APP_KEY', type:'password', placeholder:'cl\xe9 application OVH'},
+      {label:'App Secret', key:'OVH_APP_SECRET', type:'password', placeholder:'secret application OVH'},
+      {label:'Consumer Key', key:'OVH_CONSUMER_KEY', type:'password', placeholder:'consumer key OVH'}
+    ]
+  },
+  {
+    id:'ionos', name:'IONOS', bg:'#003D8F', color:'#fff', svg:SVG_IONOS,
+    fields:[
+      {label:'Repo GitHub (IONOS deploy)', key:'IONOS_GITHUB_REPO', type:'text', placeholder:'owner/repo'},
+      {label:'Deploy Key', key:'IONOS_DEPLOY_KEY', type:'password', placeholder:'cl\xe9 d\xe9ploiement IONOS'}
+    ]
+  },
+  {
+    id:'hostinger', name:'Hostinger', bg:'#673DE6', color:'#fff', svg:SVG_HOSTINGER,
+    fields:[
+      {label:'Deploy Webhook URL', key:'HOSTINGER_DEPLOY_WEBHOOK_URL', type:'password', placeholder:'https://…'}
+    ]
+  },
+  {
+    id:'ssh', name:'SSH Logs', bg:'#10b981', color:'#fff', svg:SVG_SSH,
+    fields:[
+      {label:'SSH Host', key:'SSH_HOST', type:'text', placeholder:'mon-serveur.example.com'},
+      {label:'SSH User', key:'SSH_USER', type:'text', placeholder:'ubuntu'},
+      {label:'SSH Key (path)', key:'SSH_KEY_PATH', type:'text', placeholder:'/home/user/.ssh/id_rsa'},
+      {label:'SSH Log Path', key:'SSH_LOG_PATH', type:'text', placeholder:'/var/log/app/error.log'}
+    ]
+  }
+];
+
+var _intEnv = {};
+var _currentIntId = null;
+
 function loadIntegrations() {
-  var INTEGRATIONS = [
-    {icon:'🟣',name:'Slack',key:'SLACK_WEBHOOK_URL'},
-    {icon:'🔵',name:'Discord',key:'DISCORD_WEBHOOK_URL'},
-    {icon:'🔷',name:'Teams',key:'TEAMS_WEBHOOK_URL'},
-    {icon:'🟠',name:'Jira',key:'JIRA_URL'},
-    {icon:'🟢',name:'Trello',key:'TRELLO_API_KEY'},
-    {icon:'☁️',name:'OVHcloud',key:'OVH_APP_KEY'},
-    {icon:'🔶',name:'IONOS',key:'IONOS_GITHUB_REPO'},
-    {icon:'🏠',name:'Hostinger',key:'HOSTINGER_DEPLOY_WEBHOOK_URL'},
-    {icon:'🔐',name:'SSH Logs',key:'SSH_HOST'},
-    {icon:'📊',name:'GitHub PR',key:'GITHUB_TOKEN'},
-    {icon:'💳',name:'Stripe',key:'STRIPE_WEBHOOK_SECRET'},
-  ];
   fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
-    var env = d.config || {};
+    _intEnv = d.config || {};
     var activeCount = 0;
-    var html = INTEGRATIONS.map(function(i) {
-      var active = !!(env[i.key]);
+    var html = INTEGRATIONS.map(function(intg) {
+      var active = intg.fields.some(function(f){ return !!_intEnv[f.key]; });
       if (active) activeCount++;
-      return '<div class="int-card">'
-        +'<div class="int-icon">'+i.icon+'</div>'
-        +'<div><div class="int-name">'+esc(i.name)+'</div>'
-        +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configuré':'○ Non configuré')+'</div>'
-        +'</div></div>';
+      var logoStyle = 'background:'+intg.bg+';color:'+intg.color;
+      return '<div class="int-card" data-service="'+intg.id+'">'
+        +'<div class="int-logo" style="'+logoStyle+'">'+intg.svg+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div class="int-name">'+esc(intg.name)+'</div>'
+        +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configur\xe9':'○ Non configur\xe9')+'</div>'
+        +'</div>'
+        +'<button class="btn btn-ghost" style="flex-shrink:0" onclick="openIntModal(\''+intg.id+'\')">'+(active?'Modifier':'Connecter')+'</button>'
+        +'</div>';
     }).join('');
     document.getElementById('int-grid').innerHTML = html;
     var tab = document.querySelector('[data-tab="integrations"] .nav-cnt');
-    if (!tab) { tab = document.createElement('span'); tab.className='nav-cnt'; document.querySelector('[data-tab="integrations"]').appendChild(tab); }
+    if (!tab) {
+      tab = document.createElement('span');
+      tab.className = 'nav-cnt';
+      document.querySelector('[data-tab="integrations"]').appendChild(tab);
+    }
     tab.textContent = activeCount+'/'+INTEGRATIONS.length;
     tab.className = 'nav-cnt'+(activeCount>0?' grn':'');
   }).catch(function() {
     document.getElementById('int-grid').innerHTML =
-      '<div class="empty" style="grid-column:1/-1">Impossible de charger le statut (.env non chargé ?)</div>';
+      '<div class="empty" style="grid-column:1/-1">Impossible de charger le statut (.env non charg\xe9 ?)</div>';
   });
 }
+
+window.openIntModal = function(id) {
+  var intg = INTEGRATIONS.find(function(i){ return i.id === id; });
+  if (!intg) return;
+  _currentIntId = id;
+
+  var logo = document.getElementById('modal-logo');
+  logo.innerHTML = intg.svg;
+  logo.style.cssText = 'background:'+intg.bg+';color:'+intg.color+';width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0';
+  var svgEl = logo.querySelector('svg');
+  if (svgEl) svgEl.style.cssText = 'width:20px;height:20px';
+
+  document.getElementById('modal-title').textContent = intg.name;
+
+  var fieldsHtml = intg.fields.map(function(f) {
+    var val = _intEnv[f.key] || '';
+    return '<div class="int-form-group">'
+      +'<label class="int-form-label">'+esc(f.label)+'</label>'
+      +'<input class="int-form-input" type="'+f.type+'" name="'+esc(f.key)+'" placeholder="'+esc(f.placeholder)+'" value="'+esc(val)+'" autocomplete="off">'
+      +'</div>';
+  }).join('');
+  document.getElementById('modal-fields').innerHTML = fieldsHtml;
+
+  var hasAny = intg.fields.some(function(f){ return !!_intEnv[f.key]; });
+  document.getElementById('modal-disconnect').style.display = hasAny ? 'inline-flex' : 'none';
+
+  document.getElementById('int-modal').style.display = 'flex';
+};
+
+window.closeIntModal = function() {
+  document.getElementById('int-modal').style.display = 'none';
+  _currentIntId = null;
+};
+
+window.submitIntModal = function(e) {
+  e.preventDefault();
+  var intg = INTEGRATIONS.find(function(i){ return i.id === _currentIntId; });
+  if (!intg) return;
+  var form = document.getElementById('int-form');
+  var updates = {};
+  intg.fields.forEach(function(f) {
+    var input = form.querySelector('[name="'+f.key+'"]');
+    if (input && input.value.trim()) updates[f.key] = input.value.trim();
+  });
+  if (!Object.keys(updates).length) { closeIntModal(); return; }
+  fetch('/api/env/update', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(updates)
+  }).then(function(r){ return r.json(); }).then(function() {
+    closeIntModal();
+    _loaded.integrations = false;
+    loadIntegrations();
+  }).catch(function(err) {
+    alert('Erreur: '+err.message);
+  });
+};
+
+window.disconnectInt = function() {
+  var intg = INTEGRATIONS.find(function(i){ return i.id === _currentIntId; });
+  if (!intg) return;
+  if (!confirm('Supprimer la configuration de '+intg.name+' ?')) return;
+  var keys = intg.fields.map(function(f){ return f.key; });
+  fetch('/api/env/delete', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({keys: keys})
+  }).then(function(r){ return r.json(); }).then(function() {
+    closeIntModal();
+    _loaded.integrations = false;
+    loadIntegrations();
+  }).catch(function(err) {
+    alert('Erreur: '+err.message);
+  });
+};
+
+// Modal: close on ESC or click outside
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('int-modal').style.display !== 'none') {
+    closeIntModal();
+  }
+});
+document.getElementById('int-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeIntModal();
+});
 
 // ── FinOps ────────────────────────────────────────────────────────────────────
 function loadFinOps() {
@@ -725,17 +976,17 @@ function loadFinOps() {
     var tokensSaved = d.tokensSaved ?? d.totalTokensSaved ?? 0;
     var html = [
       {val: d.totalRuns||0,                       lbl:'Runs totaux',        cls:'c-blue'},
-      {val: d.totalPassed||0,                     lbl:'Tests passés',       cls:'c-pass'},
-      {val: d.totalFailed||0,                     lbl:'Tests échoués',      cls:'c-fail'},
-      {val: Number(tokensSaved).toLocaleString(), lbl:'Tokens économisés',  cls:'c-purple'},
-      {val: '$'+Number(d.costSaved||0).toFixed(3),lbl:'Coût API évité',     cls:'c-warn'},
-      {val: Number(d.co2Saved||0).toFixed(4)+'g',lbl:'CO₂ évité',          cls:'c-pink'},
+      {val: d.totalPassed||0,                     lbl:'Tests pass\xe9s',       cls:'c-pass'},
+      {val: d.totalFailed||0,                     lbl:'Tests \xe9chou\xe9s',      cls:'c-fail'},
+      {val: Number(tokensSaved).toLocaleString(), lbl:'Tokens \xe9conomis\xe9s',  cls:'c-purple'},
+      {val: '$'+Number(d.costSaved||0).toFixed(3),lbl:'Co\xfbt API \xe9vit\xe9',     cls:'c-warn'},
+      {val: Number(d.co2Saved||0).toFixed(4)+'g',lbl:'CO₂ \xe9vit\xe9',          cls:'c-pink'},
     ].map(function(m){
       return '<div class="fcard"><div class="fcard-val '+m.cls+'">'+esc(m.val)+'</div><div class="fcard-lbl">'+esc(m.lbl)+'</div></div>';
     }).join('');
     document.getElementById('finops-grid').innerHTML = html;
     var rows = d.recentRuns || [];
-    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Passés</th><th>Échecs</th><th>Il y a</th></tr></thead><tbody>';
+    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Pass\xe9s</th><th>\xc9checs</th><th>Il y a</th></tr></thead><tbody>';
     if (rows.length) {
       rows.slice(0,10).forEach(function(r){
         table += '<tr><td>'+cmdPill(r.command||'audit')+'</td>'
@@ -749,7 +1000,7 @@ function loadFinOps() {
     document.getElementById('finops-table').innerHTML = table;
   }).catch(function() {
     document.getElementById('finops-grid').innerHTML =
-      '<div class="empty" style="grid-column:1/-1">Aucune donnée FinOps'
+      '<div class="empty" style="grid-column:1/-1">Aucune donn\xe9e FinOps'
       +'<div class="empty-cmd">e2e audit /votre/projet</div></div>';
   });
 }
@@ -771,11 +1022,11 @@ function wsConnect() {
     var ws = new WebSocket(proto+'//'+location.host+'/ws');
     ws.onopen = function() {
       document.getElementById('ws-dot').className = 'ws-dot live';
-      document.getElementById('ws-label').textContent = 'Connecté';
+      document.getElementById('ws-label').textContent = 'Connect\xe9';
     };
     ws.onclose = function() {
       document.getElementById('ws-dot').className = 'ws-dot';
-      document.getElementById('ws-label').textContent = 'Déconnecté';
+      document.getElementById('ws-label').textContent = 'D\xe9connect\xe9';
       setTimeout(wsConnect, 3000);
     };
     ws.onmessage = function(e) {

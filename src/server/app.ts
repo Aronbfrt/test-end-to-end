@@ -1218,6 +1218,73 @@ try {
     });
   });
 
+  // ── Screenshots ────────────────────────────────────────────────────────────
+  const screenshotsDir = join(targetPath, '.e2e-work', 'screenshots');
+  app.get('/api/screenshots', (_req: Request, res: Response) => {
+    if (!existsSync(screenshotsDir)) { res.json([]); return; }
+    try {
+      const files = readdirSync(screenshotsDir)
+        .filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f))
+        .map((f) => ({ file: f, url: `/screenshots/${f}`, ts: f.split('-')[0] ?? '' }))
+        .reverse();
+      res.json(files);
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+  });
+
+  app.get('/screenshots/:file', (req: Request, res: Response) => {
+    const file = (req.params as { file: string }).file.replace(/[^a-zA-Z0-9._-]/g, '');
+    const filePath = join(screenshotsDir, file);
+    if (!existsSync(filePath)) { res.status(404).end(); return; }
+    res.sendFile(filePath);
+  });
+
+  // ── Env update (integration credentials) ───────────────────────────────────
+  const ALLOWED_ENV_KEYS = new Set([
+    'OLLAMA_HOST','E2E_PORT','GITHUB_TOKEN','SLACK_WEBHOOK_URL','DISCORD_WEBHOOK_URL',
+    'TEAMS_WEBHOOK_URL','JIRA_URL','JIRA_TOKEN','JIRA_USER_EMAIL','JIRA_PROJECT_KEY',
+    'TRELLO_API_KEY','TRELLO_TOKEN','TRELLO_TODO_LIST_ID','TRELLO_DONE_LIST_ID',
+    'STRIPE_WEBHOOK_SECRET','OVH_APP_KEY','OVH_APP_SECRET','OVH_CONSUMER_KEY',
+    'OVH_PROJECT_ID','OVH_SERVICE_NAME','IONOS_GITHUB_REPO','IONOS_GITHUB_TOKEN',
+    'IONOS_WORKFLOW_FILE','IONOS_DEPLOY_BRANCH','HOSTINGER_DEPLOY_WEBHOOK_URL',
+    'SSH_HOST','SSH_PORT','SSH_USER','SSH_PRIVATE_KEY','DEPENDABOT_MIN_SEVERITY',
+  ]);
+  const pluginEnvPath = join(_serverDir, '../../.env');
+
+  app.post('/api/env/update', (req: Request, res: Response) => {
+    const updates = req.body as Record<string, string>;
+    const badKeys = Object.keys(updates).filter((k) => !ALLOWED_ENV_KEYS.has(k));
+    if (badKeys.length) { res.status(400).json({ error: `Clé non autorisée: ${badKeys[0]}` }); return; }
+    try {
+      let content = existsSync(pluginEnvPath) ? readFileSync(pluginEnvPath, 'utf-8') : '';
+      for (const [key, value] of Object.entries(updates)) {
+        if (!value && value !== '0') continue;
+        const safeVal = value.replace(/\n/g, '\\n');
+        const re = new RegExp(`^${key}=.*$`, 'm');
+        if (re.test(content)) {
+          content = content.replace(re, `${key}=${safeVal}`);
+        } else {
+          content += (content.endsWith('\n') ? '' : '\n') + `${key}=${safeVal}\n`;
+        }
+        process.env[key] = value;
+      }
+      writeFileSync(pluginEnvPath, content, 'utf-8');
+      res.json({ status: 'ok', updated: Object.keys(updates).length });
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+  });
+
+  app.post('/api/env/delete', (req: Request, res: Response) => {
+    const { key } = req.body as { key?: string };
+    if (!key || !ALLOWED_ENV_KEYS.has(key)) { res.status(400).json({ error: 'Clé non autorisée' }); return; }
+    try {
+      if (!existsSync(pluginEnvPath)) { res.json({ status: 'ok' }); return; }
+      let content = readFileSync(pluginEnvPath, 'utf-8');
+      content = content.replace(new RegExp(`^${key}=.*\\n?`, 'm'), '');
+      writeFileSync(pluginEnvPath, content, 'utf-8');
+      delete process.env[key];
+      res.json({ status: 'ok' });
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+  });
+
   // Global error handler
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('[server] unhandled error:', err.message);
