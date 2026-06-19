@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="test-end-to-end" width="120" />
+  <img src="docs/assets/logo.svg" alt="test-end-to-end" width="280" />
 </p>
 
 <p align="center">
@@ -128,7 +128,7 @@ npm run dashboard
 | `e2e-chaos` | Génère des tests réseau chaotiques (LATENCY, OFFLINE, CORRUPT…) | Fichiers `chaos_*.spec.ts` |
 | `e2e-arch` | Analyse statique : complexité, couplage, `any`, longueur de fichiers | `arch-report.md` |
 | `e2e-diff` | Comparaison avant/après routes suite à des modifications | Tableau de diff dans le terminal |
-| `e2e-shadow` | Reverse Testing zéro-prompt — 4 personas (Utilisateur Frustré, Attaquant Malveillant, Chaos Réseau, Acheteur Impulsif) génèrent des tests E2E inférés sans aucune description de feature | `tests/shadow/<persona>-<route>.spec.ts` |
+| `e2e-shadow` | Reverse Testing zéro-prompt — 4 shadow personas (Frustré, Attaquant, Chaos Réseau, Acheteur Impulsif) génèrent des tests E2E inférés sans aucune description de feature | `tests/shadow/<persona>-<route>.spec.ts` |
 
 ### Options
 
@@ -146,7 +146,72 @@ npm run dashboard
 
 ## Architecture
 
-### 13 Agents
+### Pipeline d'exécution
+
+```mermaid
+flowchart TD
+    CLI([CLI / MCP Tool]) --> ORCH
+
+    subgraph ORCH["🧠 Orchestrateur"]
+        direction LR
+        BYPASS{Zero-Token Bypass\nSHA-256 + SQLite}
+        OLLAMA[Ollama\nlocal]
+        ANTHROPIC[Anthropic SDK\nraisonnement]
+        BYPASS -->|fichier inchangé| SKIP([⚡ Skipped — 0 tokens])
+        BYPASS -->|fichier modifié| OLLAMA
+        OLLAMA -->|tâche complexe| ANTHROPIC
+    end
+
+    ORCH --> SCAN
+
+    subgraph SCAN["📡 Analyse"]
+        SCOUT[Scout\nAST → RouteMap]
+        ARCH[ArchPolice\nComplexité / Couplage]
+        DEPEND[Dependabot\nnpm audit]
+    end
+
+    SCOUT --> GEN
+
+    subgraph GEN["✍️ Génération"]
+        ARTISAN[Artisan\nSpecs Playwright]
+        CHAOS[ChaosMonkey\nTests réseau]
+        UPDATER[Updater\nSync intelligente]
+    end
+
+    GEN --> RUN
+
+    subgraph RUN["▶️ Exécution"]
+        RUNNER[Runner\nPlaywright]
+        SHADOW[Shadow\n4 Personas]
+    end
+
+    RUN -->|crash| TRIAGE
+
+    subgraph TRIAGE["🔬 Triage"]
+        CORONER[Coroner\nVerdict LLM]
+        SENTINEL[Sentinel\nOWASP PR]
+    end
+
+    CORONER -->|BACKEND_BUG| PATCH
+
+    subgraph PATCH["🩹 Correction"]
+        GHOST[Ghostwriter\nPatch + PR]
+        QA[QAEngineer\nRégression]
+        EVOLVER[Evolver\nAuto-amélioration]
+    end
+
+    PATCH --> DASH
+    TRIAGE --> DASH
+    SCAN --> DASH
+
+    subgraph DASH["📊 Dashboard :4242"]
+        direction LR
+        WS[WebSocket live]
+        SQLITE[(SQLite\nFinOps)]
+    end
+```
+
+### Les 13 agents
 
 | Agent | Rôle |
 |---|---|
@@ -162,40 +227,47 @@ npm run dashboard
 | **QAEngineer** | Génère des tests de régression après les patches Ghostwriter pour verrouiller le fix |
 | **ArchPolice** | Détecte complexité élevée, couplage excessif, `any` dangereux, fichiers surdimensionnés |
 | **Ghostwriter** | Corrige les bugs applicatifs + ouvre une PR — dry-run par défaut, `--apply` pour déployer sur disque |
-| **Evolver** | Auto-améliore les prompts des agents depuis l'analyse des échecs — supervisé par défaut, propositions dans `.e2e-work/evolutions-pending/` pour revue humaine via `e2e-evolve-apply` |
+| **Evolver** | Auto-améliore les prompts des agents depuis l'analyse des échecs — supervisé par défaut, propositions dans `.e2e-work/evolutions-pending/` |
 | **Dependabot** | `npm audit` → fix analysé par LLM → vérification `tsc --noEmit` → PR |
 
 ### Zero-Token Bypass
 
-Le système de cache élimine les appels Anthropic redondants lors des runs incrémentaux :
+```mermaid
+flowchart LR
+    FILES[Fichiers source] --> FP[SHA-256\nempreinte]
+    FP --> DB[(SQLite\ncache)]
+    DB -->|empreinte identique| SKIP([⚡ Skip — 0 token])
+    DB -->|empreinte différente| OLLAMA{Ollama\ndisponible ?}
+    OLLAMA -->|oui| LOCAL[Inférence locale\ngratuite]
+    OLLAMA -->|non| SDK[Anthropic SDK\ntokens consommés]
+    LOCAL --> RESULT([Résultat])
+    SDK --> RESULT
+```
 
 - **SHA-256** calcule l'empreinte de chaque fichier source au premier scan
 - **SQLite** (mode WAL) stocke l'état du dernier scan par projet
 - Les fichiers non modifiés sont **ignorés entièrement** — zéro token consommé
-- **Ollama** prend en charge les tâches légères d'AST et de classification de chaînes localement
+- **Ollama** prend en charge les tâches légères d'AST et de classification localement
 - **Anthropic SDK** réservé au raisonnement sémantique (triage, génération de patches, audit OWASP)
 - Résultat : **jusqu'à 90% de réduction de tokens** sur les runs incrémentaux
-
-Le bypass est automatique — si Ollama tourne sur `127.0.0.1:11434`, il est détecté au démarrage et utilisé immédiatement. Aucune configuration requise.
 
 ---
 
 ## Dashboard
 
-<table>
-  <tr>
-    <td><img src="docs/assets/dashboard-preview.png" alt="Vue d'ensemble du dashboard" /></td>
-    <td><img src="docs/assets/dashboard-routes.png" alt="Onglet Routes" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/dashboard-triage.png" alt="Onglet Crashs" /></td>
-    <td><img src="docs/assets/dashboard-ci-score.png" alt="Onglet CI Score" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/dashboard-personas.png" alt="Onglet Shadow Personas" /></td>
-    <td><img src="docs/assets/report-screenshot.png" alt="Rapport" /></td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/assets/dashboard-preview.png" alt="Dashboard — vue d'ensemble" width="780" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-routes.png" alt="Onglet Coverage" width="380" />
+  <img src="docs/assets/dashboard-triage.png" alt="Onglet Crashs" width="380" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-personas.png" alt="Onglet Shadow Personas" width="380" />
+  <img src="docs/assets/report-screenshot.png" alt="Rapport de run" width="380" />
+</p>
 
 ```bash
 npm run dashboard
@@ -252,8 +324,64 @@ Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
 
 ## Structure du projet
 
+```mermaid
+graph TD
+    subgraph CLI["🖥️ Entrée"]
+        IDX[index.ts\nCLI + MCP]
+    end
+
+    subgraph CORE["⚙️ Cœur"]
+        ORCH[orchestrator.ts\nMachine d'état]
+    end
+
+    subgraph AGENTS["🤖 Agents"]
+        direction LR
+        A1[scout]
+        A2[artisan]
+        A3[runner]
+        A4[coroner]
+        A5[ghostwriter]
+        A6[evolver]
+        A7[sentinel]
+        A8[chaosMonkey]
+        A9[coverage]
+        A10[updater]
+        A11[archPolice]
+        A12[rgpdGuard]
+        A13[qaEngineer]
+        A14[dependabot]
+    end
+
+    subgraph INTEGRATIONS["🔌 Intégrations"]
+        I1[notifier\nSlack·Discord·Teams]
+        I2[atlassian\nJira·Xray]
+        I3[trello]
+        I4[cloudDeployer\nOVH·IONOS·Hostinger]
+    end
+
+    subgraph SERVER["📊 Serveur"]
+        S1[app.ts\nAPI Express]
+        S2[public/index.html\nSPA 8 onglets]
+        S3[(SQLite\nFinOps)]
+    end
+
+    subgraph UTILS["🛠️ Utilitaires"]
+        U1[cache.ts\nSHA-256]
+        U2[compressor.ts]
+        U3[metricsTracker.ts]
+        U4[report.ts]
+    end
+
+    IDX --> ORCH
+    ORCH --> AGENTS
+    ORCH --> INTEGRATIONS
+    ORCH --> SERVER
+    AGENTS --> UTILS
+    SERVER --> S3
+```
+
 <details>
-<summary>📁 Structure du projet</summary>
+<summary>📁 Arborescence complète</summary>
 
 ```
 test-end-to-end/
