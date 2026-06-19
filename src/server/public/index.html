@@ -755,94 +755,145 @@ function loadArch() {
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────
-var SVG_GITHUB = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
-var SVG_SLACK = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.27 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.833 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zm2.521-10.123a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.833 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.833zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.311zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>';
-var SVG_DISCORD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>';
-var SVG_TEAMS = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 4h-4.125A3.375 3.375 0 0 0 12 5.625 3.375 3.375 0 0 0 8.625 4H4.5A1.5 1.5 0 0 0 3 5.5v9A1.5 1.5 0 0 0 4.5 16h3.375c.281 0 .545.08.773.21L12 18l3.352-1.79c.228-.13.492-.21.773-.21H19.5A1.5 1.5 0 0 0 21 14.5v-9A1.5 1.5 0 0 0 19.5 4zm-11.25 9H5.25V7.5h3v1.5H6.75v1.5H8.25V12zm8.25-1.5c0 .828-.672 1.5-1.5 1.5H14.25v1.5h-1.5V7.5h2.25c.828 0 1.5.672 1.5 1.5v2.5zm-1.5-2h-.75v2h.75v-2z"/></svg>';
-var SVG_JIRA = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.004-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.762a1.005 1.005 0 0 0-1.001-1.005zm5.701-5.757H11.457a5.215 5.215 0 0 0 5.215 5.215h2.129V7.272A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 22.995 0z"/></svg>';
-var SVG_TRELLO = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 0H3C1.343 0 0 1.343 0 3v18c0 1.657 1.343 3 3 3h18c1.657 0 3-1.343 3-3V3c0-1.657-1.343-3-3-3zM10.44 18.18c0 .795-.645 1.44-1.44 1.44H4.56c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v12.36zm10.44-6c0 .795-.645 1.44-1.44 1.44h-4.44c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v6.36z"/></svg>';
-var SVG_STRIPE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>';
-var SVG_OVH = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.997 0C5.37 0 0 5.373 0 12s5.37 12 11.997 12C18.629 24 24 18.627 24 12S18.629 0 11.997 0zm-.001 4.5c4.143 0 7.5 3.357 7.5 7.5s-3.357 7.5-7.5 7.5-7.5-3.357-7.5-7.5 3.357-7.5 7.5-7.5zm0 2.5c-2.762 0-5 2.238-5 5s2.238 5 5 5 5-2.238 5-5-2.238-5-5-5z"/></svg>';
-var SVG_IONOS = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2h4v2h-4V2zm0 18h4v2h-4v-2zm-2-2V6h8v12H8zm2-10v8h4V8h-4z"/></svg>';
-var SVG_HOSTINGER = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2h3v8h10V2h3v20h-3v-9H7v9H4V2z"/></svg>';
-var SVG_SSH = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h20a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm5.293 5.293L4.586 11l2.707 2.707 1.414-1.414L7.414 11l1.293-1.293-1.414-1.414zM11 13h5v-2h-5v2z"/></svg>';
+// Logos : lettre stylée pour les marques sans SVG propre, SVG précis pour les autres
+function logoLetter(letter, fontSize) {
+  return '<span style="font-size:'+(fontSize||15)+'px;font-weight:900;letter-spacing:-.5px">'+letter+'</span>';
+}
+var SVG_GITHUB  = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>';
+var SVG_SLACK   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>';
+var SVG_DISCORD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>';
+var SVG_STRIPE  = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>';
+var SVG_JIRA    = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.53 0l-5.7 5.7 3.02 3.02L12 5.57l3.15 3.15 3.02-3.02L11.53 0zM0 11.53l3.15 3.15 3.02-3.02L3.02 8.51 0 11.53zm24 0l-3.02-3.02-3.02 3.02 3.02 3.15L24 11.53zM11.53 24l5.7-5.7-3.02-3.02-3.15 3.15-3.15-3.15-3.02 3.02L11.53 24zm0-8.47l-3.02-3.06 3.02-3.02 3.02 3.02-3.02 3.06z"/></svg>';
+var SVG_TRELLO  = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 0H3C1.343 0 0 1.343 0 3v18c0 1.657 1.343 3 3 3h18c1.657 0 3-1.343 3-3V3c0-1.657-1.343-3-3-3zM10.44 18.18c0 .795-.645 1.44-1.44 1.44H4.56c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v12.36zm10.44-6c0 .795-.645 1.44-1.44 1.44h-4.44c-.795 0-1.44-.645-1.44-1.44V5.82c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v6.36z"/></svg>';
+var SVG_TERMINAL= '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h20a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2zm3.293 5.293l1.414 1.414L4.414 12l2.293 2.293-1.414 1.414L1.586 12l3.707-3.707zM10 15h6v-2h-6v2z"/></svg>';
+// Logos lettre pour marques sans SVG officiel libre
+var SVG_TEAMS     = logoLetter('T', 16);
+var SVG_OVH       = logoLetter('OVH', 11);
+var SVG_IONOS     = logoLetter('IO', 13);
+var SVG_HOSTINGER = logoLetter('H', 16);
 
 var INTEGRATIONS = [
   {
     id:'github', name:'GitHub', bg:'#24292F', color:'#fff', svg:SVG_GITHUB,
+    guide:'https://github.com/settings/tokens/new',
+    guideLabel:'Créer un token GitHub',
     fields:[
-      {label:'Token GitHub', key:'GITHUB_TOKEN', type:'password', placeholder:'ghp_…'},
-      {label:'Repo (owner/repo)', key:'GITHUB_REPO', type:'text', placeholder:'mon-org/mon-repo'}
+      {label:'Personal Access Token', key:'GITHUB_TOKEN', type:'password', placeholder:'ghp_xxxxxxxxxxxx',
+       hint:'Settings → Developer settings → Personal access tokens → Generate new token (scope: repo, pull_requests)'}
     ]
   },
   {
     id:'slack', name:'Slack', bg:'#4A154B', color:'#fff', svg:SVG_SLACK,
+    guide:'https://api.slack.com/apps',
+    guideLabel:'Créer une app Slack',
     fields:[
-      {label:'Webhook URL', key:'SLACK_WEBHOOK_URL', type:'password', placeholder:'https://hooks.slack.com/…'}
+      {label:'Incoming Webhook URL', key:'SLACK_WEBHOOK_URL', type:'password', placeholder:'https://hooks.slack.com/services/T…/B…/…',
+       hint:'api.slack.com/apps → Create App → Incoming Webhooks → Add New Webhook'}
     ]
   },
   {
     id:'discord', name:'Discord', bg:'#5865F2', color:'#fff', svg:SVG_DISCORD,
+    guide:'https://discord.com/developers/applications',
+    guideLabel:'Créer un webhook Discord',
     fields:[
-      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'password', placeholder:'https://discord.com/api/webhooks/…'}
+      {label:'Webhook URL', key:'DISCORD_WEBHOOK_URL', type:'password', placeholder:'https://discord.com/api/webhooks/…',
+       hint:'Paramètres du serveur → Intégrations → Webhooks → Nouveau webhook'}
     ]
   },
   {
     id:'teams', name:'Teams', bg:'#6264A7', color:'#fff', svg:SVG_TEAMS,
+    guide:'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
+    guideLabel:'Créer un webhook Teams',
     fields:[
-      {label:'Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'password', placeholder:'https://…webhook.office.com/…'}
+      {label:'Incoming Webhook URL', key:'TEAMS_WEBHOOK_URL', type:'password', placeholder:'https://xxx.webhook.office.com/…',
+       hint:'Canal Teams → ··· → Connecteurs → Incoming Webhook → Configurer'}
     ]
   },
   {
     id:'jira', name:'Jira', bg:'#0052CC', color:'#fff', svg:SVG_JIRA,
+    guide:'https://id.atlassian.com/manage-profile/security/api-tokens',
+    guideLabel:'Créer un token Atlassian',
     fields:[
-      {label:'URL Jira', key:'JIRA_URL', type:'text', placeholder:'https://monprojet.atlassian.net'},
-      {label:'Email', key:'JIRA_EMAIL', type:'text', placeholder:'user@example.com'},
-      {label:'Token API', key:'JIRA_API_TOKEN', type:'password', placeholder:'token Jira'}
+      {label:'URL Jira', key:'JIRA_URL', type:'text', placeholder:'https://monprojet.atlassian.net',
+       hint:'URL de ton espace Jira (sans slash final)'},
+      {label:'Email du compte', key:'JIRA_USER_EMAIL', type:'text', placeholder:'user@example.com',
+       hint:'Email de connexion à Jira'},
+      {label:'Token API', key:'JIRA_TOKEN', type:'password', placeholder:'ATATT3xFfGF0…',
+       hint:'id.atlassian.com → Sécurité → Tokens API → Créer un token'},
+      {label:'Clé du projet', key:'JIRA_PROJECT_KEY', type:'text', placeholder:'QA',
+       hint:'Clé courte visible dans l\'URL des tickets (ex: QA pour QA-123)'}
     ]
   },
   {
-    id:'trello', name:'Trello', bg:'#0052CC', color:'#fff', svg:SVG_TRELLO,
+    id:'trello', name:'Trello', bg:'#0079BF', color:'#fff', svg:SVG_TRELLO,
+    guide:'https://trello.com/app-key',
+    guideLabel:'Obtenir les clés Trello',
     fields:[
-      {label:'API Key', key:'TRELLO_API_KEY', type:'password', placeholder:'cl\xe9 API Trello'},
-      {label:'Token', key:'TRELLO_TOKEN', type:'password', placeholder:'token OAuth Trello'}
+      {label:'API Key', key:'TRELLO_API_KEY', type:'password', placeholder:'32 caractères hex',
+       hint:'trello.com/app-key → API Key'},
+      {label:'Token OAuth', key:'TRELLO_TOKEN', type:'password', placeholder:'64 caractères hex',
+       hint:'Sur la même page → cliquer "Token" pour autoriser'},
+      {label:'ID liste À faire', key:'TRELLO_TODO_LIST_ID', type:'text', placeholder:'5f3e…',
+       hint:'Ouvrir la liste Trello → Filtres → URL → extraire l\'ID'},
+      {label:'ID liste Terminé', key:'TRELLO_DONE_LIST_ID', type:'text', placeholder:'5f3e…',
+       hint:'Même méthode pour la liste "Done"'}
     ]
   },
   {
     id:'stripe', name:'Stripe', bg:'#635BFF', color:'#fff', svg:SVG_STRIPE,
+    guide:'https://dashboard.stripe.com/webhooks',
+    guideLabel:'Configurer le webhook Stripe',
     fields:[
-      {label:'Secret Key', key:'STRIPE_SECRET_KEY', type:'password', placeholder:'sk_live_…'},
-      {label:'Webhook Secret', key:'STRIPE_WEBHOOK_SECRET', type:'password', placeholder:'whsec_…'}
+      {label:'Webhook Secret', key:'STRIPE_WEBHOOK_SECRET', type:'password', placeholder:'whsec_…',
+       hint:'Stripe Dashboard → Développeurs → Webhooks → Ajouter endpoint → Révéler la clé'}
     ]
   },
   {
     id:'ovh', name:'OVHcloud', bg:'#123F92', color:'#fff', svg:SVG_OVH,
+    guide:'https://api.ovh.com/createToken/',
+    guideLabel:'Créer un token OVH',
     fields:[
-      {label:'App Key', key:'OVH_APP_KEY', type:'password', placeholder:'cl\xe9 application OVH'},
-      {label:'App Secret', key:'OVH_APP_SECRET', type:'password', placeholder:'secret application OVH'},
-      {label:'Consumer Key', key:'OVH_CONSUMER_KEY', type:'password', placeholder:'consumer key OVH'}
+      {label:'App Key', key:'OVH_APP_KEY', type:'password', placeholder:'…',
+       hint:'api.ovh.com/createToken → Application Key'},
+      {label:'App Secret', key:'OVH_APP_SECRET', type:'password', placeholder:'…',
+       hint:'api.ovh.com/createToken → Application Secret'},
+      {label:'Consumer Key', key:'OVH_CONSUMER_KEY', type:'password', placeholder:'…',
+       hint:'api.ovh.com/createToken → Consumer Key'},
+      {label:'Project ID', key:'OVH_PROJECT_ID', type:'text', placeholder:'…'},
+      {label:'Service Name', key:'OVH_SERVICE_NAME', type:'text', placeholder:'…'}
     ]
   },
   {
     id:'ionos', name:'IONOS', bg:'#003D8F', color:'#fff', svg:SVG_IONOS,
+    guide:'https://github.com/settings/tokens/new',
+    guideLabel:'Créer un token GitHub pour IONOS',
     fields:[
-      {label:'Repo GitHub (IONOS deploy)', key:'IONOS_GITHUB_REPO', type:'text', placeholder:'owner/repo'},
-      {label:'Deploy Key', key:'IONOS_DEPLOY_KEY', type:'password', placeholder:'cl\xe9 d\xe9ploiement IONOS'}
+      {label:'Repo GitHub', key:'IONOS_GITHUB_REPO', type:'text', placeholder:'owner/repo'},
+      {label:'GitHub Token (Actions)', key:'IONOS_GITHUB_TOKEN', type:'password', placeholder:'ghp_…',
+       hint:'Token avec accès repo + workflow'},
+      {label:'Fichier workflow', key:'IONOS_WORKFLOW_FILE', type:'text', placeholder:'deploy.yml'},
+      {label:'Branche de déploiement', key:'IONOS_DEPLOY_BRANCH', type:'text', placeholder:'main'}
     ]
   },
   {
     id:'hostinger', name:'Hostinger', bg:'#673DE6', color:'#fff', svg:SVG_HOSTINGER,
+    guide:'https://hpanel.hostinger.com',
+    guideLabel:'Configurer sur hPanel',
     fields:[
-      {label:'Deploy Webhook URL', key:'HOSTINGER_DEPLOY_WEBHOOK_URL', type:'password', placeholder:'https://…'}
+      {label:'Deploy Webhook URL', key:'HOSTINGER_DEPLOY_WEBHOOK_URL', type:'password', placeholder:'https://…',
+       hint:'hPanel → Hébergement → Git → Deploy webhook URL'}
     ]
   },
   {
-    id:'ssh', name:'SSH Logs', bg:'#10b981', color:'#fff', svg:SVG_SSH,
+    id:'ssh', name:'SSH Logs', bg:'#0d9488', color:'#fff', svg:SVG_TERMINAL,
+    guide:'https://www.ssh.com/academy/ssh/keygen',
+    guideLabel:'Générer une clé SSH',
     fields:[
-      {label:'SSH Host', key:'SSH_HOST', type:'text', placeholder:'mon-serveur.example.com'},
-      {label:'SSH User', key:'SSH_USER', type:'text', placeholder:'ubuntu'},
-      {label:'SSH Key (path)', key:'SSH_KEY_PATH', type:'text', placeholder:'/home/user/.ssh/id_rsa'},
-      {label:'SSH Log Path', key:'SSH_LOG_PATH', type:'text', placeholder:'/var/log/app/error.log'}
+      {label:'Host', key:'SSH_HOST', type:'text', placeholder:'mon-serveur.example.com'},
+      {label:'Port', key:'SSH_PORT', type:'text', placeholder:'22'},
+      {label:'Utilisateur', key:'SSH_USER', type:'text', placeholder:'ubuntu'},
+      {label:'Chemin clé privée', key:'SSH_PRIVATE_KEY', type:'text', placeholder:'/home/user/.ssh/id_rsa',
+       hint:'Chemin local vers la clé privée SSH (jamais le contenu, uniquement le path)'}
     ]
   }
 ];
@@ -895,11 +946,15 @@ window.openIntModal = function(id) {
 
   document.getElementById('modal-title').textContent = intg.name;
 
-  var fieldsHtml = intg.fields.map(function(f) {
+  var guideHtml = intg.guide
+    ? '<a href="'+esc(intg.guide)+'" target="_blank" style="font-size:11px;color:var(--accent2);text-decoration:none;display:block;margin-bottom:14px;padding:6px 10px;background:rgba(14,165,233,.08);border-radius:5px;border:1px solid rgba(14,165,233,.2)">🔗 '+esc(intg.guideLabel||'Comment obtenir le token')+'</a>'
+    : '';
+  var fieldsHtml = guideHtml + intg.fields.map(function(f) {
     var val = _intEnv[f.key] || '';
     return '<div class="int-form-group">'
       +'<label class="int-form-label">'+esc(f.label)+'</label>'
       +'<input class="int-form-input" type="'+f.type+'" name="'+esc(f.key)+'" placeholder="'+esc(f.placeholder)+'" value="'+esc(val)+'" autocomplete="off">'
+      +(f.hint ? '<div style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.4">'+esc(f.hint)+'</div>' : '')
       +'</div>';
   }).join('');
   document.getElementById('modal-fields').innerHTML = fieldsHtml;
