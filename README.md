@@ -75,11 +75,29 @@ flowchart TD
 ```bash
 git clone https://github.com/Aronbfrt/test-end-to-end
 cd test-end-to-end
-npm install        # installe Playwright + toutes les dépendances
-npm run build      # compile TypeScript → dist/
+bash scripts/setup.sh   # installe, build, configure — tout en une commande
 ```
 
-> Le script `scripts/setup.sh` fait la même chose et configure aussi l'environnement : `bash scripts/setup.sh`
+Le script `setup.sh` gère automatiquement les 7 étapes suivantes :
+
+| Étape | Action |
+|---|---|
+| 1 — RAM | Détecte la RAM disponible → sélectionne `llama3.2` (≥ 8 Go) ou `llama3.1:8b` (4–8 Go) |
+| 2 — Dépendances | Vérifie Node.js ≥ 18, npm, Git, GitHub CLI, Ollama — signale les mises à jour disponibles |
+| 3 — Build | `npm install` + `tsc` → `dist/` |
+| 4 — Playwright | Installe les navigateurs Chromium |
+| 5 — Ollama | Pull le modèle adapté à la RAM → active le Zero-Token Bypass |
+| 6 — Config | Crée `.env` depuis `.env.example`, initialise `.e2e-work/`, met à jour `.gitignore` |
+| 7 — Vérification | Vérifie chaque outil installé et sa version, confirme que le moteur démarre |
+
+Pour une installation manuelle étape par étape :
+
+```bash
+npm install        # dépendances
+npm run build      # compile TypeScript → dist/
+npx playwright install chromium  # navigateurs de test
+ollama pull llama3.2             # optionnel : Zero-Token Bypass
+```
 
 Ajouter dans `.claude/settings.json` :
 
