@@ -3,130 +3,176 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>test-end-to-end — Dashboard</title>
+<title>E2E Dashboard</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f172a;--surface:#1a2236;--border:#263147;
-  --text:#e2e8f0;--muted:#64748b;--subtle:#94a3b8;
-  --pass:#4ade80;--fail:#f87171;--warn:#fbbf24;
-  --accent:#6366f1;--accent2:#06b6d4;--accent3:#f472b6;
+  --bg:#0b1120;--surface:#111827;--surface2:#1a2236;--border:#1e2d45;
+  --text:#e2e8f0;--muted:#4b6080;--subtle:#7a90ab;
+  --pass:#22c55e;--fail:#ef4444;--warn:#f59e0b;
+  --accent:#6366f1;--accent2:#0ea5e9;--accent3:#ec4899;
+  --radius:8px;
 }
-html,body{height:100dvh;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+html,body{height:100dvh;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);font-size:13px}
 body{display:flex;flex-direction:column}
 
 /* ── Topbar ── */
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);
-  padding:0 18px;height:50px;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.brand{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px;white-space:nowrap}
+  padding:0 16px;height:48px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:-.3px}
 .brand em{color:var(--accent);font-style:normal}
-.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.4px;white-space:nowrap}
+.target-path{font-size:10px;color:var(--muted);font-family:'SF Mono','Fira Code',monospace;
+  max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border)}
+.badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
 .b-live{background:#052e16;color:var(--pass);border:1px solid #166534}
 .b-idle{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3}
-.b-run{background:#2d1f00;color:var(--warn);border:1px solid #92400e}
+.b-run{background:#2d1f00;color:var(--warn);border:1px solid #92400e;animation:pulse 1.5s infinite}
 .b-err{background:#2d0e0e;color:var(--fail);border:1px solid #7f1d1d}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
 .ws-ind{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .ws-dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
-.ws-dot.live{background:var(--pass);box-shadow:0 0 5px var(--pass);animation:bl 2s infinite}
-@keyframes bl{0%,100%{opacity:1}50%{opacity:.35}}
+.ws-dot.live{background:var(--pass);box-shadow:0 0 6px var(--pass);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.refresh-toggle{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);cursor:pointer;user-select:none}
+.refresh-toggle input{accent-color:var(--accent);width:12px;height:12px;cursor:pointer}
+#topbar-ts{font-size:10px;color:var(--muted)}
 
-/* ── Nav tabs ── */
-.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
-  background:var(--surface);border-bottom:1px solid var(--border);padding:0 18px}
+/* ── Nav ── */
+.nav{display:flex;gap:1px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+  background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px}
 .nav::-webkit-scrollbar{display:none}
-.nav-btn{padding:0 14px;height:40px;border:none;background:transparent;color:var(--muted);
+.nav-btn{padding:0 14px;height:38px;border:none;background:transparent;color:var(--muted);
   cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;position:relative;
-  border-bottom:2px solid transparent;transition:all .15s}
+  border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:5px}
 .nav-btn:hover{color:var(--text)}
 .nav-btn.active{color:#fff;border-bottom-color:var(--accent)}
-.nav-cnt{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:10px;
-  font-size:9px;font-weight:700;background:#1e293b;color:var(--muted)}
+.nav-cnt{padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;background:#1e293b;color:var(--muted)}
 .nav-cnt.red{background:#2d0e0e;color:var(--fail)}
 .nav-cnt.grn{background:#0a2d14;color:var(--pass)}
+.nav-cnt.ylw{background:#2d1f00;color:var(--warn)}
 
 /* ── Pages ── */
 .pages{flex:1;min-height:0;position:relative}
-.page{position:absolute;inset:0;overflow-y:auto;padding:20px 22px;
-  display:none;flex-direction:column;gap:14px;
+.page{position:absolute;inset:0;overflow-y:auto;padding:16px 18px;
+  display:none;flex-direction:column;gap:12px;
   scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .page.active{display:flex}
 
 /* ── Cards ── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.card-head{padding:10px 16px;border-bottom:1px solid var(--border);
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-head{padding:10px 14px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;gap:8px}
 .card-title{font-size:10px;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
 .card-meta{font-size:10px;color:var(--muted)}
-.card-body{padding:16px}
-.empty{padding:32px;text-align:center;color:var(--muted);font-size:13px}
+.card-body{padding:14px}
 
 /* ── Tables ── */
 table{width:100%;border-collapse:collapse}
-th{padding:7px 14px;text-align:left;font-size:9px;color:var(--muted);
+th{padding:6px 12px;text-align:left;font-size:9px;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:1px solid var(--border)}
-td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px}
+td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#1a2a40}
+tr:hover td{background:#131f33}
 .mono{font-family:'SF Mono','Fira Code',monospace;font-size:11px}
 .dim{color:var(--muted)}
 .pill{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px}
-.p-pass{background:#0a2d14;color:var(--pass)}
+.p-pass{background:#052e16;color:var(--pass)}
 .p-fail{background:#2d0e0e;color:var(--fail)}
 .p-skip{background:#1e293b;color:var(--muted)}
 .p-warn{background:#2d1f00;color:var(--warn)}
 .p-info{background:#1e1b4b;color:#818cf8}
+.p-audit{background:#1e1b4b;color:#818cf8}
+.p-init{background:#052e16;color:var(--pass)}
+.p-shadow{background:#2a0a3d;color:var(--accent3)}
+.p-diff{background:#0c1f3a;color:var(--accent2)}
 
-/* ── Hero metrics ── */
-.metrics-row{display:flex;gap:12px;flex-wrap:wrap}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;
-  padding:16px 20px;flex:1;min-width:130px}
-.metric-val{font-size:26px;font-weight:800;line-height:1;margin-bottom:4px}
-.metric-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+/* ── Metrics hero ── */
+.metrics-row{display:flex;gap:10px;flex-wrap:wrap}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;flex:1;min-width:120px}
+.metric-val{font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.metric-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .c-pass{color:var(--pass)}.c-fail{color:var(--fail)}.c-warn{color:var(--warn)}
 .c-blue{color:#60a5fa}.c-purple{color:#a78bfa}.c-pink{color:var(--accent3)}
 
 /* ── Progress bar ── */
-.progress{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s}
+.progress{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s}
+.pf-blue{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.pf-pass{background:var(--pass)}
+.pf-warn{background:var(--warn)}
+.pf-fail{background:var(--fail)}
 
-/* ── Action buttons ── */
-.btn{padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;transition:opacity .15s}
-.btn:hover{opacity:.85}
+/* ── Buttons ── */
+.btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;
+  white-space:nowrap;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn:hover:not(:disabled){filter:brightness(1.15)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary{background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff}
 .btn-danger{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff}
 .btn-success{background:linear-gradient(135deg,#065f46,#059669);color:#fff}
-.btn.loading{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:var(--bg);color:var(--subtle);border:1px solid var(--border)}
+.btn-ghost:hover{color:#fff;border-color:var(--accent)}
 
-/* ── FinOps card ── */
-.finops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px}
-.fcard{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px}
-.fcard-val{font-size:22px;font-weight:800;line-height:1;margin-bottom:3px}
-.fcard-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+/* ── Empty state ── */
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:12px}
+.empty-cmd{margin-top:8px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;
+  background:var(--bg);border:1px solid var(--border);border-radius:5px;
+  padding:6px 12px;color:var(--accent2);display:inline-block}
 
-/* ── Sentinel / Arch ── */
-.finding{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+/* ── Quick actions ── */
+.qactions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border)}
+.qa-chip{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;
+  background:var(--bg);border:1px solid var(--border);color:var(--subtle);
+  font-family:'SF Mono','Fira Code',monospace;transition:all .15s}
+.qa-chip:hover{color:#fff;border-color:var(--accent);background:#1a1f35}
+
+/* ── Findings ── */
+.finding{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
 .finding:last-child{border-bottom:none}
-.finding-sev{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
-.sev-critical{background:#3b0000;color:#fca5a5}.sev-high{background:#2d0e0e;color:var(--fail)}
-.sev-medium{background:#2d1f00;color:var(--warn)}.sev-low{background:#1e293b;color:var(--muted)}
-.finding-body{flex:1}
-.finding-file{font-size:11px;font-family:'SF Mono','Fira Code',monospace;color:var(--subtle);margin-bottom:2px}
+.finding-sev{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.sev-critical{background:#3b0000;color:#fca5a5}
+.sev-high{background:#2d0e0e;color:var(--fail)}
+.sev-medium{background:#2d1f00;color:var(--warn)}
+.sev-low{background:#1e293b;color:var(--muted)}
+.finding-body{flex:1;min-width:0}
+.finding-file{font-size:10px;font-family:'SF Mono','Fira Code',monospace;color:var(--subtle);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .finding-msg{font-size:12px;color:var(--text)}
 
 /* ── Integrations ── */
-.int-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:16px}
-.int-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;
-  display:flex;align-items:center;gap:12px}
-.int-icon{font-size:22px;flex-shrink:0}
-.int-info{flex:1}
-.int-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
-.int-status{font-size:11px}
+.int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px}
+.int-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;display:flex;align-items:center;gap:10px}
+.int-icon{font-size:20px;flex-shrink:0}
+.int-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:2px}
+.int-status{font-size:10px}
 .int-ok{color:var(--pass)}.int-off{color:var(--muted)}
+
+/* ── FinOps ── */
+.finops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:14px}
+.fcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.fcard-val{font-size:20px;font-weight:800;line-height:1;margin-bottom:3px}
+.fcard-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Arch score ── */
+.arch-score-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;flex-shrink:0;border:4px solid}
+.arch-a{border-color:var(--pass);color:var(--pass)}
+.arch-b{border-color:var(--accent2);color:var(--accent2)}
+.arch-c{border-color:var(--warn);color:var(--warn)}
+.arch-d{border-color:var(--fail);color:var(--fail)}
+
+/* ── Coverage bar ── */
+.cov-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.cov-route{font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cov-bar-wrap{width:120px;flex-shrink:0}
 
 /* ── Footer ── */
 footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
-  padding:6px 18px;font-size:10px;color:var(--muted);
+  padding:5px 16px;font-size:10px;color:var(--muted);
   display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
@@ -134,83 +180,95 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Topbar ══ -->
 <div class="topbar">
-  <span class="brand">test-end-to-end <em>V∞</em></span>
+  <span class="brand">e2e <em>V∞</em></span>
   <span class="badge b-idle" id="state-badge">IDLE</span>
+  <span class="target-path" id="target-path" title="">—</span>
   <div class="topbar-right">
+    <label class="refresh-toggle">
+      <input type="checkbox" id="auto-refresh" checked> Auto ↺
+    </label>
     <div class="ws-ind">
       <div class="ws-dot" id="ws-dot"></div>
       <span id="ws-label">—</span>
     </div>
-    <span id="topbar-ts" style="font-size:10px;color:var(--muted)"></span>
+    <span id="topbar-ts"></span>
   </div>
 </div>
 
 <!-- ══ Tabs ══ -->
 <nav class="nav">
-  <button class="nav-btn active" data-tab="runs">Runs <span class="nav-cnt" id="cnt-runs">—</span></button>
-  <button class="nav-btn" data-tab="coverage">Coverage <span class="nav-cnt" id="cnt-cov">—</span></button>
-  <button class="nav-btn" data-tab="crashs">Crashs <span class="nav-cnt" id="cnt-crash">—</span></button>
-  <button class="nav-btn" data-tab="evolutions">Évolutions <span class="nav-cnt" id="cnt-evo">—</span></button>
-  <button class="nav-btn" data-tab="sentinel">Sentinel <span class="nav-cnt" id="cnt-sent">—</span></button>
-  <button class="nav-btn" data-tab="arch">ArchPolice <span class="nav-cnt" id="cnt-arch">—</span></button>
-  <button class="nav-btn" data-tab="integrations">Intégrations</button>
-  <button class="nav-btn" data-tab="finops">FinOps</button>
+  <button class="nav-btn active" data-tab="runs">🏃 Runs <span class="nav-cnt" id="cnt-runs">—</span></button>
+  <button class="nav-btn" data-tab="coverage">📊 Coverage <span class="nav-cnt" id="cnt-cov">—</span></button>
+  <button class="nav-btn" data-tab="crashs">💥 Crashs <span class="nav-cnt" id="cnt-crash">—</span></button>
+  <button class="nav-btn" data-tab="evolutions">🧬 Évolutions <span class="nav-cnt" id="cnt-evo">—</span></button>
+  <button class="nav-btn" data-tab="sentinel">🛡 Sentinel <span class="nav-cnt" id="cnt-sent">—</span></button>
+  <button class="nav-btn" data-tab="arch">🏛 Arch <span class="nav-cnt" id="cnt-arch">—</span></button>
+  <button class="nav-btn" data-tab="integrations">🔌 Intégrations</button>
+  <button class="nav-btn" data-tab="finops">💰 FinOps</button>
 </nav>
 
 <!-- ══ Pages ══ -->
 <div class="pages">
 
-  <!-- ── Runs ── -->
+  <!-- Runs -->
   <div class="page active" id="page-runs">
     <div class="metrics-row" id="runs-metrics">
       <div class="metric"><div class="metric-val c-blue" id="m-total">—</div><div class="metric-lbl">Runs totaux</div></div>
       <div class="metric"><div class="metric-val c-pass" id="m-passed">—</div><div class="metric-lbl">Tests passés</div></div>
-      <div class="metric"><div class="metric-val c-fail" id="m-failed">—</div><div class="metric-lbl">Tests échoués</div></div>
+      <div class="metric"><div class="metric-val c-fail" id="m-failed">—</div><div class="metric-lbl">Échecs</div></div>
       <div class="metric"><div class="metric-val c-purple" id="m-saved">—</div><div class="metric-lbl">Tokens écon.</div></div>
     </div>
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Historique des runs</span>
-        <button class="btn btn-primary" onclick="loadTab('runs')">↺ Actualiser</button>
+        <span class="card-title">Historique</span>
+        <button class="btn btn-ghost" onclick="loadTab('runs')">↺ Actualiser</button>
+      </div>
+      <div class="qactions" id="quick-actions">
+        <span style="font-size:10px;color:var(--muted);align-self:center">Copier :</span>
+        <span class="qa-chip" onclick="copyCmd(this)">e2e init .</span>
+        <span class="qa-chip" onclick="copyCmd(this)">e2e audit .</span>
+        <span class="qa-chip" onclick="copyCmd(this)">e2e audit . --level=3</span>
+        <span class="qa-chip" onclick="copyCmd(this)">e2e coverage .</span>
+        <span class="qa-chip" onclick="copyCmd(this)">e2e fix .</span>
       </div>
       <div id="runs-table"><div class="empty">Chargement…</div></div>
     </div>
   </div>
 
-  <!-- ── Coverage ── -->
+  <!-- Coverage -->
   <div class="page" id="page-coverage">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Couverture des routes</span>
+        <span class="card-title">Couverture routes</span>
         <span class="card-meta" id="cov-pct-label">—</span>
       </div>
       <div id="cov-body"><div class="empty">Chargement…</div></div>
     </div>
   </div>
 
-  <!-- ── Crashs ── -->
+  <!-- Crashs -->
   <div class="page" id="page-crashs">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Crash Reports &amp; Triage</span>
+        <span class="card-title">Crash Reports</span>
         <span class="card-meta" id="crash-meta">—</span>
       </div>
       <div id="crash-body"><div class="empty">Chargement…</div></div>
     </div>
   </div>
 
-  <!-- ── Evolutions ── -->
+  <!-- Evolutions -->
   <div class="page" id="page-evolutions">
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Évolutions en attente</span>
+        <span class="card-title">Évolutions supervisées</span>
         <span class="card-meta" id="evo-meta">—</span>
       </div>
       <div id="evo-body"><div class="empty">Chargement…</div></div>
     </div>
   </div>
 
-  <!-- ── Sentinel ── -->
+  <!-- Sentinel -->
   <div class="page" id="page-sentinel">
     <div class="card">
       <div class="card-head">
@@ -221,7 +279,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     </div>
   </div>
 
-  <!-- ── ArchPolice ── -->
+  <!-- Arch -->
   <div class="page" id="page-arch">
     <div class="card">
       <div class="card-head">
@@ -232,10 +290,10 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     </div>
   </div>
 
-  <!-- ── Integrations ── -->
+  <!-- Integrations -->
   <div class="page" id="page-integrations">
     <div class="card">
-      <div class="card-head"><span class="card-title">Intégrations actives</span></div>
+      <div class="card-head"><span class="card-title">Intégrations (.env)</span></div>
       <div class="int-grid" id="int-grid">
         <div class="empty" style="grid-column:1/-1">Chargement…</div>
       </div>
@@ -243,14 +301,14 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     <div class="card">
       <div class="card-head"><span class="card-title">Log en direct</span></div>
       <div id="live-log" style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;
-        color:var(--subtle);padding:12px 16px;max-height:260px;overflow-y:auto;
+        color:var(--subtle);padding:12px 14px;max-height:240px;overflow-y:auto;
         scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-        <div style="color:var(--muted)">En attente…</div>
+        <div style="color:var(--muted)">En attente de messages WebSocket…</div>
       </div>
     </div>
   </div>
 
-  <!-- ── FinOps ── -->
+  <!-- FinOps -->
   <div class="page" id="page-finops">
     <div class="card">
       <div class="card-head"><span class="card-title">FinOps &amp; Green-IT</span></div>
@@ -259,7 +317,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="card-title">Métriques globales</span></div>
+      <div class="card-head"><span class="card-title">10 derniers runs</span></div>
       <div id="finops-table"><div class="empty">Chargement…</div></div>
     </div>
   </div>
@@ -267,7 +325,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 </div>
 
 <footer>
-  <span>test-end-to-end V-Infinite 2.0.0</span>
+  <span>test-end-to-end V-Infinite 2.0.0 — <a href="https://github.com/Aronbfrt/test-end-to-end" target="_blank" style="color:var(--accent);text-decoration:none">GitHub</a></span>
   <span id="footer-ts">—</span>
 </footer>
 
@@ -275,7 +333,7 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 (function(){
 'use strict';
 
-// ── Tab routing ──────────────────────────────────────────────────────────────
+// ── Tab routing ─────────────────────────────────────────────────────────────
 var TABS = ['runs','coverage','crashs','evolutions','sentinel','arch','integrations','finops'];
 var _loaded = {};
 
@@ -296,138 +354,241 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
 var _h = location.hash.replace('#','');
 if (TABS.includes(_h)) showTab(_h); else loadTab('runs');
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Auto-refresh ─────────────────────────────────────────────────────────────
+var _arTimer;
+document.getElementById('auto-refresh').addEventListener('change', function(e) {
+  clearInterval(_arTimer);
+  if (e.target.checked) {
+    _arTimer = setInterval(function() {
+      var active = document.querySelector('.nav-btn.active');
+      if (active) { _loaded[active.dataset.tab] = false; loadTab(active.dataset.tab); }
+    }, 30000);
+  }
+});
+_arTimer = setInterval(function() {
+  var active = document.querySelector('.nav-btn.active');
+  if (active) { _loaded[active.dataset.tab] = false; loadTab(active.dataset.tab); }
+}, 30000);
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function pill(v) {
   var cls = v==='PASS'?'p-pass':v==='FAIL'?'p-fail':v==='SKIP'?'p-skip':v==='UNKNOWN'?'p-warn':'p-info';
   return '<span class="pill '+cls+'">'+esc(v)+'</span>';
 }
-function relTime(ts) {
-  var d = Date.now() - ts; if (d < 60000) return Math.round(d/1000)+'s';
-  if (d < 3600000) return Math.round(d/60000)+'min'; return Math.round(d/3600000)+'h';
+function cmdPill(cmd) {
+  var cls = cmd==='audit'?'p-audit':cmd==='init'?'p-init':cmd==='shadow'?'p-shadow':cmd==='diff'?'p-diff':'p-info';
+  return '<span class="pill '+cls+'">'+esc(cmd||'?')+'</span>';
 }
+function relTime(ts) {
+  var t = typeof ts === 'number' ? ts : new Date(ts).getTime();
+  if (isNaN(t)) return '—';
+  var d = Date.now() - t;
+  if (d < 60000) return Math.round(d/1000)+'s';
+  if (d < 3600000) return Math.round(d/60000)+'min';
+  if (d < 86400000) return Math.round(d/3600000)+'h';
+  return Math.round(d/86400000)+'j';
+}
+function scoreColor(s) {
+  return s >= 80 ? 'var(--pass)' : s >= 60 ? 'var(--warn)' : 'var(--fail)';
+}
+function scoreGrade(s) {
+  return s >= 90 ? 'A' : s >= 80 ? 'B' : s >= 60 ? 'C' : 'D';
+}
+window.copyCmd = function(el) {
+  navigator.clipboard.writeText(el.textContent.trim()).then(function() {
+    var orig = el.textContent;
+    el.textContent = '✓ Copié !';
+    el.style.color = 'var(--pass)';
+    setTimeout(function(){ el.textContent = orig; el.style.color = ''; }, 1200);
+  });
+};
 
-// ── Load per-tab data ─────────────────────────────────────────────────────────
+// ── Clock ────────────────────────────────────────────────────────────────────
+function tick() {
+  var s = new Date().toLocaleTimeString('fr-FR');
+  document.getElementById('topbar-ts').textContent = s;
+  document.getElementById('footer-ts').textContent = s;
+}
+tick(); setInterval(tick, 1000);
+
+// ── Load target path from status ─────────────────────────────────────────────
+fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
+  var t = d.targetPath || d.config?.targetPath || '';
+  if (t) {
+    var el = document.getElementById('target-path');
+    el.textContent = t.length > 40 ? '…'+t.slice(-40) : t;
+    el.title = t;
+  }
+}).catch(function(){});
+
+// ── Tab loader ───────────────────────────────────────────────────────────────
 function loadTab(tab) {
   switch(tab) {
-    case 'runs':       loadRuns();        break;
-    case 'coverage':   loadCoverage();    break;
-    case 'crashs':     loadCrashs();      break;
-    case 'evolutions': loadEvolutions();  break;
-    case 'sentinel':   loadSentinel();    break;
-    case 'arch':       loadArch();        break;
+    case 'runs':         loadRuns();         break;
+    case 'coverage':     loadCoverage();     break;
+    case 'crashs':       loadCrashs();       break;
+    case 'evolutions':   loadEvolutions();   break;
+    case 'sentinel':     loadSentinel();     break;
+    case 'arch':         loadArch();         break;
     case 'integrations': loadIntegrations(); break;
-    case 'finops':     loadFinOps();      break;
+    case 'finops':       loadFinOps();       break;
   }
 }
 
-// ── Runs ──────────────────────────────────────────────────────────────────────
+// ── Runs ─────────────────────────────────────────────────────────────────────
 function loadRuns() {
   fetch('/api/runs?limit=50').then(function(r){return r.json();}).then(function(rows) {
-    var total = rows.length;
+    var total  = rows.length;
     var passed = rows.reduce(function(a,r){return a+(r.passed||0);},0);
     var failed = rows.reduce(function(a,r){return a+(r.failed||0);},0);
-    var saved  = rows.reduce(function(a,r){return a+(r.tokensSaved||0);},0);
+    var saved  = rows.reduce(function(a,r){return a+(r.tokens_saved||r.tokensSaved||0);},0);
     document.getElementById('m-total').textContent  = total;
     document.getElementById('m-passed').textContent = passed;
     document.getElementById('m-failed').textContent = failed;
     document.getElementById('m-saved').textContent  = saved.toLocaleString();
     var cnt = document.getElementById('cnt-runs');
-    cnt.textContent = total; cnt.className = 'nav-cnt'+(failed>0?' red':total>0?' grn':'');
-    if (!rows.length) { document.getElementById('runs-table').innerHTML = '<div class="empty">Aucun run enregistré — lance un audit</div>'; return; }
-    var html = '<table><thead><tr><th>Commande</th><th>Niveau</th><th>Passés</th><th>Échoués</th><th>Cache</th><th>Score CI</th><th>Il y a</th></tr></thead><tbody>';
+    cnt.textContent = total;
+    cnt.className = 'nav-cnt'+(failed>0?' red':total>0?' grn':'');
+    if (!rows.length) {
+      document.getElementById('runs-table').innerHTML =
+        '<div class="empty">Aucun run — lance ton premier audit'
+        +'<div class="empty-cmd">e2e audit /votre/projet</div></div>';
+      return;
+    }
+    var html = '<table><thead><tr>'
+      +'<th>Commande</th><th>Lvl</th><th>Cible</th>'
+      +'<th>Passés</th><th>Échecs</th><th>Cache</th><th>Score CI</th><th>Il y a</th>'
+      +'</tr></thead><tbody>';
     rows.forEach(function(r) {
+      var ciScore = r.ci_score ?? r.ciScore ?? null;
+      var target = (r.target||'').split('/').slice(-2).join('/');
       html += '<tr>'
-        +'<td><span class="pill p-info">'+esc(r.command||'audit')+'</span></td>'
-        +'<td class="dim">L'+esc(r.level||2)+'</td>'
-        +'<td class="c-pass">'+esc(r.passed||0)+'</td>'
+        +'<td>'+cmdPill(r.command||'audit')+'</td>'
+        +'<td class="dim" style="font-size:11px">L'+(r.level||2)+'</td>'
+        +'<td class="mono dim" style="font-size:10px" title="'+esc(r.target||'')+'">'+esc(target||'—')+'</td>'
+        +'<td class="c-pass" style="font-weight:700">'+esc(r.passed||0)+'</td>'
         +'<td class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</td>'
         +'<td class="dim">'+esc(r.cached||0)+'</td>'
-        +'<td>'+(r.ciScore!=null?'<span class="pill '+(r.ciScore>=80?'p-pass':r.ciScore>=60?'p-warn':'p-fail')+'">'+r.ciScore+'/100</span>':'<span class="dim">—</span>')+'</td>'
-        +'<td class="dim">'+(r.ts?relTime(r.ts):'—')+'</td>'
+        +'<td>'+(ciScore!=null
+          ?'<span class="pill '+(ciScore>=80?'p-pass':ciScore>=60?'p-warn':'p-fail')+'">'+ciScore+'/100</span>'
+          :'<span class="dim">—</span>')+'</td>'
+        +'<td class="dim">'+relTime(r.ts)+'</td>'
         +'</tr>';
     });
     html += '</tbody></table>';
     document.getElementById('runs-table').innerHTML = html;
-  }).catch(function(e) { document.getElementById('runs-table').innerHTML = '<div class="empty c-fail">Erreur: '+esc(e.message)+'</div>'; });
+  }).catch(function(e) {
+    document.getElementById('runs-table').innerHTML = '<div class="empty c-fail">'+esc(e.message)+'</div>';
+  });
 }
 
 // ── Coverage ─────────────────────────────────────────────────────────────────
 function loadCoverage() {
   fetch('/api/coverage').then(function(r){
-    if(!r.ok) throw new Error('Aucune donnée — run: node dist/index.js coverage <path>');
+    if(!r.ok) throw new Error('no-data');
     return r.json();
   }).then(function(d) {
-    var pct = d.coveragePercent ?? d.percent ?? '?';
-    document.getElementById('cov-pct-label').textContent = pct+'% couvert';
-    document.getElementById('cnt-cov').textContent = pct+'%';
-    var rows = d.routes || d.gaps || [];
-    var html = '<div style="padding:16px">'
-      +'<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>Couverture globale</span><strong>'+pct+'%</strong></div>'
-      +'<div class="progress"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
-    if (rows.length) {
-      html += '<table><thead><tr><th>Route</th><th>Méthode</th><th>Tests</th><th>Statut</th></tr></thead><tbody>';
-      rows.forEach(function(r) {
-        var covered = r.testFiles && r.testFiles.length > 0;
-        html += '<tr><td class="mono">'+esc(r.path||r.route||r)+'</td>'
-          +'<td class="dim">'+(r.method||'GET')+'</td>'
-          +'<td class="dim">'+(r.testFiles?r.testFiles.length:covered?'✓':'0')+'</td>'
-          +'<td>'+pill(covered?'PASS':'FAIL')+'</td></tr>';
+    var pct = d.coveragePercent ?? d.percent ?? 0;
+    document.getElementById('cov-pct-label').textContent = pct+'%';
+    var cnt = document.getElementById('cnt-cov');
+    cnt.textContent = pct+'%';
+    cnt.className = 'nav-cnt'+(pct>=80?' grn':pct>=50?' ylw':' red');
+    var routes = d.routes || d.gaps || [];
+    var covered = routes.filter(function(r){return r.testFiles && r.testFiles.length > 0;}).length;
+    var html = '<div style="padding:14px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<span style="font-size:12px;font-weight:600">'+covered+' / '+routes.length+' routes couvertes</span>'
+      +'<strong style="font-size:18px;color:'+(pct>=80?'var(--pass)':pct>=50?'var(--warn)':'var(--fail)')+'">'+pct+'%</strong>'
+      +'</div>'
+      +'<div class="progress" style="margin-bottom:14px"><div class="progress-fill '+(pct>=80?'pf-pass':pct>=50?'pf-warn':'pf-fail')+'" style="width:'+pct+'%"></div></div>';
+    if (routes.length) {
+      html += '<div>';
+      routes.forEach(function(r) {
+        var ok = r.testFiles && r.testFiles.length > 0;
+        html += '<div class="cov-row">'
+          +'<span class="cov-route" title="'+esc(r.path||r.route||r)+'">'+esc(r.path||r.route||r)+'</span>'
+          +'<span class="dim" style="font-size:10px;white-space:nowrap">'+(r.method||'GET')+'</span>'
+          +'<div class="cov-bar-wrap"><div class="progress" style="margin-top:0"><div class="progress-fill '+(ok?'pf-pass':'pf-fail')+'" style="width:'+(ok?'100':'0')+'%"></div></div></div>'
+          +'<span class="pill '+(ok?'p-pass':'p-fail')+'">'+(ok?'✓':'✗')+'</span>'
+          +'</div>';
       });
-      html += '</tbody></table>';
-    } else { html += '<div class="empty">Aucune route détectée</div>'; }
+      html += '</div>';
+    } else {
+      html += '<div class="empty">Aucune route détectée</div>';
+    }
     html += '</div>';
     document.getElementById('cov-body').innerHTML = html;
-  }).catch(function(e) { document.getElementById('cov-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+  }).catch(function() {
+    document.getElementById('cov-body').innerHTML =
+      '<div class="empty">Aucune donnée de couverture'
+      +'<div class="empty-cmd">e2e coverage /votre/projet</div></div>';
+    var cnt = document.getElementById('cnt-cov');
+    cnt.textContent = '—'; cnt.className = 'nav-cnt';
+  });
 }
 
 // ── Crashs ───────────────────────────────────────────────────────────────────
 function loadCrashs() {
   fetch('/api/crashs').then(function(r){return r.json();}).then(function(list) {
     var cnt = document.getElementById('cnt-crash');
-    cnt.textContent = list.length; cnt.className = 'nav-cnt'+(list.length>0?' red':'');
+    cnt.textContent = list.length;
+    cnt.className = 'nav-cnt'+(list.length>0?' red':'');
     document.getElementById('crash-meta').textContent = list.length+' rapport(s)';
-    if (!list.length) { document.getElementById('crash-body').innerHTML = '<div class="empty">✅ Aucun crash enregistré</div>'; return; }
+    if (!list.length) {
+      document.getElementById('crash-body').innerHTML = '<div class="empty">✅ Aucun crash enregistré</div>';
+      return;
+    }
     var html = '';
     list.forEach(function(c) {
-      html += '<div class="finding"><div class="finding-sev sev-'+(c.verdict==='BACKEND_BUG'?'high':c.verdict==='SELECTOR_DRIFT'?'medium':'low')+'">'
-        +esc(c.verdict||'UNKNOWN')+'</div><div class="finding-body">'
+      var sev = c.verdict==='BACKEND_BUG'?'high':c.verdict==='SELECTOR_DRIFT'?'medium':'low';
+      html += '<div class="finding">'
+        +'<div class="finding-sev sev-'+sev+'">'+esc(c.verdict||'?')+'</div>'
+        +'<div class="finding-body">'
         +'<div class="finding-file">'+esc(c.bugReport?.route||c.route||'—')+'</div>'
         +'<div class="finding-msg">'+esc(c.reasoning||c.bugReport?.assertion||'—')+'</div>'
         +'<div style="margin-top:6px;display:flex;gap:6px;align-items:center">'
-        +'<span style="font-size:10px;color:var(--muted)">Confiance: '+(Math.round((c.confidence||0)*100))+'%</span>'
-        +(c.verdict==='BACKEND_BUG'?'<button class="btn btn-primary" onclick="triggerRepair(\''+esc(c.traceId||'')+'\',this)">👻 Auto-Patch</button>':'')
+        +'<span class="dim" style="font-size:10px">Confiance: '+(Math.round((c.confidence||0)*100))+'%</span>'
+        +(c.verdict==='BACKEND_BUG'
+          ?'<button class="btn btn-primary" onclick="triggerRepair(\''+esc(c.traceId||'')+'\',this)">👻 Auto-Patch</button>'
+          :'')
         +'</div></div></div>';
     });
     document.getElementById('crash-body').innerHTML = html;
-  }).catch(function(e) { document.getElementById('crash-body').innerHTML = '<div class="empty c-fail">'+esc(e.message)+'</div>'; });
+  }).catch(function(e) {
+    document.getElementById('crash-body').innerHTML = '<div class="empty c-fail">'+esc(e.message)+'</div>';
+  });
 }
 
 window.triggerRepair = function(traceId, btn) {
-  btn.classList.add('loading'); btn.textContent = '⏳…';
+  btn.disabled = true; btn.textContent = '⏳…';
   fetch('/api/repair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({traceId:traceId})})
   .then(function(r){return r.json();}).then(function(){
-    btn.classList.remove('loading'); btn.classList.add('btn-success'); btn.textContent = '✓ Queued';
-  }).catch(function(e){ btn.classList.remove('loading'); btn.textContent = '✗ '+e.message.slice(0,20); });
+    btn.disabled = false; btn.classList.add('btn-success'); btn.textContent = '✓ En file';
+  }).catch(function(e){ btn.disabled = false; btn.textContent = '✗ '+e.message.slice(0,20); });
 };
 
 // ── Evolutions ───────────────────────────────────────────────────────────────
 function loadEvolutions() {
   fetch('/api/evolutions/pending').then(function(r){return r.json();}).then(function(list) {
     var cnt = document.getElementById('cnt-evo');
-    cnt.textContent = list.length; cnt.className = 'nav-cnt'+(list.length>0?' red':'');
-    document.getElementById('evo-meta').textContent = list.length+' évolution(s) en attente';
-    if (!list.length) { document.getElementById('evo-body').innerHTML = '<div class="empty">✅ Aucune évolution en attente</div>'; return; }
+    cnt.textContent = list.length;
+    cnt.className = 'nav-cnt'+(list.length>0?' ylw':'');
+    document.getElementById('evo-meta').textContent = list.length+' en attente';
+    if (!list.length) {
+      document.getElementById('evo-body').innerHTML = '<div class="empty">✅ Aucune évolution en attente</div>';
+      return;
+    }
     var html = '';
     list.forEach(function(e) {
       html += '<div class="finding"><div class="finding-sev sev-medium">PENDING</div>'
         +'<div class="finding-body">'
         +'<div class="finding-file mono">'+esc(e.agentModule||'?')+' — '+esc(e._file||'')+'</div>'
         +'<div class="finding-msg">'+esc(e.reason||'—')+'</div>'
-        +'<div style="margin-top:6px;display:flex;gap:6px">'
-        +'<span style="font-size:10px;color:var(--muted)">Root cause: '+esc(e.critique?.rootCause||'—')+'</span>'
+        +'<div style="margin-top:5px;display:flex;gap:8px;align-items:center">'
+        +'<span class="dim" style="font-size:10px">'+esc(e.critique?.rootCause||'—')+'</span>'
         +'<button class="btn btn-success" onclick="applyEvolution(\''+esc(e._file||'')+'\',this)">▶ Appliquer</button>'
         +'</div></div></div>';
     });
@@ -436,69 +597,85 @@ function loadEvolutions() {
 }
 
 window.applyEvolution = function(file, btn) {
-  btn.classList.add('loading'); btn.textContent = '⏳…';
+  btn.disabled = true; btn.textContent = '⏳…';
   fetch('/api/evolution/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:file})})
   .then(function(r){return r.json();}).then(function(){
-    btn.classList.remove('loading'); btn.classList.add('btn-success'); btn.textContent = '✓ Applied';
-    setTimeout(function(){_loaded.evolutions=false; loadTab('evolutions');}, 2000);
-  }).catch(function(e){ btn.classList.remove('loading'); btn.textContent='✗ Erreur'; });
+    btn.disabled = false; btn.classList.add('btn-success'); btn.textContent = '✓ Appliqué';
+    setTimeout(function(){ _loaded.evolutions=false; loadTab('evolutions'); }, 2000);
+  }).catch(function(){ btn.disabled = false; btn.textContent = '✗ Erreur'; });
 };
 
 // ── Sentinel ─────────────────────────────────────────────────────────────────
 function loadSentinel() {
   fetch('/api/sentinel').then(function(r){
-    if(!r.ok) throw new Error('Aucun rapport — run: node dist/index.js sentinel <path>');
+    if(!r.ok) throw new Error('no-data');
     return r.json();
   }).then(function(d) {
     var findings = d.findings || [];
     var cnt = document.getElementById('cnt-sent');
-    cnt.textContent = findings.length; cnt.className = 'nav-cnt'+(findings.length>0?' red':'');
+    cnt.textContent = findings.length;
+    cnt.className = 'nav-cnt'+(findings.length>0?' red':'');
     document.getElementById('sent-meta').textContent = 'PR #'+(d.prNumber||'?')+' — '+findings.length+' finding(s)';
-    var html = findings.length ? '' : '<div class="empty">✅ Aucun problème de sécurité détecté</div>';
+    var html = findings.length ? '' : '<div class="empty">✅ Aucun problème de sécurité</div>';
     findings.forEach(function(f) {
       var sev = (f.severity||'').toLowerCase();
       html += '<div class="finding"><div class="finding-sev sev-'+sev+'">'+esc(f.severity||'INFO')+'</div>'
-        +'<div class="finding-body"><div class="finding-file mono">'+esc(f.file||'—')+':'+(f.line||'?')+'</div>'
+        +'<div class="finding-body"><div class="finding-file">'+esc(f.file||'—')+':'+(f.line||'?')+'</div>'
         +'<div class="finding-msg">'+esc(f.message||f.description||'—')+'</div>'
-        +(f.rule?'<div style="font-size:10px;color:var(--muted);margin-top:3px">'+esc(f.rule)+'</div>':'')
+        +(f.rule?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+esc(f.rule)+'</div>':'')
         +'</div></div>';
     });
     document.getElementById('sent-body').innerHTML = html;
-  }).catch(function(e){ document.getElementById('sent-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+  }).catch(function() {
+    document.getElementById('sent-body').innerHTML =
+      '<div class="empty">Aucun rapport Sentinel'
+      +'<div class="empty-cmd">e2e sentinel --pr=42</div></div>';
+  });
 }
 
 // ── ArchPolice ───────────────────────────────────────────────────────────────
 function loadArch() {
   fetch('/api/arch').then(function(r){
-    if(!r.ok) throw new Error('Aucun rapport — run: node dist/index.js arch <path>');
+    if(!r.ok) throw new Error('no-data');
     return r.json();
   }).then(function(d) {
-    var score = d.score ?? d.globalScore ?? '?';
-    var grade = d.grade ?? '?';
-    document.getElementById('arch-meta').textContent = 'Score: '+score+'/100 — Grade '+grade;
-    document.getElementById('cnt-arch').textContent = grade;
+    var score = d.score ?? d.globalScore ?? 0;
+    var grade = d.grade ?? scoreGrade(score);
     var issues = d.issues || d.violations || [];
-    var html = '<div style="padding:16px">'
+    document.getElementById('arch-meta').textContent = score+'/100 — Grade '+grade+' — '+issues.length+' problème(s)';
+    var cnt = document.getElementById('cnt-arch');
+    cnt.textContent = grade;
+    cnt.className = 'nav-cnt'+(score>=80?' grn':score>=60?' ylw':' red');
+    var gradeClass = score>=80?'arch-a':score>=70?'arch-b':score>=60?'arch-c':'arch-d';
+    var html = '<div style="padding:14px">'
       +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">'
-      +'<div style="font-size:40px;font-weight:900;color:'+(score>=80?'var(--pass)':score>=60?'var(--warn)':'var(--fail)')+'">'+score+'</div>'
+      +'<div class="arch-score-ring '+gradeClass+'">'
+      +'<div style="font-size:22px;font-weight:900">'+score+'</div>'
+      +'<div style="font-size:10px;font-weight:600">Grade '+grade+'</div>'
+      +'</div>'
       +'<div>'
-      +'<div style="font-size:20px;font-weight:700;color:#fff">Grade '+grade+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'+issues.length+' problème(s) détecté(s)</div>'
-      +'</div></div>'
-      +'<div class="progress" style="margin-bottom:14px"><div class="progress-fill" style="width:'+score+'%;background:linear-gradient(90deg,'+(score>=80?'var(--pass)':score>=60?'var(--warn)':'var(--fail)')+'transparent)"></div></div>'
-      +'</div>';
+      +'<div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px">Qualité architecturale</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+issues.length+' violation(s) détectée(s)</div>'
+      +'<div class="progress" style="margin-top:8px;width:200px"><div class="progress-fill '+(score>=80?'pf-pass':score>=60?'pf-warn':'pf-fail')+'" style="width:'+score+'%"></div></div>'
+      +'</div></div></div>';
     if (issues.length) {
       html += '<div>';
       issues.forEach(function(i) {
         var sev = (i.severity||'medium').toLowerCase();
         html += '<div class="finding"><div class="finding-sev sev-'+sev+'">'+esc(i.severity||i.type||'ISSUE')+'</div>'
-          +'<div class="finding-body"><div class="finding-file mono">'+esc(i.file||i.filePath||'—')+'</div>'
+          +'<div class="finding-body"><div class="finding-file">'+esc(i.file||i.filePath||'—')+'</div>'
           +'<div class="finding-msg">'+esc(i.message||i.description||'—')+'</div></div></div>';
       });
       html += '</div>';
+    } else if (!issues.length && score > 0) {
+      html += '<div class="empty">✅ Aucune violation détectée</div>';
     }
     document.getElementById('arch-body').innerHTML = html;
-  }).catch(function(e){ document.getElementById('arch-body').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+  }).catch(function() {
+    document.getElementById('arch-body').innerHTML =
+      '<div class="empty">Aucun rapport d\'architecture'
+      +'<div class="empty-cmd">e2e arch /votre/projet</div></div>';
+  });
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────
@@ -507,63 +684,74 @@ function loadIntegrations() {
     {icon:'🟣',name:'Slack',key:'SLACK_WEBHOOK_URL'},
     {icon:'🔵',name:'Discord',key:'DISCORD_WEBHOOK_URL'},
     {icon:'🔷',name:'Teams',key:'TEAMS_WEBHOOK_URL'},
-    {icon:'🟠',name:'Jira/Xray',key:'JIRA_HOST'},
+    {icon:'🟠',name:'Jira',key:'JIRA_URL'},
     {icon:'🟢',name:'Trello',key:'TRELLO_API_KEY'},
     {icon:'☁️',name:'OVHcloud',key:'OVH_APP_KEY'},
     {icon:'🔶',name:'IONOS',key:'IONOS_GITHUB_REPO'},
     {icon:'🏠',name:'Hostinger',key:'HOSTINGER_DEPLOY_WEBHOOK_URL'},
     {icon:'🔐',name:'SSH Logs',key:'SSH_HOST'},
     {icon:'📊',name:'GitHub PR',key:'GITHUB_TOKEN'},
+    {icon:'💳',name:'Stripe',key:'STRIPE_WEBHOOK_SECRET'},
   ];
   fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
     var env = d.config || {};
+    var activeCount = 0;
     var html = INTEGRATIONS.map(function(i) {
-      var active = !!(env[i.key] || false);
+      var active = !!(env[i.key]);
+      if (active) activeCount++;
       return '<div class="int-card">'
         +'<div class="int-icon">'+i.icon+'</div>'
-        +'<div class="int-info"><div class="int-name">'+esc(i.name)+'</div>'
+        +'<div><div class="int-name">'+esc(i.name)+'</div>'
         +'<div class="int-status '+(active?'int-ok':'int-off')+'">'+(active?'✓ Configuré':'○ Non configuré')+'</div>'
         +'</div></div>';
     }).join('');
     document.getElementById('int-grid').innerHTML = html;
-  }).catch(function(){
-    var html = INTEGRATIONS.map(function(i){
-      return '<div class="int-card"><div class="int-icon">'+i.icon+'</div>'
-        +'<div class="int-info"><div class="int-name">'+esc(i.name)+'</div>'
-        +'<div class="int-status int-off">○ Statut inconnu</div></div></div>';
-    }).join('');
-    document.getElementById('int-grid').innerHTML = html;
+    var tab = document.querySelector('[data-tab="integrations"] .nav-cnt');
+    if (!tab) { tab = document.createElement('span'); tab.className='nav-cnt'; document.querySelector('[data-tab="integrations"]').appendChild(tab); }
+    tab.textContent = activeCount+'/'+INTEGRATIONS.length;
+    tab.className = 'nav-cnt'+(activeCount>0?' grn':'');
+  }).catch(function() {
+    document.getElementById('int-grid').innerHTML =
+      '<div class="empty" style="grid-column:1/-1">Impossible de charger le statut (.env non chargé ?)</div>';
   });
 }
 
 // ── FinOps ────────────────────────────────────────────────────────────────────
 function loadFinOps() {
-  fetch('/api/finops').then(function(r){return r.json();}).then(function(d) {
+  fetch('/api/finops').then(function(r){
+    if (!r.ok) throw new Error('no-data');
+    return r.json();
+  }).then(function(d) {
+    var tokensSaved = d.tokensSaved ?? d.totalTokensSaved ?? 0;
     var html = [
-      {val: (d.totalRuns||0), lbl:'Runs totaux', cls:'c-blue'},
-      {val: (d.totalPassed||0), lbl:'Tests passés', cls:'c-pass'},
-      {val: (d.totalFailed||0), lbl:'Tests échoués', cls:'c-fail'},
-      {val: Number(d.totalTokensSaved||0).toLocaleString(), lbl:'Tokens économisés', cls:'c-purple'},
-      {val: '$'+Number(d.costSaved||0).toFixed(3), lbl:'Coût évité (API)', cls:'c-warn'},
-      {val: Number(d.co2Saved||0).toFixed(4)+'g', lbl:'CO₂ évité (Green-IT)', cls:'c-pink'},
+      {val: d.totalRuns||0,                       lbl:'Runs totaux',        cls:'c-blue'},
+      {val: d.totalPassed||0,                     lbl:'Tests passés',       cls:'c-pass'},
+      {val: d.totalFailed||0,                     lbl:'Tests échoués',      cls:'c-fail'},
+      {val: Number(tokensSaved).toLocaleString(), lbl:'Tokens économisés',  cls:'c-purple'},
+      {val: '$'+Number(d.costSaved||0).toFixed(3),lbl:'Coût API évité',     cls:'c-warn'},
+      {val: Number(d.co2Saved||0).toFixed(4)+'g',lbl:'CO₂ évité',          cls:'c-pink'},
     ].map(function(m){
       return '<div class="fcard"><div class="fcard-val '+m.cls+'">'+esc(m.val)+'</div><div class="fcard-lbl">'+esc(m.lbl)+'</div></div>';
     }).join('');
     document.getElementById('finops-grid').innerHTML = html;
-    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Passés</th><th>Échoués</th><th>Il y a</th></tr></thead><tbody>';
     var rows = d.recentRuns || [];
+    var table = '<table><thead><tr><th>Commande</th><th>Cible</th><th>Passés</th><th>Échecs</th><th>Il y a</th></tr></thead><tbody>';
     if (rows.length) {
       rows.slice(0,10).forEach(function(r){
-        table += '<tr><td><span class="pill p-info">'+esc(r.command||'audit')+'</span></td>'
-          +'<td class="dim mono" style="font-size:10px">'+esc((r.target||'').split('/').slice(-2).join('/'))+'</td>'
+        table += '<tr><td>'+cmdPill(r.command||'audit')+'</td>'
+          +'<td class="mono dim" style="font-size:10px" title="'+esc(r.target||'')+'">'+esc((r.target||'').split('/').slice(-2).join('/'))+'</td>'
           +'<td class="c-pass">'+esc(r.passed||0)+'</td>'
           +'<td class="'+(r.failed>0?'c-fail':'dim')+'">'+esc(r.failed||0)+'</td>'
-          +'<td class="dim">'+(r.ts?relTime(r.ts):'—')+'</td></tr>';
+          +'<td class="dim">'+relTime(r.ts)+'</td></tr>';
       });
-    } else { table += '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Aucune donnée</td></tr>'; }
+    } else { table += '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Aucun run</td></tr>'; }
     table += '</tbody></table>';
     document.getElementById('finops-table').innerHTML = table;
-  }).catch(function(e){ document.getElementById('finops-grid').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; });
+  }).catch(function() {
+    document.getElementById('finops-grid').innerHTML =
+      '<div class="empty" style="grid-column:1/-1">Aucune donnée FinOps'
+      +'<div class="empty-cmd">e2e audit /votre/projet</div></div>';
+  });
 }
 
 // ── State badge ───────────────────────────────────────────────────────────────
@@ -580,7 +768,7 @@ function setStateBadge(state) {
 var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
 function wsConnect() {
   try {
-    var ws = new WebSocket(proto + '//' + location.host + '/ws');
+    var ws = new WebSocket(proto+'//'+location.host+'/ws');
     ws.onopen = function() {
       document.getElementById('ws-dot').className = 'ws-dot live';
       document.getElementById('ws-label').textContent = 'Connecté';
@@ -591,42 +779,30 @@ function wsConnect() {
       setTimeout(wsConnect, 3000);
     };
     ws.onmessage = function(e) {
-      var ev = JSON.parse(e.data);
-      if (ev.type === 'STATE') { setStateBadge(ev.payload); }
-      if (ev.type === 'LOG') {
-        var feed = document.getElementById('live-log');
-        if (feed) {
-          var d = document.createElement('div');
-          d.style.cssText = 'padding:2px 0;border-bottom:1px solid var(--border)';
-          d.textContent = ev.payload;
-          feed.appendChild(d); feed.scrollTop = feed.scrollHeight;
+      try {
+        var ev = JSON.parse(e.data);
+        if (ev.type === 'STATE') { setStateBadge(ev.payload); }
+        if (ev.type === 'LOG') {
+          var feed = document.getElementById('live-log');
+          if (feed) {
+            var line = document.createElement('div');
+            line.style.cssText = 'border-bottom:1px solid var(--border);padding:3px 0;white-space:pre-wrap;word-break:break-all';
+            line.textContent = ev.payload;
+            if (feed.children.length > 200) feed.removeChild(feed.firstChild);
+            feed.appendChild(line);
+            feed.scrollTop = feed.scrollHeight;
+          }
         }
-      }
-      if (ev.type === 'REPORT_READY') {
-        _loaded = {};
-        var cur = document.querySelector('.nav-btn.active');
-        if (cur) { var t = cur.dataset.tab; _loaded[t] = true; loadTab(t); }
-      }
+        if (ev.type === 'RUN_DONE') {
+          _loaded.runs = false; loadTab('runs');
+          _loaded.finops = false;
+        }
+      } catch(err){}
     };
-  } catch(_) {
-    document.getElementById('ws-dot').className = 'ws-dot';
-  }
+    ws.onerror = function(){};
+  } catch(err){}
 }
 wsConnect();
-
-// ── Live state poll (fallback for cross-process CLI) ─────────────────────────
-setInterval(function() {
-  fetch('/api/live').then(function(r){return r.json();}).then(function(d) {
-    setStateBadge(d.state);
-    document.getElementById('topbar-ts').textContent = d.command ? '('+d.command+')' : '';
-    document.getElementById('footer-ts').textContent = d.state === 'DONE' && d.ts ? 'Terminé '+relTime(d.ts)+' ago' : d.state;
-  }).catch(function(){});
-}, 3000);
-
-// Keyboard shortcut: press digit 1-8 to switch tabs
-document.addEventListener('keydown', function(e) {
-  var n = parseInt(e.key); if (n >= 1 && n <= TABS.length) showTab(TABS[n-1]);
-});
 
 })();
 </script>

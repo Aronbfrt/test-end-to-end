@@ -896,17 +896,17 @@ code{background:#0f172a;border:1px solid #263147;padding:2px 6px;border-radius:4
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-text">Audit rapide (niveau 1, sans IA) :<br>
-        <code>node dist/index.js audit --level=1</code></div>
+        <code>e2e audit --level=1</code></div>
     </div>
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-text">Audit complet avec Vision IA :<br>
-        <code>node dist/index.js audit --level=2 --predictive</code></div>
+        <code>e2e audit --level=2 --predictive</code></div>
     </div>
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-text">Shadow Personas + auto-patch :<br>
-        <code>node dist/index.js shadow --level=3 --chaos</code></div>
+        <code>e2e shadow --level=3 --chaos</code></div>
     </div>
   </div>
   <div class="status"><div class="dot" id="dot"></div><span id="status-text">Serveur actif — en attente d'un audit</span></div>
@@ -1047,7 +1047,7 @@ try {
   app.get('/api/arch', (_req: Request, res: Response) => {
     const archPath = join(targetPath, '.e2e-work', 'arch-report.json');
     if (!existsSync(archPath)) {
-      res.status(404).json({ error: 'No arch report yet — run: node dist/index.js arch <path>' });
+      res.status(404).json({ error: 'No arch report yet — run: e2e arch <path>' });
       return;
     }
     res.json(JSON.parse(readFileSync(archPath, 'utf-8')));
@@ -1056,7 +1056,7 @@ try {
   app.get('/api/dependabot', (_req: Request, res: Response) => {
     const depPath = join(targetPath, '.e2e-work', 'dependabot-report.json');
     if (!existsSync(depPath)) {
-      res.status(404).json({ error: 'No dependabot report yet — run: npm run security-fix' });
+      res.status(404).json({ error: 'No dependabot report yet — run: e2e fix' });
       return;
     }
     res.json(JSON.parse(readFileSync(depPath, 'utf-8')));
@@ -1065,7 +1065,7 @@ try {
   app.get('/api/coverage', (_req: Request, res: Response) => {
     const covPath = join(targetPath, '.e2e-work', 'coverage.json');
     if (!existsSync(covPath)) {
-      res.status(404).json({ error: 'No coverage data — run: node dist/index.js coverage <path>' });
+      res.status(404).json({ error: 'No coverage data — run: e2e coverage <path>' });
       return;
     }
     res.json(JSON.parse(readFileSync(covPath, 'utf-8')));
@@ -1097,7 +1097,7 @@ try {
   app.get('/api/sentinel', (_req: Request, res: Response) => {
     const sentPath = join(targetPath, '.e2e-work', 'sentinel-report.json');
     if (!existsSync(sentPath)) {
-      res.status(404).json({ error: 'No sentinel report — run: node dist/index.js sentinel <path>' });
+      res.status(404).json({ error: 'No sentinel report — run: e2e sentinel <path>' });
       return;
     }
     res.json(JSON.parse(readFileSync(sentPath, 'utf-8')));
