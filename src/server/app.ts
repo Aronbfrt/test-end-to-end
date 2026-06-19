@@ -1288,8 +1288,9 @@ try {
 
   // ── Integration connection test ─────────────────────────────────────────────
   app.post('/api/integration/test', async (req: Request, res: Response) => {
-    const { id } = req.body as { id: string };
-    const env = process.env;
+    const { id, values } = req.body as { id: string; values?: Record<string, string> };
+    // Form values take priority over process.env (allows testing before saving)
+    const env = { ...process.env, ...(values ?? {}) };
 
     try {
       if (id === 'discord') {

@@ -356,9 +356,10 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
     <div id="modal-test-result" style="display:none;margin:8px 0;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:500"></div>
     <div class="int-modal-actions">
       <button type="button" class="int-disconnect" id="modal-disconnect" onclick="disconnectInt()" style="display:none">Déconnecter</button>
-      <button type="button" class="btn btn-ghost" id="modal-test-btn" onclick="testIntConnection()" style="display:none">⚡ Tester</button>
+      <span style="flex:1"></span>
       <button type="button" class="btn btn-ghost" onclick="closeIntModal()">Annuler</button>
-      <button type="submit" form="int-form" class="btn btn-primary">Enregistrer</button>
+      <button type="button" class="btn btn-ghost" id="modal-test-btn" onclick="testIntConnection()" style="display:none">⚡ Tester</button>
+      <button type="submit" form="int-form" id="modal-save-btn" class="btn btn-primary">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -991,18 +992,23 @@ window.closeIntModal = function() {
   _currentIntId = null;
 };
 
+function _getFormValues(intg) {
+  var form = document.getElementById('int-form');
+  var vals = {};
+  intg.fields.forEach(function(f) {
+    var input = form.querySelector('[name="'+f.key+'"]');
+    if (input && input.value.trim()) vals[f.key] = input.value.trim();
+  });
+  return vals;
+}
+
 window.submitIntModal = function(e) {
   e.preventDefault();
   var intg = INTEGRATIONS.find(function(i){ return i.id === _currentIntId; });
   if (!intg) return;
-  var form = document.getElementById('int-form');
-  var updates = {};
-  intg.fields.forEach(function(f) {
-    var input = form.querySelector('[name="'+f.key+'"]');
-    if (input && input.value.trim()) updates[f.key] = input.value.trim();
-  });
+  var updates = _getFormValues(intg);
   if (!Object.keys(updates).length) { closeIntModal(); return; }
-  var btn = form.closest('.int-modal-body').querySelector('[type="submit"]');
+  var btn = document.getElementById('modal-save-btn');
   btn.disabled = true; btn.textContent = 'Enregistrement…';
   fetch('/api/env/update', {
     method:'POST',
@@ -1013,14 +1019,10 @@ window.submitIntModal = function(e) {
     _loaded.integrations = false;
     loadIntegrations();
     var testable = ['discord','slack','teams','github','jira'].indexOf(intg.id) !== -1;
-    if (testable) {
-      setTimeout(function(){ testIntConnection(true); }, 300);
-    } else {
-      closeIntModal();
-    }
+    if (testable) { testIntConnection(true); } else { closeIntModal(); }
   }).catch(function(err) {
     btn.disabled = false; btn.textContent = 'Enregistrer';
-    alert('Erreur: '+err.message);
+    alert('Erreur enregistrement: '+err.message);
   });
 };
 
@@ -1033,25 +1035,27 @@ window.testIntConnection = function(autoAfterSave) {
   resEl.style.background = 'rgba(99,102,241,.1)';
   resEl.style.color = 'var(--fg)';
   resEl.textContent = '⏳ Test en cours…';
-  testBtn.disabled = true;
+  if (testBtn) testBtn.disabled = true;
+  // Envoie les valeurs du formulaire pour tester sans avoir besoin de sauvegarder d'abord
+  var values = _getFormValues(intg);
   fetch('/api/integration/test', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({id: intg.id})
+    body: JSON.stringify({id: intg.id, values: values})
   }).then(function(r){ return r.json(); }).then(function(d) {
-    testBtn.disabled = false;
+    if (testBtn) testBtn.disabled = false;
     if (d.ok) {
       resEl.style.background = 'rgba(16,185,129,.12)';
       resEl.style.color = '#10b981';
       resEl.textContent = '✅ '+d.message;
-      if (autoAfterSave) setTimeout(closeIntModal, 2000);
+      if (autoAfterSave) setTimeout(closeIntModal, 1800);
     } else {
       resEl.style.background = 'rgba(239,68,68,.1)';
       resEl.style.color = '#ef4444';
       resEl.textContent = '❌ '+d.message;
     }
   }).catch(function(err) {
-    testBtn.disabled = false;
+    if (testBtn) testBtn.disabled = false;
     resEl.style.background = 'rgba(239,68,68,.1)';
     resEl.style.color = '#ef4444';
     resEl.textContent = '❌ Erreur réseau: '+err.message;
