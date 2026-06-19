@@ -201,6 +201,42 @@ tr:hover td{background:var(--surface2)}
 .arch-c{border-color:var(--warn);color:var(--warn)}
 .arch-d{border-color:var(--fail);color:var(--fail)}
 
+/* ── Home page ── */
+.home-wrap{padding:20px;display:flex;flex-direction:column;gap:14px;height:100%;overflow-y:auto}
+.home-hero{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:24px 28px;display:flex;align-items:center;gap:28px}
+.home-score-ring{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;flex-shrink:0;border:4px solid;transition:border-color .3s}
+.home-score-val{font-size:22px;font-weight:800;line-height:1}
+.home-score-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.6px;margin-top:2px;opacity:.7}
+.home-hero-info{flex:1;min-width:0}
+.home-hero-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.home-hero-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.home-hero-tags{display:flex;gap:6px;flex-wrap:wrap}
+.home-stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.hstat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.hstat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.hstat-val{font-size:20px;font-weight:800;line-height:1;color:var(--text)}
+.hstat-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.home-quick{display:flex;flex-direction:column;gap:8px;padding:14px}
+.home-quick-btn{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg);cursor:pointer;
+  transition:all .15s;text-align:left;width:100%}
+.home-quick-btn:hover{border-color:var(--accent);background:var(--surface2)}
+.home-quick-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0}
+.home-quick-label{font-size:12px;font-weight:600;color:var(--text);display:block}
+.home-quick-sub{font-size:10px;color:var(--muted);display:block}
+.home-activity{display:flex;flex-direction:column}
+.home-act-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)}
+.home-act-row:last-child{border-bottom:none}
+.home-act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.home-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:12px;padding:60px 20px;text-align:center}
+.home-empty-icon{font-size:48px;line-height:1}
+.home-empty-title{font-size:16px;font-weight:700;color:var(--text)}
+.home-empty-sub{font-size:12px;color:var(--muted);max-width:320px;line-height:1.6}
 /* ── Coverage bar ── */
 .cov-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .cov-route{font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:var(--subtle);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -396,7 +432,8 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 <!-- ══ Tabs ══ -->
 <nav class="nav">
-  <button class="nav-btn active" data-tab="commandes" data-i18n="nav_launch">Lancer</button>
+  <button class="nav-btn active" data-tab="accueil" data-i18n="nav_home">Accueil</button>
+  <button class="nav-btn" data-tab="commandes" data-i18n="nav_launch">Lancer</button>
   <button class="nav-btn" data-tab="runs" data-i18n="nav_history">Historique <span class="nav-cnt" id="cnt-runs"></span></button>
   <button class="nav-btn" data-tab="resultats" data-i18n="nav_results">Résultats <span class="nav-cnt" id="cnt-results"></span></button>
   <button class="nav-btn" data-tab="integrations" data-i18n="nav_integrations">Intégrations</button>
@@ -412,8 +449,13 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 <!-- ══ Pages ══ -->
 <div class="pages">
 
+  <!-- Accueil -->
+  <div class="page active" id="page-accueil">
+    <div class="home-wrap" id="home-wrap"></div>
+  </div>
+
   <!-- Commandes -->
-  <div class="page active" id="page-commandes" style="padding:0;overflow-y:auto">
+  <div class="page" id="page-commandes" style="padding:0;overflow-y:auto">
     <div id="cmd-sections"></div>
   </div>
 
@@ -556,7 +598,11 @@ footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border
 
 // ── i18n ────────────────────────────────────────────────────────────────────
 var LANGS = {
-  fr:{nav_launch:'Lancer',nav_history:'Historique',nav_results:'Résultats',nav_integrations:'Intégrations',nav_finops:'FinOps',
+  fr:{nav_home:'Accueil',nav_launch:'Lancer',nav_history:'Historique',nav_results:'Résultats',nav_integrations:'Intégrations',nav_finops:'FinOps',
+    home_health:'Santé du projet',home_no_project:'Ouvrez un projet pour commencer',home_no_project_sub:'Cliquez sur le sélecteur de projet en haut à gauche pour choisir un dossier.',
+    home_last_run:'Dernier run',home_quick:'Actions rapides',home_activity:'Activité récente',
+    home_stat_runs:'Runs totaux',home_stat_crash:'Crashs',home_stat_cov:'Couverture',home_stat_last:'Dernier run',
+    home_no_data:'Pas encore de données',home_never:'Jamais',home_grade:'Note',
     metric_runs:'Runs',metric_passed:'Passés',metric_failed:'Échecs',metric_avg:'Score moyen',
     th_cmd:'Commande',th_project:'Projet',th_passed:'Passés',th_failed:'Échecs',th_score:'Score CI',th_ago:'Il y a',
     btn_launch:'▶ Lancer',btn_stop:'■ Arrêter',btn_done:'✓ Résultats',btn_err:'⚠ Erreur',btn_new_run:'+ Nouveau run',btn_refresh:'↺',
@@ -583,7 +629,11 @@ var LANGS = {
     results_coverage:'Couverture',results_crashs:'Crashs',results_security:'Sécurité',results_arch:'Architecture',
     live_activity:'Activité en direct',no_data_coverage:'Aucune donnée de couverture',no_crash:'Aucun crash enregistré',
   },
-  en:{nav_launch:'Launch',nav_history:'History',nav_results:'Results',nav_integrations:'Integrations',nav_finops:'FinOps',
+  en:{nav_home:'Home',nav_launch:'Launch',nav_history:'History',nav_results:'Results',nav_integrations:'Integrations',nav_finops:'FinOps',
+    home_health:'Project health',home_no_project:'Open a project to get started',home_no_project_sub:'Click the project selector in the top left to choose a folder.',
+    home_last_run:'Last run',home_quick:'Quick actions',home_activity:'Recent activity',
+    home_stat_runs:'Total runs',home_stat_crash:'Crashes',home_stat_cov:'Coverage',home_stat_last:'Last run',
+    home_no_data:'No data yet',home_never:'Never',home_grade:'Grade',
     metric_runs:'Runs',metric_passed:'Passed',metric_failed:'Failures',metric_avg:'Avg score',
     th_cmd:'Command',th_project:'Project',th_passed:'Passed',th_failed:'Failed',th_score:'CI Score',th_ago:'Ago',
     btn_launch:'▶ Run',btn_stop:'■ Stop',btn_done:'✓ Results',btn_err:'⚠ Error',btn_new_run:'+ New run',btn_refresh:'↺',
@@ -610,7 +660,11 @@ var LANGS = {
     results_coverage:'Coverage',results_crashs:'Crashes',results_security:'Security',results_arch:'Architecture',
     live_activity:'Live activity',no_data_coverage:'No coverage data',no_crash:'No crashes recorded',
   },
-  es:{nav_launch:'Lanzar',nav_history:'Historial',nav_results:'Resultados',nav_integrations:'Integraciones',nav_finops:'FinOps',
+  es:{nav_home:'Inicio',nav_launch:'Lanzar',nav_history:'Historial',nav_results:'Resultados',nav_integrations:'Integraciones',nav_finops:'FinOps',
+    home_health:'Salud del proyecto',home_no_project:'Abre un proyecto para empezar',home_no_project_sub:'Haz clic en el selector de proyecto arriba a la izquierda.',
+    home_last_run:'Último run',home_quick:'Acciones rápidas',home_activity:'Actividad reciente',
+    home_stat_runs:'Runs totales',home_stat_crash:'Fallos',home_stat_cov:'Cobertura',home_stat_last:'Último run',
+    home_no_data:'Sin datos aún',home_never:'Nunca',home_grade:'Nota',
     metric_runs:'Runs',metric_passed:'Pasados',metric_failed:'Fallos',metric_avg:'Score medio',
     th_cmd:'Comando',th_project:'Proyecto',th_passed:'Pasados',th_failed:'Fallos',th_score:'Score CI',th_ago:'Hace',
     btn_launch:'▶ Ejecutar',btn_stop:'■ Detener',btn_done:'✓ Resultados',btn_err:'⚠ Error',btn_new_run:'+ Nuevo run',btn_refresh:'↺',
@@ -637,7 +691,11 @@ var LANGS = {
     results_coverage:'Cobertura',results_crashs:'Fallos',results_security:'Seguridad',results_arch:'Arquitectura',
     live_activity:'Actividad en vivo',no_data_coverage:'Sin datos de cobertura',no_crash:'Sin crashes registrados',
   },
-  de:{nav_launch:'Starten',nav_history:'Verlauf',nav_results:'Ergebnisse',nav_integrations:'Integrationen',nav_finops:'FinOps',
+  de:{nav_home:'Startseite',nav_launch:'Starten',nav_history:'Verlauf',nav_results:'Ergebnisse',nav_integrations:'Integrationen',nav_finops:'FinOps',
+    home_health:'Projektzustand',home_no_project:'Öffne ein Projekt zum Starten',home_no_project_sub:'Klicke oben links auf die Projektauswahl.',
+    home_last_run:'Letzter Run',home_quick:'Schnellaktionen',home_activity:'Letzte Aktivität',
+    home_stat_runs:'Ausführungen',home_stat_crash:'Abstürze',home_stat_cov:'Abdeckung',home_stat_last:'Letzter Run',
+    home_no_data:'Noch keine Daten',home_never:'Nie',home_grade:'Note',
     metric_runs:'Runs',metric_passed:'Bestanden',metric_failed:'Fehler',metric_avg:'Ø Score',
     th_cmd:'Befehl',th_project:'Projekt',th_passed:'Bestanden',th_failed:'Fehler',th_score:'CI Score',th_ago:'Vor',
     btn_launch:'▶ Starten',btn_stop:'■ Stoppen',btn_done:'✓ Ergebnisse',btn_err:'⚠ Fehler',btn_new_run:'+ Neuer Run',btn_refresh:'↺',
@@ -664,7 +722,11 @@ var LANGS = {
     results_coverage:'Abdeckung',results_crashs:'Abstürze',results_security:'Sicherheit',results_arch:'Architektur',
     live_activity:'Live-Aktivität',no_data_coverage:'Keine Abdeckungsdaten',no_crash:'Keine Abstürze erfasst',
   },
-  pt:{nav_launch:'Lançar',nav_history:'Histórico',nav_results:'Resultados',nav_integrations:'Integrações',nav_finops:'FinOps',
+  pt:{nav_home:'Início',nav_launch:'Lançar',nav_history:'Histórico',nav_results:'Resultados',nav_integrations:'Integrações',nav_finops:'FinOps',
+    home_health:'Saúde do projeto',home_no_project:'Abre um projeto para começar',home_no_project_sub:'Clica no seletor de projeto no canto superior esquerdo.',
+    home_last_run:'Último run',home_quick:'Ações rápidas',home_activity:'Atividade recente',
+    home_stat_runs:'Runs totais',home_stat_crash:'Crashes',home_stat_cov:'Cobertura',home_stat_last:'Último run',
+    home_no_data:'Sem dados ainda',home_never:'Nunca',home_grade:'Nota',
     metric_runs:'Runs',metric_passed:'Passados',metric_failed:'Falhas',metric_avg:'Score médio',
     th_cmd:'Comando',th_project:'Projeto',th_passed:'Passados',th_failed:'Falhas',th_score:'Score CI',th_ago:'Há',
     btn_launch:'▶ Lançar',btn_stop:'■ Parar',btn_done:'✓ Resultados',btn_err:'⚠ Erro',btn_new_run:'+ Novo run',btn_refresh:'↺',
@@ -691,7 +753,11 @@ var LANGS = {
     results_coverage:'Cobertura',results_crashs:'Crashes',results_security:'Segurança',results_arch:'Arquitetura',
     live_activity:'Atividade em direto',no_data_coverage:'Sem dados de cobertura',no_crash:'Nenhum crash registado',
   },
-  zh:{nav_launch:'启动',nav_history:'历史',nav_results:'结果',nav_integrations:'集成',nav_finops:'FinOps',
+  zh:{nav_home:'首页',nav_launch:'启动',nav_history:'历史',nav_results:'结果',nav_integrations:'集成',nav_finops:'FinOps',
+    home_health:'项目健康',home_no_project:'打开项目以开始',home_no_project_sub:'点击左上角的项目选择器选择文件夹。',
+    home_last_run:'上次运行',home_quick:'快速操作',home_activity:'近期活动',
+    home_stat_runs:'总运行数',home_stat_crash:'崩溃',home_stat_cov:'覆盖率',home_stat_last:'上次运行',
+    home_no_data:'暂无数据',home_never:'从未',home_grade:'评级',
     metric_runs:'运行数',metric_passed:'通过',metric_failed:'失败',metric_avg:'平均分',
     th_cmd:'命令',th_project:'项目',th_passed:'通过',th_failed:'失败',th_score:'CI评分',th_ago:'前',
     btn_launch:'▶ 运行',btn_stop:'■ 停止',btn_done:'✓ 结果',btn_err:'⚠ 错误',btn_new_run:'+ 新运行',btn_refresh:'↺',
@@ -1074,7 +1140,7 @@ function showToast(message, type) {
 }
 
 // ── Tab routing ─────────────────────────────────────────────────────────────
-var TABS = ['commandes','runs','resultats','integrations','finops','coverage','crashs','evolutions','sentinel','arch'];
+var TABS = ['accueil','commandes','runs','resultats','integrations','finops','coverage','crashs','evolutions','sentinel','arch'];
 var _loaded = {};
 
 function showTab(id) {
@@ -1096,7 +1162,8 @@ applyTheme(_theme);
 document.getElementById('lang-sel').value = _lang;
 
 var _h = location.hash.replace('#','');
-if (TABS.includes(_h)) showTab(_h); else { buildCmdGrid(); }
+if (TABS.includes(_h)) showTab(_h);
+else { loadAccueil(); buildCmdGrid(); }
 
 // ── Auto-refresh (30s) ───────────────────────────────────────────────────────
 var _arTimer = setInterval(function() {
@@ -1173,6 +1240,7 @@ fetch('/api/status').then(function(r){return r.json();}).then(function(d) {
 // ── Tab loader ───────────────────────────────────────────────────────────────
 function loadTab(tab) {
   switch(tab) {
+    case 'accueil':      loadAccueil();      break;
     case 'runs':         loadRuns();         break;
     case 'resultats':    loadResultats();    break;
     case 'coverage':     loadCoverage();     break;
@@ -1192,6 +1260,117 @@ function loadResultats() {
   loadArch();
   var cnt = document.getElementById('cnt-results');
   if (cnt) { cnt.textContent = ''; cnt.className = 'nav-cnt'; }
+}
+
+// ── Accueil ──────────────────────────────────────────────────────────────────
+function loadAccueil() {
+  var wrap = document.getElementById('home-wrap');
+  if (!wrap) return;
+
+  if (!window.currentProject) {
+    wrap.innerHTML =
+      '<div class="home-empty">'
+      +'<div class="home-empty-icon">📂</div>'
+      +'<div class="home-empty-title">'+t('home_no_project')+'</div>'
+      +'<div class="home-empty-sub">'+t('home_no_project_sub')+'</div>'
+      +'<button class="btn btn-primary" style="margin-top:8px" onclick="toggleProjDropdown()">'+t('open_project')+'</button>'
+      +'</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px">Chargement…</div>';
+
+  Promise.all([
+    fetch('/api/runs?limit=10').then(function(r){return r.json();}).catch(function(){return [];}),
+    fetch('/api/coverage').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('/api/crashs').then(function(r){return r.json();}).catch(function(){return [];}),
+  ]).then(function(results) {
+    var runs   = results[0] || [];
+    var cov    = results[1];
+    var crashs = results[2] || [];
+
+    var total  = runs.length;
+    var passed = runs.reduce(function(a,r){return a+(r.passed||0);},0);
+    var failed = runs.reduce(function(a,r){return a+(r.failed||0);},0);
+    var ciScores = runs.filter(function(r){return (r.passed||0)+(r.failed||0)>0;}).map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
+    var allScores = runs.map(function(r){return r.ci_score??r.ciScore??null;}).filter(function(v){return v!=null;});
+    var avgScore = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : null;
+    var grade = avgScore==null?'—':avgScore>=90?'A':avgScore>=80?'B':avgScore>=60?'C':'D';
+    var scoreColor = avgScore==null?'var(--border)':avgScore>=80?'var(--pass)':avgScore>=60?'var(--warn)':'var(--fail)';
+    var covPct = cov ? (cov.coveragePercent??cov.percent??0) : null;
+    var lastRun = runs[0];
+    var projName = (window.currentProject||'').split('/').filter(Boolean).pop()||'—';
+
+    // ── Hero ──
+    var heroHtml =
+      '<div class="home-hero">'
+      +'<div class="home-score-ring" style="border-color:'+scoreColor+';color:'+scoreColor+'">'
+      +'<div class="home-score-val">'+(avgScore!=null?avgScore:'—')+'</div>'
+      +'<div class="home-score-lbl">'+t('home_grade')+' '+grade+'</div>'
+      +'</div>'
+      +'<div class="home-hero-info">'
+      +'<div class="home-hero-title">'+esc(projName)+'</div>'
+      +'<div class="home-hero-sub">'+t('home_health')+' · '+(lastRun?relTime(lastRun.ts):t('home_never'))+'</div>'
+      +'<div class="home-hero-tags">'
+      +(avgScore!=null?'<span class="pill '+(avgScore>=80?'p-pass':avgScore>=60?'p-warn':'p-fail')+'">Score CI '+avgScore+'/100</span>':'')
+      +(covPct!=null?'<span class="pill '+(covPct>=80?'p-pass':covPct>=50?'p-warn':'p-fail')+'">Couv. '+covPct+'%</span>':'')
+      +(crashs.length?'<span class="pill p-fail">'+crashs.length+' crash'+(crashs.length>1?'s':'')+'</span>':'<span class="pill p-pass">0 crash</span>')
+      +'</div></div>'
+      +'</div>';
+
+    // ── Stat strip ──
+    var stripHtml =
+      '<div class="home-stat-strip">'
+      +'<div class="hstat"><div class="hstat-icon" style="background:rgba(99,102,241,.12)">🏃</div>'
+      +'<div><div class="hstat-val c-blue">'+total+'</div><div class="hstat-lbl">'+t('home_stat_runs')+'</div></div></div>'
+      +'<div class="hstat"><div class="hstat-icon" style="background:rgba(34,197,94,.12)">✅</div>'
+      +'<div><div class="hstat-val c-pass">'+passed+'</div><div class="hstat-lbl">'+t('metric_passed')+'</div></div></div>'
+      +'<div class="hstat"><div class="hstat-icon" style="background:rgba(239,68,68,.12)">💥</div>'
+      +'<div><div class="hstat-val '+(crashs.length?'c-fail':'c-pass')+'">'+crashs.length+'</div><div class="hstat-lbl">'+t('home_stat_crash')+'</div></div></div>'
+      +'<div class="hstat"><div class="hstat-icon" style="background:rgba(14,165,233,.12)">📊</div>'
+      +'<div><div class="hstat-val '+(covPct!=null?covPct>=80?'c-pass':covPct>=50?'c-warn':'c-fail':'dim')+'">'+(covPct!=null?covPct+'%':'—')+'</div><div class="hstat-lbl">'+t('home_stat_cov')+'</div></div></div>'
+      +'</div>';
+
+    // ── Grid: Quick actions + Recent activity ──
+    var quickCmds = [
+      {id:'audit', icon:'▶', bg:'rgba(34,197,94,.15)', label:t('card_audit'), sub:t('desc_audit').slice(0,50)+'…'},
+      {id:'init',  icon:'🔍', bg:'rgba(99,102,241,.15)', label:t('card_init'),  sub:t('desc_init').slice(0,50)+'…'},
+      {id:'repair',icon:'🔧', bg:'rgba(245,158,11,.15)', label:t('card_repair'),sub:t('desc_repair').slice(0,50)+'…'},
+    ];
+    var quickHtml = '<div class="card"><div class="card-head"><span class="card-title">'+t('home_quick')+'</span></div>'
+      +'<div class="home-quick">'
+      +quickCmds.map(function(c) {
+        return '<button class="home-quick-btn" onclick="showTab(\'commandes\')">'
+          +'<div class="home-quick-icon" style="background:'+c.bg+'">'+c.icon+'</div>'
+          +'<div><span class="home-quick-label">'+esc(c.label)+'</span>'
+          +'<span class="home-quick-sub">'+esc(c.sub)+'</span></div>'
+          +'</button>';
+      }).join('')
+      +'</div></div>';
+
+    var actHtml = '<div class="card"><div class="card-head"><span class="card-title">'+t('home_activity')+'</span>'
+      +'<button class="btn btn-ghost" onclick="showTab(\'runs\')" style="font-size:10px">'+t('nav_history')+' →</button></div>'
+      +'<div class="home-activity">'
+      +(runs.length === 0
+        ? '<div class="empty" style="padding:20px">'+t('home_no_data')+'</div>'
+        : runs.slice(0,6).map(function(r) {
+            var hasData = (r.passed||0)+(r.failed||0)>0;
+            var ok = r.failed===0 && hasData;
+            var dotColor = !hasData?'var(--border)':ok?'var(--pass)':'var(--fail)';
+            return '<div class="home-act-row">'
+              +'<div class="home-act-dot" style="background:'+dotColor+'"></div>'
+              +cmdPill(r.command||'?')
+              +'<span class="dim" style="font-size:10px;flex:1;padding-left:6px">'+esc((r.target||'').split('/').pop()||'—')+'</span>'
+              +(hasData?'<span class="'+(ok?'c-pass':'c-fail')+'" style="font-size:10px;font-weight:600">'+r.passed+'/'+(r.passed+r.failed)+'</span>':'')
+              +'<span class="dim" style="font-size:10px;margin-left:8px">'+relTime(r.ts)+'</span>'
+              +'</div>';
+          }).join('')
+      )
+      +'</div></div>';
+
+    wrap.innerHTML = heroHtml + stripHtml
+      +'<div class="home-grid">'+quickHtml+actHtml+'</div>';
+  });
 }
 
 // ── Runs ─────────────────────────────────────────────────────────────────────
