@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="test-end-to-end" width="280" />
+  <img src="docs/assets/logo.svg" alt="test-end-to-end" width="480" />
 </p>
 
 <p align="center">
@@ -33,34 +33,48 @@
 
 ## Comment ça marche
 
-```
-Votre projet
-     │
-     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         ORCHESTRATEUR                           │
-│            Zero-Token Bypass (empreinte SHA-256)                │
-│              Ollama  ←──────────────────→  Anthropic            │
-│         (AST / string / tâches légères)  (raisonnement)         │
-└────┬──────────┬──────────┬──────────┬──────────┬───────────────┘
-     │          │          │          │          │          │
-     ▼          ▼          ▼          ▼          ▼          ▼
-  Scout      Artisan    Runner     Coroner   Ghostwriter  Sentinel
-  Scan AST   Génération Playwright  Triage    Patch + PR   Audit
-  routes     specs      exécution   crashs    dry-run      OWASP
-  forms                             verdicts
-     │          │          │          │          │          │
-     ▼          ▼          ▼          ▼          ▼          ▼
- Coverage  ChaosMonkey  Updater  ArchPolice  Evolver   Dependabot
- carte %   LATENCY      sync     complexité  gate       npm audit
-           OFFLINE      smart    couplage    supervisé  auto-fix
-           CORRUPT
-     │          │          │          │          │          │
-     └──────────┴──────────┴──────────┴──────────┴──────────┘
-                                  │
-                                  ▼
-                       Dashboard  localhost:4242
-                  (8 onglets · WebSocket live · Confidence Index)
+```mermaid
+flowchart LR
+    PROJET([🗂️ Votre projet]) --> ORCH
+
+    subgraph ORCH["🧠 Orchestrateur"]
+        direction TB
+        ZTB["Zero-Token Bypass\nSHA-256 + SQLite"]
+        OLL["Ollama — local\ntâches légères"]
+        ANT["Anthropic SDK\nraisonnement"]
+        ZTB -- modifié --> OLL
+        OLL -- complexe --> ANT
+        ZTB -- inchangé --> SKIP(["⚡ 0 token"])
+    end
+
+    ORCH --> PIPE
+
+    subgraph PIPE["Pipeline séquentiel"]
+        direction LR
+        S1["Scout\nAST scan"] --> S2["Artisan\nSpec gen"] --> S3["Runner\nPlaywright"]
+        S3 -- crash --> S4["Coroner\nTriage"]
+        S3 -- pass --> S5["Coverage\n% carte"]
+        S4 -- BACKEND_BUG --> S6["Ghostwriter\nPatch + PR"]
+    end
+
+    ORCH --> PAR
+
+    subgraph PAR["Agents parallèles"]
+        direction LR
+        P1["ChaosMonkey\nLATENCY · OFFLINE"] 
+        P2["ArchPolice\nComplexité · Couplage"]
+        P3["Sentinel\nOWASP PRs"]
+        P4["Dependabot\nnpm audit"]
+    end
+
+    PIPE --> DASH
+    PAR --> DASH
+
+    subgraph DASH["📊 Dashboard :4242"]
+        direction LR
+        D1["8 onglets\nWebSocket live"]
+        D2[("SQLite\nFinOps")]
+    end
 ```
 
 ---
@@ -150,64 +164,73 @@ npm run dashboard
 
 ```mermaid
 flowchart TD
-    CLI([CLI / MCP Tool]) --> ORCH
+    CLI(["🖥️ CLI · MCP Tool"]) --> ORCH
 
     subgraph ORCH["🧠 Orchestrateur"]
         direction LR
-        BYPASS{Zero-Token Bypass\nSHA-256 + SQLite}
-        OLLAMA[Ollama\nlocal]
-        ANTHROPIC[Anthropic SDK\nraisonnement]
-        BYPASS -->|fichier inchangé| SKIP([⚡ Skipped — 0 tokens])
-        BYPASS -->|fichier modifié| OLLAMA
-        OLLAMA -->|tâche complexe| ANTHROPIC
+        BY["SHA-256\nZero-Token Bypass"]
+        OL["Ollama\nlocal"]
+        AN["Anthropic SDK"]
+        BY -- modifié --> OL
+        OL -- complexe --> AN
+        BY -- inchangé --> SK(["⚡ Skip"])
     end
 
     ORCH --> SCAN
+    ORCH --> PARA
 
-    subgraph SCAN["📡 Analyse"]
-        SCOUT[Scout\nAST → RouteMap]
-        ARCH[ArchPolice\nComplexité / Couplage]
-        DEPEND[Dependabot\nnpm audit]
+    subgraph SCAN["📡 Analyse & Génération"]
+        direction LR
+        SCOUT["Scout\nAST → RouteMap"]
+        ARTISAN["Artisan\nSpecs Playwright"]
+        UPDATER["Updater\nSync"]
+        SCOUT --> ARTISAN --> UPDATER
     end
 
-    SCOUT --> GEN
-
-    subgraph GEN["✍️ Génération"]
-        ARTISAN[Artisan\nSpecs Playwright]
-        CHAOS[ChaosMonkey\nTests réseau]
-        UPDATER[Updater\nSync intelligente]
+    subgraph PARA["Agents indépendants"]
+        direction LR
+        ARCHP["ArchPolice"]
+        DEP["Dependabot"]
+        SENT["Sentinel\nOWASP"]
+        CHAOS["ChaosMonkey"]
+        SHADOW["Shadow\n4 Personas"]
     end
 
-    GEN --> RUN
+    SCAN --> RUN
 
     subgraph RUN["▶️ Exécution"]
-        RUNNER[Runner\nPlaywright]
-        SHADOW[Shadow\n4 Personas]
+        RUNNER["Runner\nPlaywright"]
     end
 
-    RUN -->|crash| TRIAGE
+    RUN -- "✓ pass" --> COV["Coverage\ncarte %"]
+    RUN -- "✗ crash" --> TRI
 
-    subgraph TRIAGE["🔬 Triage"]
-        CORONER[Coroner\nVerdict LLM]
-        SENTINEL[Sentinel\nOWASP PR]
+    subgraph TRI["🔬 Triage"]
+        CORONER["Coroner\nVerdict LLM"]
+        RGPD["RGPDGuard\nmasquage PII"]
+        CORONER --> RGPD
     end
 
-    CORONER -->|BACKEND_BUG| PATCH
+    CORONER -- "BACKEND_BUG" --> FIX
 
-    subgraph PATCH["🩹 Correction"]
-        GHOST[Ghostwriter\nPatch + PR]
-        QA[QAEngineer\nRégression]
-        EVOLVER[Evolver\nAuto-amélioration]
+    subgraph FIX["🩹 Correction"]
+        GHOST["Ghostwriter\nPatch + PR"]
+        QAE["QAEngineer\nRégression"]
+        EVOL["Evolver\nsupervisé"]
+        GHOST --> QAE
+        GHOST --> EVOL
     end
 
-    PATCH --> DASH
-    TRIAGE --> DASH
-    SCAN --> DASH
+    FIX --> DB
+    TRI --> DB
+    SCAN --> DB
+    PARA --> DB
+    COV --> DB
 
-    subgraph DASH["📊 Dashboard :4242"]
+    subgraph DB["📊 Dashboard :4242"]
         direction LR
-        WS[WebSocket live]
-        SQLITE[(SQLite\nFinOps)]
+        WS["WebSocket live\n8 onglets"]
+        SQ[("SQLite\nFinOps")]
     end
 ```
 
@@ -234,14 +257,14 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    FILES[Fichiers source] --> FP[SHA-256\nempreinte]
-    FP --> DB[(SQLite\ncache)]
-    DB -->|empreinte identique| SKIP([⚡ Skip — 0 token])
-    DB -->|empreinte différente| OLLAMA{Ollama\ndisponible ?}
-    OLLAMA -->|oui| LOCAL[Inférence locale\ngratuite]
-    OLLAMA -->|non| SDK[Anthropic SDK\ntokens consommés]
-    LOCAL --> RESULT([Résultat])
-    SDK --> RESULT
+    F(["📂 Fichiers\nsource"]) --> H["SHA-256\nempreinte"]
+    H --> C[("SQLite\ncache")]
+    C -- "identique" --> SK(["⚡ Skipped\n0 token"])
+    C -- "différente" --> O{"Ollama\ndispo ?"}
+    O -- "oui" --> L(["Inférence locale\ngratuite"])
+    O -- "non" --> A(["Anthropic SDK\ntokens"])
+    L --> R(["✓ Résultat"])
+    A --> R
 ```
 
 - **SHA-256** calcule l'empreinte de chaque fichier source au premier scan
@@ -256,17 +279,7 @@ flowchart LR
 ## Dashboard
 
 <p align="center">
-  <img src="docs/assets/dashboard-preview.png" alt="Dashboard — vue d'ensemble" width="780" />
-</p>
-
-<p align="center">
-  <img src="docs/assets/dashboard-routes.png" alt="Onglet Coverage" width="380" />
-  <img src="docs/assets/dashboard-triage.png" alt="Onglet Crashs" width="380" />
-</p>
-
-<p align="center">
-  <img src="docs/assets/dashboard-personas.png" alt="Onglet Shadow Personas" width="380" />
-  <img src="docs/assets/report-screenshot.png" alt="Rapport de run" width="380" />
+  <img src="docs/assets/dashboard-preview.png" alt="Dashboard — vue d'ensemble" width="860" />
 </p>
 
 ```bash
@@ -325,63 +338,47 @@ Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
 ## Structure du projet
 
 ```mermaid
-graph TD
-    subgraph CLI["🖥️ Entrée"]
-        IDX[index.ts\nCLI + MCP]
+graph LR
+    IDX["🖥️ index.ts\nCLI · MCP · e2e-evolve-apply"] --> ORCH["⚙️ orchestrator.ts\nMachine d'état · routing · cache"]
+
+    ORCH --> AG
+    ORCH --> IN
+    ORCH --> SV
+
+    subgraph AG["🤖 src/agents/"]
+        direction TB
+        AG1["scout · artisan · runner\nCoroner · ghostwriter · evolver"]
+        AG2["sentinel · chaosMonkey · coverage\nupdater · archPolice · rgpdGuard"]
+        AG3["qaEngineer · dependabot"]
     end
 
-    subgraph CORE["⚙️ Cœur"]
-        ORCH[orchestrator.ts\nMachine d'état]
+    subgraph IN["🔌 src/integrations/"]
+        direction TB
+        IN1["notifier — Slack · Discord · Teams"]
+        IN2["atlassian — Jira · Xray"]
+        IN3["trello · cloudDeployer"]
     end
 
-    subgraph AGENTS["🤖 Agents"]
+    subgraph SV["📊 src/server/"]
+        direction TB
+        SV1["app.ts — API Express 8 routes"]
+        SV2["start.ts — WebSocket"]
+        SV3["public/index.html — SPA zéro CDN"]
+    end
+
+    AG --> UT
+    SV --> UT
+
+    subgraph UT["🛠️ src/utils/"]
         direction LR
-        A1[scout]
-        A2[artisan]
-        A3[runner]
-        A4[coroner]
-        A5[ghostwriter]
-        A6[evolver]
-        A7[sentinel]
-        A8[chaosMonkey]
-        A9[coverage]
-        A10[updater]
-        A11[archPolice]
-        A12[rgpdGuard]
-        A13[qaEngineer]
-        A14[dependabot]
+        UT1["cache.ts\nSHA-256"] 
+        UT2["compressor\nByte-State"]
+        UT3["metricsTracker\nFinOps"]
+        UT4["report.ts"]
     end
-
-    subgraph INTEGRATIONS["🔌 Intégrations"]
-        I1[notifier\nSlack·Discord·Teams]
-        I2[atlassian\nJira·Xray]
-        I3[trello]
-        I4[cloudDeployer\nOVH·IONOS·Hostinger]
-    end
-
-    subgraph SERVER["📊 Serveur"]
-        S1[app.ts\nAPI Express]
-        S2[public/index.html\nSPA 8 onglets]
-        S3[(SQLite\nFinOps)]
-    end
-
-    subgraph UTILS["🛠️ Utilitaires"]
-        U1[cache.ts\nSHA-256]
-        U2[compressor.ts]
-        U3[metricsTracker.ts]
-        U4[report.ts]
-    end
-
-    IDX --> ORCH
-    ORCH --> AGENTS
-    ORCH --> INTEGRATIONS
-    ORCH --> SERVER
-    AGENTS --> UTILS
-    SERVER --> S3
 ```
 
-<details>
-<summary>📁 Arborescence complète</summary>
+📁 Arborescence complète
 
 ```
 test-end-to-end/
@@ -429,8 +426,6 @@ test-end-to-end/
 ├── tsconfig.json
 └── playwright.config.ts
 ```
-
-</details>
 
 ---
 
