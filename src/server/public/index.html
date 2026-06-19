@@ -885,6 +885,12 @@ function toggleTheme() {
 }
 window.toggleTheme = toggleTheme;
 window.changeLang = changeLang;
+window.toggleProjDropdown = toggleProjDropdown;
+window.handleCmdBtn = handleCmdBtn;
+window.showTab = showTab;
+window.loadTab = loadTab;
+window.selectProject = selectProject;
+window.toggleFeed = toggleFeed;
 
 // ── Global state ────────────────────────────────────────────────────────────
 window.currentProject = null;
@@ -948,7 +954,7 @@ function buildCmdCard(c, accent) {
     +(flagsHtml ? '<div class="cmd-flags">'+flagsHtml+'</div>' : '')
     +'<div class="cmd-mini-log" id="minilog-'+c.id+'" style="display:none"></div>'
     +'<div class="cmd-footer">'
-    +'<button class="btn-launch" id="btn-'+c.id+'" onclick="handleCmdBtn(\''+c.id+'\')">&#9654;&nbsp; Lancer</button>'
+    +'<button class="btn-launch" id="btn-'+c.id+'">&#9654;&nbsp; Lancer</button>'
     +'</div>'
     +'</div>';
 }
@@ -972,6 +978,10 @@ function buildCmdGrid() {
       +'<div class="cmd-grid">'+s.cmds.map(function(c){ return buildCmdCard(c, s.accent); }).join('')+'</div>'
       +'</div></div>';
   }).join('');
+  COMMANDS.forEach(function(c) {
+    var btn = document.getElementById('btn-'+c.id);
+    if (btn) btn.addEventListener('click', function(){ handleCmdBtn(c.id); });
+  });
 }
 
 function getCardFlags(cmdId) {
@@ -1086,6 +1096,8 @@ async function initProjectSelector() {
     if (projects.length > 0) {
       window.currentProject = projects[0].path;
       document.getElementById('proj-name').textContent = projects[0].name;
+      var active = document.querySelector('.nav-btn.active');
+      if (active && active.dataset.tab === 'accueil') loadAccueil();
     }
     renderProjectList(projects);
   } catch(e) {}
@@ -1115,6 +1127,8 @@ function selectProject(path, name) {
   document.getElementById('proj-name').textContent = name;
   closeProjDropdown();
   showToast('Projet "'+name+'" sélectionné', 'success');
+  var active = document.querySelector('.nav-btn.active');
+  if (active && active.dataset.tab === 'accueil') { _loaded.accueil = false; loadAccueil(); }
 }
 
 function toggleProjDropdown() {
@@ -1144,6 +1158,8 @@ async function validateAndSetProject(inputPath) {
       document.getElementById('proj-name').textContent = data.name;
       closeProjDropdown();
       showToast('Projet "'+data.name+'" sélectionné', 'success');
+      var activeTab = document.querySelector('.nav-btn.active');
+      if (activeTab && activeTab.dataset.tab === 'accueil') { _loaded.accueil = false; loadAccueil(); }
       var projects = await fetch('/api/projects').then(function(r){return r.json();});
       renderProjectList(projects);
     } else {
