@@ -124,16 +124,32 @@ npm run dashboard
 | `e2e-diff` | Cible le scan sur les fichiers modifiés (git diff HEAD + staged) | Specs pour routes nouvelles/modifiées |
 | `e2e-shadow` | Reverse Testing zéro-prompt — 4 personas (Frustré, Attaquant, Chaos Réseau, Acheteur Impulsif) | `tests/shadow/<persona>-<route>.spec.ts` |
 
+### Niveaux d'exécution
+
+| Niveau | Ce qui s'active |
+|---|---|
+| `--level=1` | Scan AST + génération tests + run Playwright. Zéro token si Ollama actif. |
+| `--level=2` | Niveau 1 + Vision QA (Coroner analyse les screenshots) + rapport de couverture |
+| `--level=3` | Niveau 2 + Ghostwriter (patch auto) + Evolver (auto-amélioration) + Shadow Personas |
+
 ### Options
 
 ```bash
---level=1|2|3       # Profondeur : 1=basique, 2=+Vision QA, 3=+auto-patch
+--level=1|2|3       # Profondeur (défaut : 2)
 --dry-run           # Affiche les changements prévus sans écrire les fichiers
 --apply             # Ghostwriter : applique les patches sur disque et ouvre la PR
 --unsupervised      # Evolver : auto-commit des auto-patches (dangereux)
 --chaos             # Injecte des fautes réseau en parallèle du run
 --predictive        # Priorise les fichiers à fort taux de churn (historique git 12 mois)
 --trace=<id>        # Répare un triage spécifique par son ID
+```
+
+### Script de sécurité rapide
+
+```bash
+npm run security-fix /votre/projet
+# équivalent à : node dist/agents/dependabot.js /votre/projet
+# → npm audit, fix LLM, vérification tsc, PR GitHub si GITHUB_TOKEN défini
 ```
 
 ### Appliquer une évolution supervisée
@@ -368,6 +384,30 @@ Toutes les intégrations sont **optionnelles**. Copier `.env.example` vers `.env
 - **RGPDGuard masque toutes les PII** avant écriture dans `.e2e-work/` — tokens JWT, clés API, emails, IBAN, numéros de carte
 - **Aucune donnée sensible loggée sur stdout** — clés API et credentials SSH n'apparaissent jamais dans la console
 - **Rate limiter sur tous les appels Anthropic SDK** — 5 requêtes simultanées max, rechargement token-bucket à 1/sec
+
+---
+
+## Répertoire de travail `.e2e-work/`
+
+Tous les artefacts générés sont isolés dans `.e2e-work/` à la racine du projet cible — jamais dans votre code source.
+
+| Fichier / Dossier | Contenu |
+|---|---|
+| `state.json` | État courant de l'orchestrateur (polling dashboard) |
+| `last-routes.json` | Snapshot RouteMap du dernier scan — base de comparaison pour `e2e-update` |
+| `.e2e-cache.json` | Empreintes SHA-256 par fichier — Zero-Token Bypass |
+| `storage.sqlite` | Métriques FinOps, historique runs, triages (SQLite WAL) |
+| `coverage.json` | Résultats de couverture routes/forms |
+| `coverage.html` | Rapport de couverture visuel |
+| `arch-report.json` | Données brutes analyse ArchPolice |
+| `arch-report.md` | Rapport lisible avec plan de refactoring LLM |
+| `latest.log` | Log complet du dernier run |
+| `patches-pending/` | Patches Ghostwriter en attente d'application (`--apply`) |
+| `evolutions-pending/` | Propositions Evolver en attente de revue humaine |
+| `evolutions-applied/` | Archive des évolutions appliquées via `e2e-evolve-apply` |
+| `*.triage.json` | Résultats de triage Coroner par trace ID |
+
+> `.e2e-work/` doit être ajouté à `.gitignore` si vous ne souhaitez pas versionner les artefacts.
 
 ---
 
