@@ -34,47 +34,24 @@
 ## Comment ça marche
 
 ```mermaid
-flowchart LR
-    PROJET([🗂️ Votre projet]) --> ORCH
+flowchart TD
+    P(["📂 Votre projet"]) --> O
 
-    subgraph ORCH["🧠 Orchestrateur"]
-        direction TB
-        ZTB["Zero-Token Bypass\nSHA-256 + SQLite"]
-        OLL["Ollama — local\ntâches légères"]
-        ANT["Anthropic SDK\nraisonnement"]
-        ZTB -- modifié --> OLL
-        OLL -- complexe --> ANT
-        ZTB -- inchangé --> SKIP(["⚡ 0 token"])
-    end
+    O["🧠 Orchestrateur\nZero-Token Bypass · SHA-256\nOllama local → Anthropic SDK"]
 
-    ORCH --> PIPE
+    O --> SC["🔍 Scout\nAST scan · routes · forms"]
+    SC --> AR["✍️ Artisan\ngénération specs Playwright"]
+    AR --> RU["▶️ Runner\nexécution Playwright"]
 
-    subgraph PIPE["Pipeline séquentiel"]
-        direction LR
-        S1["Scout\nAST scan"] --> S2["Artisan\nSpec gen"] --> S3["Runner\nPlaywright"]
-        S3 -- crash --> S4["Coroner\nTriage"]
-        S3 -- pass --> S5["Coverage\n% carte"]
-        S4 -- BACKEND_BUG --> S6["Ghostwriter\nPatch + PR"]
-    end
+    RU -- "✓ pass" --> CO["📈 Coverage\ncarte % routes"]
+    RU -- "✗ crash" --> CR["🔬 Coroner\ntriage · verdict LLM"]
+    CR -- "BACKEND_BUG" --> GH["🩹 Ghostwriter\npatch + PR dry-run"]
 
-    ORCH --> PAR
+    O --> PA["Agents parallèles\nChaosMonkey · ArchPolice · Sentinel · Dependabot"]
 
-    subgraph PAR["Agents parallèles"]
-        direction LR
-        P1["ChaosMonkey\nLATENCY · OFFLINE"] 
-        P2["ArchPolice\nComplexité · Couplage"]
-        P3["Sentinel\nOWASP PRs"]
-        P4["Dependabot\nnpm audit"]
-    end
-
-    PIPE --> DASH
-    PAR --> DASH
-
-    subgraph DASH["📊 Dashboard :4242"]
-        direction LR
-        D1["8 onglets\nWebSocket live"]
-        D2[("SQLite\nFinOps")]
-    end
+    CO --> DA["📊 Dashboard :4242\n8 onglets · WebSocket · FinOps"]
+    GH --> DA
+    PA --> DA
 ```
 
 ---
@@ -339,43 +316,14 @@ Copier `.env.example` vers `.env` et renseigner uniquement ce qui est utilisé.
 
 ```mermaid
 graph LR
-    IDX["🖥️ index.ts\nCLI · MCP · e2e-evolve-apply"] --> ORCH["⚙️ orchestrator.ts\nMachine d'état · routing · cache"]
+    IDX["🖥️ index.ts\nCLI · MCP"] --> ORC["⚙️ orchestrator.ts\nMachine d'état · cache"]
 
-    ORCH --> AG
-    ORCH --> IN
-    ORCH --> SV
+    ORC --> AG["🤖 agents/\n14 agents spécialisés"]
+    ORC --> IN["🔌 integrations/\nSlack · Jira · SSH · Trello"]
+    ORC --> SV["📊 server/\nAPI Express · SPA · WebSocket"]
 
-    subgraph AG["🤖 src/agents/"]
-        direction TB
-        AG1["scout · artisan · runner\nCoroner · ghostwriter · evolver"]
-        AG2["sentinel · chaosMonkey · coverage\nupdater · archPolice · rgpdGuard"]
-        AG3["qaEngineer · dependabot"]
-    end
-
-    subgraph IN["🔌 src/integrations/"]
-        direction TB
-        IN1["notifier — Slack · Discord · Teams"]
-        IN2["atlassian — Jira · Xray"]
-        IN3["trello · cloudDeployer"]
-    end
-
-    subgraph SV["📊 src/server/"]
-        direction TB
-        SV1["app.ts — API Express 8 routes"]
-        SV2["start.ts — WebSocket"]
-        SV3["public/index.html — SPA zéro CDN"]
-    end
-
-    AG --> UT
+    AG --> UT["🛠️ utils/\ncache SHA-256 · métriques · rapports"]
     SV --> UT
-
-    subgraph UT["🛠️ src/utils/"]
-        direction LR
-        UT1["cache.ts\nSHA-256"] 
-        UT2["compressor\nByte-State"]
-        UT3["metricsTracker\nFinOps"]
-        UT4["report.ts"]
-    end
 ```
 
 📁 Arborescence complète
