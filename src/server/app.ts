@@ -1408,7 +1408,7 @@ try {
         const failed = results.filter((r) => !r.ok);
         if (!failed.length) {
           const label = id.charAt(0).toUpperCase() + id.slice(1);
-          res.json({ ok: true, message: `✅ ${results.length} webhook${results.length > 1 ? 's' : ''} ${label} OK` });
+          res.json({ ok: true, message: `${results.length} webhook${results.length > 1 ? 's' : ''} ${label} OK` });
         } else {
           const details = failed.map((f) => `• ${f.url.slice(0, 60)}… → ${f.status} ${f.error ?? ''}`).join('\n');
           res.json({ ok: false, message: `${failed.length}/${results.length} webhook(s) en erreur :\n${details}` });
